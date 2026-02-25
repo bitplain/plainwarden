@@ -27,6 +27,8 @@ describe("terminal slash commands", () => {
     });
 
     expect(result.action).toBe("login");
+    expect(result.silent).toBe(true);
+    expect(result.output).toEqual([]);
   });
 
   it("accepts guest command without slash", () => {
@@ -36,6 +38,8 @@ describe("terminal slash commands", () => {
     });
 
     expect(result.action).toBe("login");
+    expect(result.silent).toBe(true);
+    expect(result.output).toEqual([]);
   });
 
   it("handles /clear action for authenticated mode", () => {
@@ -55,6 +59,8 @@ describe("terminal slash commands", () => {
     });
 
     expect(result.action).toBe("logout");
+    expect(result.silent).toBe(true);
+    expect(result.output).toEqual([]);
   });
 
   it("returns /end cli undock action for authenticated mode", () => {
@@ -91,6 +97,26 @@ describe("terminal slash commands", () => {
     });
 
     expect(result.action).toBe("open_calendar");
+  });
+
+  it("navigates to /home command", () => {
+    const result = executeSlashCommand("home", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/home");
+  });
+
+  it("navigates to /notes command", () => {
+    const result = executeSlashCommand("/notes", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/notes");
   });
 
   it("does not allow calendar command for guest mode", () => {

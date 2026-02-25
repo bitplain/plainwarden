@@ -18,6 +18,7 @@ export interface TerminalComposerState {
 export interface TerminalCommandResult {
   output: string[];
   action?: TerminalAction;
+  silent?: boolean;
   navigateTo?: string;
   serverRequest?: {
     line: string;

@@ -33,7 +33,7 @@ const CLI_SCALE_KEY = "netden:cli-scale";
 const CLI_SCALE_MIN = 0.8;
 const CLI_SCALE_MAX = 1.2;
 const CLI_SCALE_DEFAULT = 1;
-const PROMPT_PLACEHOLDER = 'Ask anything... "Fix a TODO in the codebase"';
+const PROMPT_PLACEHOLDER = "Ask anything";
 
 function nextMode(current: TerminalMode): TerminalMode {
   return current === "slash" ? "shell" : "slash";
@@ -351,22 +351,13 @@ export default function Terminal() {
 
       setIsAuthenticated(true);
       setShowLoginForm(false);
-      setHasStarted(true);
+      setHasStarted(false);
       setIsCalendarOpen(false);
       setMode("slash");
       setInput("");
       setLoginPassword("");
       setLoginError(null);
       router.replace("/");
-
-      setHistory((prev) => [
-        ...prev,
-        {
-          command: "login",
-          output: ["Authenticated."],
-          mode: "slash",
-        },
-      ]);
 
       setTimeout(() => inputRef.current?.focus(), 0);
     } catch (error) {
@@ -397,14 +388,16 @@ export default function Terminal() {
       return;
     }
 
-    setHistory((prev) => [
-      ...prev,
-      {
-        command: trimmed,
-        output: result.output,
-        mode: "slash",
-      },
-    ]);
+    if (!result.silent) {
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: trimmed,
+          output: result.output,
+          mode: "slash",
+        },
+      ]);
+    }
 
     setInput("");
     setHistoryIndex(-1);

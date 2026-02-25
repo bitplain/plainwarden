@@ -4,5 +4,16 @@ export const terminalModule: NetdenModule = {
   id: "terminal",
   description: "Desktop-like command surface",
   routes: ["/"],
-  commands: ["/setup", "/login", "/calendar", "/settings", "/help", "/clear", "/end cli", "/exit"],
+  commands: [
+    "/setup",
+    "/login",
+    "/calendar",
+    "/home",
+    "/notes",
+    "/settings",
+    "/help",
+    "/clear",
+    "/end cli",
+    "/exit",
+  ],
 };
