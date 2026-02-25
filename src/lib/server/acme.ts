@@ -489,7 +489,21 @@ export async function waitForTlsActivation(
   throw new Error(`Сертификат не активировался в течение ${Math.round(waitMs / 1000)} секунд.${tail}`);
 }
 
+let activeIssuancePromise: Promise<AcmeConfigV1> | null = null;
+
 export async function issueAcmeCertificate(): Promise<AcmeConfigV1> {
+  if (activeIssuancePromise) {
+    return activeIssuancePromise;
+  }
+
+  activeIssuancePromise = _issueAcmeCertificate().finally(() => {
+    activeIssuancePromise = null;
+  });
+
+  return activeIssuancePromise;
+}
+
+async function _issueAcmeCertificate(): Promise<AcmeConfigV1> {
   const existing = await readAcmeConfig();
   if (!existing?.domain || !existing?.email) {
     throw new Error("Сначала сохраните домен и email в настройках HTTPS/ACME.");
