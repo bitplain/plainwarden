@@ -1,0 +1,51 @@
+import type { NextConfig } from "next";
+
+const isDev = process.env.NODE_ENV !== "production";
+const shouldUpgradeInsecureRequests = process.env.NETDEN_CSP_UPGRADE_INSECURE_REQUESTS === "true";
+
+const cspDirectives = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+];
+
+if (shouldUpgradeInsecureRequests) {
+  cspDirectives.push("upgrade-insecure-requests");
+}
+
+const cspHeader = cspDirectives.join("; ");
+
+const nextConfig: NextConfig = {
+  output: "standalone",
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), browsing-topics=()",
+          },
+          { key: "Content-Security-Policy", value: cspHeader },
+        ],
+      },
+    ];
+  },
+};
+
+export default nextConfig;

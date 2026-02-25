@@ -1,0 +1,68 @@
+import { CalendarEvent } from "@/lib/types";
+
+export const mockEvents: CalendarEvent[] = [
+  {
+    id: "1",
+    title: "Server maintenance",
+    description: "Scheduled downtime for database server migration and OS patching.",
+    date: "2026-02-24",
+    time: "09:00",
+    type: "event",
+  },
+  {
+    id: "2",
+    title: "Update SSL certificates",
+    description: "Renew and deploy SSL certificates for all production domains.",
+    date: "2026-02-25",
+    type: "task",
+    status: "pending",
+  },
+  {
+    id: "3",
+    title: "Team standup",
+    description: "Daily standup meeting with the infrastructure team.",
+    date: "2026-02-26",
+    time: "10:00",
+    type: "event",
+  },
+  {
+    id: "4",
+    title: "Backup verification",
+    description: "Verify integrity of weekly backups across all environments.",
+    date: "2026-02-27",
+    type: "task",
+    status: "done",
+  },
+  {
+    id: "5",
+    title: "Network audit",
+    description: "Perform a full network audit including firewall rules and VPN configurations.",
+    date: "2026-02-28",
+    time: "14:00",
+    type: "event",
+  },
+  {
+    id: "6",
+    title: "Deploy monitoring stack",
+    description: "Deploy Prometheus + Grafana monitoring for the staging environment.",
+    date: "2026-03-02",
+    type: "task",
+    status: "pending",
+  },
+  {
+    id: "7",
+    title: "Incident review",
+    description: "Post-mortem review for last week's API outage incident.",
+    date: "2026-03-04",
+    time: "11:00",
+    type: "event",
+  },
+  {
+    id: "8",
+    title: "Update Docker images",
+    description: "Rebuild and push all production Docker images with latest security patches.",
+    date: "2026-03-05",
+    type: "task",
+    status: "pending",
+  },
+];
