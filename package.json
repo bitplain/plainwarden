@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "pretest": "prisma generate",
     "test": "vitest run",
     "db:generate": "prisma generate",
     "db:migrate:deploy": "prisma migrate deploy",
