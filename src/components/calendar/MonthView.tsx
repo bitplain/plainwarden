@@ -22,7 +22,7 @@ export default function MonthView({
   const today = new Date();
 
   return (
-    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0e111d]/80">
+    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-white/10 bg-black/40">
       <div className="grid grid-cols-7 border-b border-white/10 bg-black/25">
         {MONTH_DAY_NAMES.map((name) => (
           <div
