@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import TlsAcmeSettings from "@/components/settings/TlsAcmeSettings";
 
 const CLI_SCALE_KEY = "netden:cli-scale";
 const MIN = 0.8;
@@ -187,7 +188,7 @@ export default function SettingsPage() {
           <div>
             <p className="home-kicker">NetDen</p>
             <h1 className="home-title">Настройки</h1>
-            <p className="home-subtitle">CLI масштаб и GitHub Billing для организации.</p>
+            <p className="home-subtitle">CLI масштаб, GitHub Billing и управление HTTPS сертификатом.</p>
           </div>
           <nav className="home-links">
             <Link href="/" className="home-link">
@@ -312,6 +313,8 @@ export default function SettingsPage() {
             {lastSync ? ` Последняя синхронизация: ${lastSync}.` : ""}
           </p>
         </section>
+
+        <TlsAcmeSettings />
       </div>
     </div>
   );

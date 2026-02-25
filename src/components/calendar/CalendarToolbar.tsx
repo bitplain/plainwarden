@@ -38,7 +38,7 @@ export default function CalendarToolbar({
 }: CalendarToolbarProps) {
   return (
     <header className="calendar-toolbar border-b border-white/10 bg-black/70 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 px-3 py-3 sm:px-5 xl:px-6">
+      <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-5 xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             {showTerminalLink ? (
