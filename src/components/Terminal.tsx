@@ -34,6 +34,13 @@ const CLI_SCALE_MIN = 0.8;
 const CLI_SCALE_MAX = 1.2;
 const CLI_SCALE_DEFAULT = 1;
 const PROMPT_PLACEHOLDER = "Ask anything";
+type TerminalPanel = "none" | "calendar" | "home" | "notes" | "settings";
+
+const PANEL_ROUTE_MAP: Record<Exclude<TerminalPanel, "none" | "calendar">, string> = {
+  home: "/home",
+  notes: "/notes",
+  settings: "/settings",
+};
 
 function nextMode(current: TerminalMode): TerminalMode {
   return current === "slash" ? "shell" : "slash";
@@ -98,7 +105,7 @@ export default function Terminal() {
   const [isRuntimeLoading, setIsRuntimeLoading] = useState(true);
   const [cliScale, setCliScale] = useState(CLI_SCALE_DEFAULT);
   const [showLoginForm, setShowLoginForm] = useState(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<TerminalPanel>("none");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -176,7 +183,7 @@ export default function Terminal() {
     if (params.get("login") === "1") {
       setShowLoginForm(true);
       setHasStarted(false);
-      setIsCalendarOpen(false);
+      setActivePanel("none");
     }
   }, []);
 
@@ -210,7 +217,7 @@ export default function Terminal() {
           setShowLoginForm(false);
         } else {
           setIsAuthenticated(false);
-          setIsCalendarOpen(false);
+          setActivePanel("none");
           if (setupRequired) {
             setShowLoginForm(false);
           } else if (wantsLogin) {
@@ -358,7 +365,7 @@ export default function Terminal() {
       setIsAuthenticated(true);
       setShowLoginForm(false);
       setHasStarted(false);
-      setIsCalendarOpen(false);
+      setActivePanel("none");
       setMode("slash");
       setInput("");
       setLoginPassword("");
@@ -373,6 +380,19 @@ export default function Terminal() {
       setLoginBusy(false);
     }
   }
+
+  const closePanelToConsole = () => {
+    setActivePanel("none");
+    setHasStarted(false);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
+
+  const openPanel = (panel: Exclude<TerminalPanel, "none">) => {
+    setHasStarted(true);
+    setShowLoginForm(false);
+    setActivePanel(panel);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  };
 
   async function runInput(rawInput: string) {
     const trimmed = rawInput.trim();
@@ -411,7 +431,7 @@ export default function Terminal() {
     if (result.action === "login") {
       setShowLoginForm(true);
       setHasStarted(false);
-      setIsCalendarOpen(false);
+      setActivePanel("none");
       setMode("slash");
       setLoginError(null);
       setLoginPassword("");
@@ -422,7 +442,7 @@ export default function Terminal() {
 
     if (result.action === "undock") {
       setHasStarted(false);
-      setIsCalendarOpen(false);
+      setActivePanel("none");
       setMode("slash");
       setShowLoginForm(false);
       setTimeout(() => inputRef.current?.focus(), 0);
@@ -430,10 +450,22 @@ export default function Terminal() {
     }
 
     if (result.action === "open_calendar") {
-      setHasStarted(true);
-      setIsCalendarOpen(true);
-      setShowLoginForm(false);
-      setTimeout(() => inputRef.current?.focus(), 0);
+      openPanel("calendar");
+      return;
+    }
+
+    if (result.action === "open_home") {
+      openPanel("home");
+      return;
+    }
+
+    if (result.action === "open_notes") {
+      openPanel("notes");
+      return;
+    }
+
+    if (result.action === "open_settings") {
+      openPanel("settings");
       return;
     }
 
@@ -450,7 +482,7 @@ export default function Terminal() {
       setIsAuthenticated(false);
       setShowLoginForm(false);
       setHasStarted(false);
-      setIsCalendarOpen(false);
+      setActivePanel("none");
       setMode("slash");
       setHistory([]);
       setCmdHistory([]);
@@ -552,14 +584,20 @@ export default function Terminal() {
   );
 
   const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
-  const historyVisible = hasStarted && !showLoginForm && !isCalendarOpen;
-  const calendarVisible = hasStarted && !showLoginForm && isCalendarOpen;
-  const currentTerminalWindow = showLoginForm ? "login" : isCalendarOpen ? "calendar" : "console";
+  const historyVisible = hasStarted && !showLoginForm && activePanel === "none";
+  const panelVisible = hasStarted && !showLoginForm && activePanel !== "none";
+  const currentTerminalWindow = showLoginForm ? "login" : activePanel === "none" ? "console" : activePanel;
   const windowTitle =
     currentTerminalWindow === "login"
       ? "Вход"
       : currentTerminalWindow === "calendar"
         ? "Календарь"
+        : currentTerminalWindow === "home"
+          ? "Главная"
+          : currentTerminalWindow === "notes"
+            ? "Заметки"
+            : currentTerminalWindow === "settings"
+              ? "Настройки"
         : "NetDen";
   const idleClock = useMemo(
     () =>
@@ -626,21 +664,33 @@ export default function Terminal() {
         </div>
       </div>
 
-      <div className={`terminal-calendar-shell ${calendarVisible ? "terminal-calendar-shell-visible" : ""}`}>
+      <div className={`terminal-calendar-shell ${panelVisible ? "terminal-calendar-shell-visible" : ""}`}>
         <div className="terminal-calendar-inner">
-          <Calendar
-            variant="embedded"
-            onBackToConsole={() => {
-              setIsCalendarOpen(false);
-              setHasStarted(false);
-              setTimeout(() => inputRef.current?.focus(), 0);
-            }}
-          />
+          {activePanel === "calendar" ? (
+            <Calendar variant="embedded" onBackToConsole={closePanelToConsole} />
+          ) : activePanel === "home" || activePanel === "notes" || activePanel === "settings" ? (
+            <div className="terminal-inline-page-shell">
+              <button
+                type="button"
+                className="terminal-inline-page-back"
+                onClick={closePanelToConsole}
+                aria-label="Вернуться к консоли"
+              >
+                ← Консоль
+              </button>
+              <iframe
+                className="terminal-inline-page-frame"
+                src={PANEL_ROUTE_MAP[activePanel]}
+                title={windowTitle}
+                loading="eager"
+              />
+            </div>
+          ) : null}
         </div>
       </div>
 
       <footer
-        className={`terminal-composer ${historyVisible || calendarVisible ? "terminal-composer-active" : ""}`}
+        className={`terminal-composer ${historyVisible || panelVisible ? "terminal-composer-active" : ""}`}
       >
         {showLoginForm ? (
           <form className="terminal-auth-shell nd-animate-in" onSubmit={handleLoginSubmit}>

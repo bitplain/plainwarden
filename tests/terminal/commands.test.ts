@@ -99,24 +99,31 @@ describe("terminal slash commands", () => {
     expect(result.action).toBe("open_calendar");
   });
 
-  it("navigates to /home command", () => {
+  it("opens inline home from /home command", () => {
     const result = executeSlashCommand("home", {
       isAuthenticated: true,
       isSetupRequired: false,
     });
 
-    expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/home");
+    expect(result.action).toBe("open_home");
   });
 
-  it("navigates to /notes command", () => {
+  it("opens inline notes from /notes command", () => {
     const result = executeSlashCommand("/notes", {
       isAuthenticated: true,
       isSetupRequired: false,
     });
 
-    expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/notes");
+    expect(result.action).toBe("open_notes");
+  });
+
+  it("opens inline settings from /settings command", () => {
+    const result = executeSlashCommand("/settings", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("open_settings");
   });
 
   it("does not allow calendar command for guest mode", () => {
