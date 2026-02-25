@@ -1,0 +1,46 @@
+{
+  "name": "netden",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "prebuild": "prisma generate",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "test": "vitest run",
+    "db:generate": "prisma generate",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:down:volumes": "docker compose down -v",
+    "docker:ps": "docker compose ps",
+    "docker:logs": "docker compose logs -f app postgres proxy",
+    "docker:smoke": "docker compose up --build -d --wait && curl -fsS http://localhost:${PROXY_PORT:-8080}/api/health && echo \"\\n[smoke] /api/health ok\"",
+    "docker:smoke:ephemeral": "docker compose down -v && docker compose up --build -d --wait && curl -fsS http://localhost:${PROXY_PORT:-8080}/api/health && echo \"\\n[smoke] /api/health ok (ephemeral)\""
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.4.1",
+    "@prisma/client": "^7.4.1",
+    "date-fns": "^4.1.0",
+    "geist": "^1.7.0",
+    "next": "16.1.6",
+    "pg": "^8.18.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "zustand": "^5.0.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.16.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "prisma": "^7.4.1",
+    "tailwindcss": "^4",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

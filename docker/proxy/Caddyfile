@@ -1,0 +1,16 @@
+:80 {
+  encode gzip zstd
+
+  @health path /healthz
+  handle @health {
+    respond "ok" 200
+  }
+
+  reverse_proxy app:3000
+
+  header {
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "SAMEORIGIN"
+    Referrer-Policy "strict-origin-when-cross-origin"
+  }
+}

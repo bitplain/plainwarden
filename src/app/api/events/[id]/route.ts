@@ -1,0 +1,75 @@
+import { NextRequest, NextResponse } from "next/server";
+import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { deleteEventForUser, updateEventForUser } from "@/lib/server/json-db";
+import {
+  HttpError,
+  handleRouteError,
+  readJsonBody,
+  validateUpdateEventInput,
+} from "@/lib/server/validators";
+
+interface RouteContext {
+  params: Promise<{ id: string }>;
+}
+
+async function updateEvent(request: NextRequest, context: RouteContext) {
+  try {
+    await bootstrapAuth();
+
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      throw new HttpError(400, "Event id is required");
+    }
+
+    const body = await readJsonBody(request);
+    const input = validateUpdateEventInput(body);
+
+    const updated = await updateEventForUser(user.id, id, input);
+    if (!updated) {
+      throw new HttpError(404, "Event not found");
+    }
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}
+
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  return updateEvent(request, context);
+}
+
+export async function PUT(request: NextRequest, context: RouteContext) {
+  // Backward-compatible alias for legacy clients.
+  return updateEvent(request, context);
+}
+
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  try {
+    await bootstrapAuth();
+
+    const user = await getAuthenticatedUser(request);
+    if (!user) {
+      throw new HttpError(401, "Unauthorized");
+    }
+
+    const { id } = await context.params;
+    if (!id) {
+      throw new HttpError(400, "Event id is required");
+    }
+
+    const deleted = await deleteEventForUser(user.id, id);
+    if (!deleted) {
+      throw new HttpError(404, "Event not found");
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    return handleRouteError(error);
+  }
+}

@@ -1,0 +1,5 @@
+import { SetupWizard } from "@/app/setup/setup-wizard";
+
+export default function SetupPage() {
+  return <SetupWizard />;
+}
