@@ -239,7 +239,7 @@ body {
 }
 
 .terminal-input-shell {
-  border-left: 2px solid #39a9ff;
+  border-left: 2px solid var(--terminal-mode-color);
   border-radius: 0;
   background:
     linear-gradient(90deg, rgba(24, 24, 24, 0.98) 0%, rgba(31, 31, 31, 0.98) 100%);
@@ -276,16 +276,20 @@ body {
   line-height: 1.2;
 }
 
-.terminal-input-preview-mode {
+.terminal-input-preview-role {
   font-weight: 500;
 }
 
-.terminal-input-preview-mode-slash {
+.terminal-input-preview-role-slash {
   color: color-mix(in srgb, var(--terminal-slash) 88%, #ebfff3);
 }
 
-.terminal-input-preview-mode-shell {
+.terminal-input-preview-role-shell {
   color: color-mix(in srgb, var(--terminal-shell) 88%, #fff0f0);
+}
+
+.terminal-input-preview-mode-word {
+  color: #f0f3ff;
 }
 
 .terminal-auth-shell {

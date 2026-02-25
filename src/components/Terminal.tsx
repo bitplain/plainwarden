@@ -641,11 +641,10 @@ export default function Terminal() {
               />
 
               <div className="terminal-input-preview-row" aria-hidden>
-                <span
-                  className={`terminal-input-preview-mode terminal-input-preview-mode-${mode}`}
-                >
-                  {mode === "slash" ? "Slash mode" : "Shell mode"}
+                <span className={`terminal-input-preview-role terminal-input-preview-role-${mode}`}>
+                  {mode === "slash" ? "Slash" : "Shell"}
                 </span>
+                <span className="terminal-input-preview-mode-word">mode</span>
               </div>
             </div>
 
