@@ -280,7 +280,7 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(100% - 2rem, 980px);
+  width: min(100% - 2rem, 900px);
   transform: translate(-50%, -50%) scale(var(--nd-cli-scale, 1));
   transform-origin: center center;
   z-index: 4;
@@ -293,7 +293,7 @@ body {
 
 .terminal-composer-active {
   top: 100%;
-  width: min(100% - 0.9rem, 1200px);
+  width: min(100% - 0.9rem, 980px);
   transform: translate(-50%, calc(-100% - 0.5rem - env(safe-area-inset-bottom, 0px))) scale(var(--nd-cli-scale, 1));
 }
 
@@ -477,10 +477,11 @@ body {
 
 .terminal-idle-mode-meta {
   display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  gap: 0.75rem;
+  align-items: baseline;
+  justify-content: flex-start;
+  width: fit-content;
+  gap: 0.48rem;
+  flex-wrap: nowrap;
 }
 
 .terminal-idle-clock {
@@ -488,6 +489,7 @@ body {
   font-size: 0.86em;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  transform: translateX(0.08rem);
 }
 
 .terminal-mode-toggle {
@@ -533,7 +535,7 @@ body {
 }
 
 .terminal-idle-tip {
-  margin-top: 1.9rem;
+  margin-top: 1.05rem;
   display: flex;
   align-items: center;
   gap: 0.44rem;
@@ -1078,7 +1080,7 @@ body {
   }
 
   .terminal-idle-mode-meta {
-    gap: 0.52rem;
+    gap: 0.4rem;
   }
 
   .acme-actions .notes-submit {
@@ -1086,7 +1088,7 @@ body {
   }
 
   .terminal-idle-tip {
-    margin-top: 1.1rem;
+    margin-top: 0.74rem;
     font-size: 0.8rem;
   }
 }
