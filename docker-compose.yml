@@ -36,17 +36,23 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://netden:netdenpass@postgres:5432/netden?schema=public}
       - NETDEN_SESSION_SECRET=${NETDEN_SESSION_SECRET:-local-session-secret-change-me}
       - NEXT_PUBLIC_BUILD_SHA=${NEXT_PUBLIC_BUILD_SHA:-dev}
+      - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://proxy:2019}
 
   proxy:
     image: caddy:2.10-alpine
     restart: unless-stopped
+    command: ["sh", "/etc/caddy/run.sh"]
     depends_on:
       app:
         condition: service_healthy
     ports:
       - "${PROXY_PORT:-8080}:80"
+      - "${PROXY_HTTPS_PORT:-8443}:443"
     volumes:
-      - ./docker/proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./docker/proxy/bootstrap.json:/etc/caddy/bootstrap.json:ro
+      - ./docker/proxy/run.sh:/etc/caddy/run.sh:ro
+      - caddy_data:/data
+      - caddy_config:/config
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
       interval: 20s
@@ -56,3 +62,5 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:

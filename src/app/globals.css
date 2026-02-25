@@ -464,9 +464,8 @@ body {
 
 .terminal-idle-meta {
   margin-top: 0.62rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 0.5rem;
+  display: grid;
+  gap: 0.24rem;
   color: #8289a0;
   font-size: clamp(0.78rem, 1.35vw, 0.94rem);
 }
@@ -474,6 +473,21 @@ body {
 .terminal-idle-meta strong {
   color: #d7ddf0;
   font-weight: 700;
+}
+
+.terminal-idle-mode-meta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.terminal-idle-clock {
+  color: #f7ab1b;
+  font-size: 0.86em;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .terminal-mode-toggle {
@@ -875,6 +889,106 @@ body {
   width: fit-content;
 }
 
+.acme-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.45rem;
+  padding: 0 0.52rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.acme-badge-idle {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c3ccde;
+}
+
+.acme-badge-issuing {
+  background: rgba(245, 158, 11, 0.18);
+  color: #ffd69a;
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+.acme-badge-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #9debcf;
+  border-color: rgba(16, 185, 129, 0.38);
+}
+
+.acme-badge-failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ffb1b1;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.acme-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.acme-meta {
+  display: grid;
+  gap: 0.16rem;
+  color: #95a1c0;
+  font-size: 0.78rem;
+}
+
+.acme-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.acme-note {
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.34);
+  color: #b6c2e3;
+  padding: 0.48rem 0.56rem;
+  font-size: 0.78rem;
+}
+
+.acme-log {
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.34);
+  padding: 0.56rem;
+}
+
+.acme-log-title {
+  margin-bottom: 0.36rem;
+  color: #b5bfd9;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.acme-log-list {
+  max-height: 11.5rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.acme-log-line {
+  color: #9eaacf;
+  font-size: 0.75rem;
+}
+
+.acme-log-line-error {
+  color: #f6b3b3;
+}
+
+.acme-message {
+  color: #9debcf;
+  font-size: 0.8rem;
+}
+
+.acme-error {
+  color: #ffb3b3;
+  font-size: 0.8rem;
+}
+
 @media (max-width: 768px) {
   .home-page-grid {
     width: calc(100% - 0.74rem);
@@ -960,9 +1074,15 @@ body {
   }
 
   .terminal-idle-meta {
-    flex-direction: column;
-    gap: 0.2rem;
     font-size: 0.84rem;
+  }
+
+  .terminal-idle-mode-meta {
+    gap: 0.52rem;
+  }
+
+  .acme-actions .notes-submit {
+    width: 100%;
   }
 
   .terminal-idle-tip {

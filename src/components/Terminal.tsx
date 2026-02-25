@@ -103,6 +103,7 @@ export default function Terminal() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginBusy, setLoginBusy] = useState(false);
+  const [clockNow, setClockNow] = useState(() => new Date());
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -159,6 +160,11 @@ export default function Terminal() {
 
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -548,6 +554,23 @@ export default function Terminal() {
   const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
   const historyVisible = hasStarted && !showLoginForm && !isCalendarOpen;
   const calendarVisible = hasStarted && !showLoginForm && isCalendarOpen;
+  const currentTerminalWindow = showLoginForm ? "login" : isCalendarOpen ? "calendar" : "console";
+  const windowTitle =
+    currentTerminalWindow === "login"
+      ? "Вход"
+      : currentTerminalWindow === "calendar"
+        ? "Календарь"
+        : "NetDen";
+  const idleClock = useMemo(
+    () =>
+      new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(clockNow),
+    [clockNow],
+  );
 
   return (
     <div
@@ -557,7 +580,7 @@ export default function Terminal() {
       <div className="terminal-grid-overlay" aria-hidden />
 
       <header className={`terminal-brand ${hasStarted || showLoginForm ? "terminal-brand-active" : ""}`}>
-        <h1 className="terminal-brand-name">NetDen</h1>
+        <h1 className="terminal-brand-name">{windowTitle}</h1>
       </header>
 
       <div
@@ -725,8 +748,11 @@ export default function Terminal() {
             {!hasStarted && (
               <>
                 <div className="terminal-idle-meta">
-                  <span>
-                    <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
+                  <span className="terminal-idle-mode-meta">
+                    <span>
+                      <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
+                    </span>
+                    <span className="terminal-idle-clock">{idleClock}</span>
                   </span>
                   <span>
                     <strong>{isMobile ? "tap" : "type"}</strong> {idleCommandHint} to continue
