@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const isDev = process.env.NODE_ENV !== "production";
-const shouldUpgradeInsecureRequests = process.env.NETDEN_CSP_UPGRADE_INSECURE_REQUESTS === "true";
 
-const cspDirectives = [
+const cspHeader = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
@@ -14,13 +13,8 @@ const cspDirectives = [
   "base-uri 'self'",
   "form-action 'self'",
   "frame-ancestors 'none'",
-];
-
-if (shouldUpgradeInsecureRequests) {
-  cspDirectives.push("upgrade-insecure-requests");
-}
-
-const cspHeader = cspDirectives.join("; ");
+  "upgrade-insecure-requests",
+].join("; ");
 
 const nextConfig: NextConfig = {
   output: "standalone",
