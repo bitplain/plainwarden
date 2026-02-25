@@ -12,9 +12,14 @@ const cspHeader = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
-  "upgrade-insecure-requests",
-].join("; ");
+  "frame-ancestors 'self'",
+];
+
+if (shouldUpgradeInsecureRequests) {
+  cspDirectives.push("upgrade-insecure-requests");
+}
+
+const cspHeader = cspDirectives.join("; ");
 
 const nextConfig: NextConfig = {
   output: "standalone",
