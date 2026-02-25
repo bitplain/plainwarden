@@ -148,24 +148,21 @@ export function executeSlashCommand(
   if (matchedCommand.trigger === "/settings") {
     return {
       output: ["Opening settings..."],
-      action: "navigate",
-      navigateTo: "/settings",
+      action: "open_settings",
     };
   }
 
   if (matchedCommand.trigger === "/home") {
     return {
       output: ["Opening home..."],
-      action: "navigate",
-      navigateTo: "/home",
+      action: "open_home",
     };
   }
 
   if (matchedCommand.trigger === "/notes") {
     return {
       output: ["Opening notes..."],
-      action: "navigate",
-      navigateTo: "/notes",
+      action: "open_notes",
     };
   }
 
