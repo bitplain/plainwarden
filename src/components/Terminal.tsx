@@ -755,7 +755,7 @@ export default function Terminal() {
                     <span className="terminal-idle-clock">{idleClock}</span>
                   </span>
                   <span>
-                    <strong>{isMobile ? "tap" : "type"}</strong> {idleCommandHint} to continue
+                    <strong>type</strong> /help to continue
                   </span>
                 </div>
                 <div className="terminal-idle-tip">
