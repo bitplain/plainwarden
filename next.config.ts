@@ -13,7 +13,7 @@ const cspDirectives = [
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
-  "frame-ancestors 'none'",
+  "frame-ancestors 'self'",
 ];
 
 if (shouldUpgradeInsecureRequests) {
