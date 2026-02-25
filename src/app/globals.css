@@ -239,42 +239,57 @@ body {
 }
 
 .terminal-input-shell {
-  border-left: 2px solid var(--terminal-mode-color);
-  border-radius: 0.15rem;
-  background: rgba(26, 26, 26, 0.96);
+  border-left: 2px solid #39a9ff;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgba(24, 24, 24, 0.98) 0%, rgba(31, 31, 31, 0.98) 100%);
   box-shadow:
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.05),
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
     0 12px 26px -22px rgba(0, 0, 0, 0.95);
-  display: flex;
-  align-items: center;
-  gap: 0.44rem;
-  padding: 0.86rem 0.72rem;
-}
-
-.terminal-input-caret {
-  color: #e3e7f8;
-  font-size: 1.04rem;
-  line-height: 1;
+  display: grid;
+  gap: 0.82rem;
+  padding: 0.9rem 0.84rem 0.84rem;
 }
 
 .terminal-input {
-  flex: 1;
+  width: 100%;
   background: transparent;
   border: 0;
   outline: none;
-  color: #dce2f5;
-  font-size: clamp(0.98rem, 2vw, 1.32rem);
+  color: #e7ebf6;
+  font-size: clamp(0.97rem, 1.9vw, 1.26rem);
   line-height: 1.2;
-  caret-color: var(--terminal-mode-color);
+  caret-color: #eaf3ff;
   font-family: var(--font-geist-mono);
 }
 
 .terminal-input::placeholder {
-  color: #767c90;
+  color: #747884;
+}
+
+.terminal-input-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 0.88rem;
+  font-family: var(--font-geist-mono);
+  font-size: clamp(0.89rem, 1.5vw, 0.99rem);
+  line-height: 1.2;
+}
+
+.terminal-input-preview-accent {
+  color: #39a9ff;
+}
+
+.terminal-input-preview-primary {
+  color: #e7ebf5;
+}
+
+.terminal-input-preview-muted {
+  color: #8e929f;
 }
 
 .terminal-mode-row {
-  margin-top: 0.42rem;
+  margin-top: 0.46rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -299,8 +314,67 @@ body {
   color: #7e8598;
 }
 
+.terminal-auth-shell {
+  border-left: 2px solid #39a9ff;
+  background:
+    linear-gradient(90deg, rgba(24, 24, 24, 0.98) 0%, rgba(31, 31, 31, 0.98) 100%);
+  box-shadow:
+    inset 0 0 0 0.5px rgba(255, 255, 255, 0.06),
+    0 12px 26px -22px rgba(0, 0, 0, 0.95);
+  padding: 0.85rem;
+  display: grid;
+  gap: 0.58rem;
+}
+
+.terminal-auth-title {
+  color: #e9edf9;
+  font-size: 0.95rem;
+  font-family: var(--font-geist-mono);
+}
+
+.terminal-auth-input {
+  height: 2.25rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.16);
+  background: rgba(11, 11, 11, 0.95);
+  color: #edf1ff;
+  padding: 0 0.64rem;
+  outline: none;
+  font-size: 0.9rem;
+  font-family: var(--font-geist-mono);
+}
+
+.terminal-auth-input::placeholder {
+  color: #7c8091;
+}
+
+.terminal-auth-input:focus {
+  border-color: rgba(57, 169, 255, 0.8);
+}
+
+.terminal-auth-button {
+  height: 2.18rem;
+  border: 0;
+  background: #39a9ff;
+  color: #021423;
+  font-size: 0.88rem;
+  font-weight: 700;
+  font-family: var(--font-geist-mono);
+  cursor: pointer;
+}
+
+.terminal-auth-button:disabled {
+  opacity: 0.66;
+  cursor: default;
+}
+
+.terminal-auth-error {
+  color: #ffb5b5;
+  font-size: 0.78rem;
+  font-family: var(--font-geist-mono);
+}
+
 .terminal-slash-menu {
-  margin-top: 0.55rem;
+  margin-top: 0.52rem;
   border: 0.5px solid color-mix(in srgb, var(--terminal-mode-color) 40%, rgba(255, 255, 255, 0.16));
   border-radius: 0.28rem;
   background: rgba(10, 10, 10, 0.97);
@@ -490,6 +564,11 @@ body {
 
   .terminal-input-shell {
     padding: 0.72rem 0.58rem;
+  }
+
+  .terminal-input-preview-row {
+    gap: 0.54rem;
+    font-size: 0.82rem;
   }
 
   .terminal-output-line,

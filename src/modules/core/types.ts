@@ -1,6 +1,6 @@
 export type TerminalMode = "slash" | "shell";
 
-export type TerminalAction = "clear" | "navigate" | "server" | "logout";
+export type TerminalAction = "clear" | "navigate" | "server" | "logout" | "login";
 
 export interface TerminalComposerState {
   isDocked: boolean;

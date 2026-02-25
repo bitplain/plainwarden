@@ -20,6 +20,15 @@ describe("terminal slash commands", () => {
     expect(commands).toEqual(["/setup"]);
   });
 
+  it("returns login action for guest mode", () => {
+    const result = executeSlashCommand("/login", {
+      isAuthenticated: false,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("login");
+  });
+
   it("handles /clear action for authenticated mode", () => {
     const result = executeSlashCommand("/clear", {
       isAuthenticated: true,

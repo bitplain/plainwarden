@@ -114,9 +114,8 @@ export function executeSlashCommand(
 
   if (normalized === "/login") {
     return {
-      output: ["Opening login..."],
-      action: "navigate",
-      navigateTo: "/login",
+      output: ["Opening login form..."],
+      action: "login",
     };
   }
 

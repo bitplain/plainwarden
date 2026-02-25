@@ -1,6 +1,14 @@
 "use client";
 
-import { CSSProperties, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  CSSProperties,
+  FormEvent,
+  KeyboardEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter } from "next/navigation";
 import type { TerminalMode } from "@/modules/core/types";
 import {
@@ -24,6 +32,7 @@ const CLI_SCALE_KEY = "netden:cli-scale";
 const CLI_SCALE_MIN = 0.8;
 const CLI_SCALE_MAX = 1.2;
 const CLI_SCALE_DEFAULT = 1;
+const PROMPT_PLACEHOLDER = 'Ask anything... "Fix a TODO in the codebase"';
 
 function nextMode(current: TerminalMode): TerminalMode {
   return current === "slash" ? "shell" : "slash";
@@ -87,9 +96,15 @@ export default function Terminal() {
   const [isSetupRequired, setIsSetupRequired] = useState(false);
   const [isRuntimeLoading, setIsRuntimeLoading] = useState(true);
   const [cliScale, setCliScale] = useState(CLI_SCALE_DEFAULT);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginBusy, setLoginBusy] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const loginEmailRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
   const commandContext = useMemo<SlashCommandContext>(
@@ -101,7 +116,7 @@ export default function Terminal() {
   );
 
   const slashCommands = useMemo(() => getSlashCommands(commandContext), [commandContext]);
-  const slashMenuVisible = mode === "slash" && input.trim().startsWith("/");
+  const slashMenuVisible = !showLoginForm && mode === "slash" && input.trim().startsWith("/");
   const slashQuery = input.trim().slice(1).toLowerCase();
 
   const filteredSlashCommands = useMemo(() => {
@@ -118,13 +133,18 @@ export default function Terminal() {
   }, [slashQuery, slashMenuVisible, mode]);
 
   useEffect(() => {
-    if (!hasStarted) return;
+    if (!hasStarted || showLoginForm) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history, hasStarted]);
+  }, [history, hasStarted, showLoginForm]);
 
   useEffect(() => {
+    if (showLoginForm) {
+      loginEmailRef.current?.focus();
+      return;
+    }
+
     inputRef.current?.focus();
-  }, []);
+  }, [showLoginForm]);
 
   useEffect(() => {
     setCliScale(readCliScaleFromStorage());
@@ -137,6 +157,18 @@ export default function Terminal() {
 
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("login") === "1") {
+      setShowLoginForm(true);
+      setHasStarted(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -159,13 +191,24 @@ export default function Terminal() {
           return;
         }
 
-        setIsSetupRequired(setupData?.setupRequired === true);
-        setIsAuthenticated(meResponse.ok);
-      } catch {
-        if (!active) {
-          return;
-        }
+        const setupRequired = setupData?.setupRequired === true;
+        setIsSetupRequired(setupRequired);
 
+        const wantsLogin = new URLSearchParams(window.location.search).get("login") === "1";
+
+        if (meResponse.ok) {
+          setIsAuthenticated(true);
+          setShowLoginForm(false);
+        } else {
+          setIsAuthenticated(false);
+          if (setupRequired) {
+            setShowLoginForm(false);
+          } else if (wantsLogin) {
+            setShowLoginForm(true);
+          }
+        }
+      } catch {
+        if (!active) return;
         setIsAuthenticated(false);
       } finally {
         if (active) {
@@ -271,6 +314,64 @@ export default function Terminal() {
     }
   }
 
+  async function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (loginBusy) {
+      return;
+    }
+
+    setLoginBusy(true);
+    setLoginError(null);
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          email: loginEmail,
+          password: loginPassword,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            message?: string;
+          }
+        | null;
+
+      if (!response.ok) {
+        throw new Error(payload?.message || "Login failed");
+      }
+
+      setIsAuthenticated(true);
+      setShowLoginForm(false);
+      setHasStarted(true);
+      setMode("slash");
+      setInput("");
+      setLoginPassword("");
+      setLoginError(null);
+      router.replace("/");
+
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: "login",
+          output: ["Authenticated."],
+          mode: "slash",
+        },
+      ]);
+
+      setTimeout(() => inputRef.current?.focus(), 0);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      setLoginError(message);
+    } finally {
+      setLoginBusy(false);
+    }
+  }
+
   async function runInput(rawInput: string) {
     const trimmed = rawInput.trim();
     if (!trimmed || isRunning) return;
@@ -303,6 +404,17 @@ export default function Terminal() {
     setInput("");
     setHistoryIndex(-1);
 
+    if (result.action === "login") {
+      setShowLoginForm(true);
+      setHasStarted(false);
+      setMode("slash");
+      setLoginError(null);
+      setLoginPassword("");
+      setTimeout(() => loginEmailRef.current?.focus(), 0);
+      router.replace("/?login=1");
+      return;
+    }
+
     if (result.action === "logout") {
       try {
         await fetch("/api/auth/logout", {
@@ -310,13 +422,19 @@ export default function Terminal() {
           headers: { "content-type": "application/json" },
         });
       } catch {
-        // Session already invalidated in this case.
+        // Session may already be gone.
       }
 
       setIsAuthenticated(false);
-      setMode("slash");
+      setShowLoginForm(true);
       setHasStarted(false);
-      router.push("/");
+      setMode("slash");
+      setHistory([]);
+      setCmdHistory([]);
+      setLoginPassword("");
+      setLoginError(null);
+      router.replace("/?login=1");
+      setTimeout(() => loginEmailRef.current?.focus(), 0);
       return;
     }
 
@@ -327,6 +445,10 @@ export default function Terminal() {
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (showLoginForm) {
+      return;
+    }
+
     if (event.key === "Tab" && !isMobile) {
       event.preventDefault();
       setMode((current) => nextMode(current));
@@ -407,6 +529,7 @@ export default function Terminal() {
   );
 
   const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
+  const historyVisible = hasStarted && !showLoginForm;
 
   return (
     <div
@@ -415,12 +538,12 @@ export default function Terminal() {
     >
       <div className="terminal-grid-overlay" aria-hidden />
 
-      <header className={`terminal-brand ${hasStarted ? "terminal-brand-active" : ""}`}>
+      <header className={`terminal-brand ${hasStarted || showLoginForm ? "terminal-brand-active" : ""}`}>
         <h1 className="terminal-brand-name">NetDen</h1>
       </header>
 
       <div
-        className={`terminal-history-shell ${hasStarted ? "terminal-history-shell-visible" : ""}`}
+        className={`terminal-history-shell ${historyVisible ? "terminal-history-shell-visible" : ""}`}
         onClick={() => inputRef.current?.focus()}
       >
         <div className="terminal-stream">
@@ -430,7 +553,6 @@ export default function Terminal() {
               className={`terminal-entry terminal-entry-${entry.mode} nd-animate-in`}
             >
               <div className="terminal-command-row">
-                <span className="terminal-command-caret">{entry.mode === "shell" ? "$" : "/"}</span>
                 <span className="terminal-command-text">{entry.command}</span>
               </div>
               {entry.output.length > 0 && (
@@ -445,7 +567,7 @@ export default function Terminal() {
             </div>
           ))}
 
-          {hasStarted && history.length === 0 && (
+          {historyVisible && history.length === 0 && (
             <div className="terminal-entry nd-animate-in">
               <div className="terminal-output">
                 {isRuntimeLoading ? (
@@ -463,108 +585,144 @@ export default function Terminal() {
         </div>
       </div>
 
-      <footer className={`terminal-composer ${hasStarted ? "terminal-composer-active" : ""}`}>
-        <div className={`terminal-input-shell terminal-input-shell-${mode}`}>
-          <span className="terminal-input-caret">{mode === "shell" ? "$" : "/"}</span>
-          <input
-            ref={inputRef}
-            type="text"
-            value={input}
-            onChange={(event) => {
-              const nextValue = event.target.value;
-              if (!hasStarted && nextValue.trim().length > 0) {
-                setHasStarted(true);
-              }
-              setInput(nextValue);
-              setSelectedSlashIndex(0);
-            }}
-            onKeyDown={handleKeyDown}
-            className="terminal-input"
-            placeholder={
-              mode === "shell"
-                ? "Run allowlisted server command..."
-                : `Type command, e.g. ${idleCommandHint}`
-            }
-            autoFocus
-            spellCheck={false}
-            aria-label="Terminal input"
-          />
-        </div>
+      <footer className={`terminal-composer ${historyVisible ? "terminal-composer-active" : ""}`}>
+        {showLoginForm ? (
+          <form className="terminal-auth-shell nd-animate-in" onSubmit={handleLoginSubmit}>
+            <div className="terminal-auth-title">Login</div>
 
-        <div className="terminal-mode-row">
-          <span className={`terminal-mode-label terminal-mode-label-${mode}`}>
-            {mode === "slash" ? "Slash mode" : "Shell mode"}
-          </span>
-          <span className="terminal-mode-meta">
-            {isMobile ? "Use Slash | Shell switcher" : "Press Tab to switch mode"}
-          </span>
-        </div>
+            <input
+              ref={loginEmailRef}
+              type="email"
+              value={loginEmail}
+              onChange={(event) => setLoginEmail(event.target.value)}
+              className="terminal-auth-input"
+              placeholder="Email"
+              autoComplete="email"
+              required
+            />
 
-        {isMobile && (
-          <div className="terminal-mode-toggle" role="tablist" aria-label="Input mode switcher">
-            <button
-              type="button"
-              className={`terminal-mode-button ${mode === "slash" ? "is-active" : ""}`}
-              onClick={() => setMode("slash")}
-              aria-selected={mode === "slash"}
-              role="tab"
-            >
-              Slash
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(event) => setLoginPassword(event.target.value)}
+              className="terminal-auth-input"
+              placeholder="Password"
+              autoComplete="current-password"
+              required
+            />
+
+            {loginError ? <div className="terminal-auth-error">{loginError}</div> : null}
+
+            <button type="submit" className="terminal-auth-button" disabled={loginBusy}>
+              {loginBusy ? "Signing in..." : "Log in"}
             </button>
-            <button
-              type="button"
-              className={`terminal-mode-button ${mode === "shell" ? "is-active" : ""}`}
-              onClick={() => setMode("shell")}
-              aria-selected={mode === "shell"}
-              role="tab"
-            >
-              Shell
-            </button>
-          </div>
-        )}
-
-        {slashMenuVisible && (
-          <div className="terminal-slash-menu">
-            {filteredSlashCommands.length > 0 ? (
-              filteredSlashCommands.map((slashCommand, index) => (
-                <button
-                  key={slashCommand.trigger}
-                  type="button"
-                  className={`terminal-slash-item ${index === selectedSlashIndex ? "terminal-slash-item-active" : ""}`}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onMouseEnter={() => setSelectedSlashIndex(index)}
-                  onClick={() => void runInput(slashCommand.trigger)}
-                >
-                  <span className="terminal-slash-item-trigger">{slashCommand.trigger}</span>
-                  <span className="terminal-slash-item-description">{slashCommand.description}</span>
-                </button>
-              ))
-            ) : (
-              <div className="terminal-slash-empty">No commands found.</div>
-            )}
-          </div>
-        )}
-
-        {!hasStarted && (
+          </form>
+        ) : (
           <>
-            <div className="terminal-idle-meta">
-              <span>
-                <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
+            <div className={`terminal-input-shell terminal-input-shell-${mode}`}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(event) => {
+                  const nextValue = event.target.value;
+                  if (!hasStarted && nextValue.trim().length > 0) {
+                    setHasStarted(true);
+                  }
+                  setInput(nextValue);
+                  setSelectedSlashIndex(0);
+                }}
+                onKeyDown={handleKeyDown}
+                className="terminal-input"
+                placeholder={PROMPT_PLACEHOLDER}
+                autoFocus
+                spellCheck={false}
+                aria-label="Terminal input"
+              />
+
+              <div className="terminal-input-preview-row" aria-hidden>
+                <span className="terminal-input-preview-accent">Build</span>
+                <span className="terminal-input-preview-primary">MiniMax M2.5 Free</span>
+                <span className="terminal-input-preview-muted">OpenCode Zen</span>
+              </div>
+            </div>
+
+            <div className="terminal-mode-row">
+              <span className={`terminal-mode-label terminal-mode-label-${mode}`}>
+                {mode === "slash" ? "Slash mode" : "Shell mode"}
               </span>
-              <span>
-                <strong>{isMobile ? "tap" : "type"}</strong> {idleCommandHint} to continue
+              <span className="terminal-mode-meta">
+                {isMobile ? "Use Slash | Shell switcher" : "Press Tab to switch mode"}
               </span>
             </div>
-            <div className="terminal-idle-tip">
-              <span className="terminal-idle-tip-dot">●</span>
-              <span>
-                {isRuntimeLoading
-                  ? "Checking session..."
-                  : isAuthenticated
-                    ? "Session active. /exit logs out to guest console."
-                    : "Guest console mode. Login required for calendar and shell."}
-              </span>
-            </div>
+
+            {isMobile && (
+              <div className="terminal-mode-toggle" role="tablist" aria-label="Input mode switcher">
+                <button
+                  type="button"
+                  className={`terminal-mode-button ${mode === "slash" ? "is-active" : ""}`}
+                  onClick={() => setMode("slash")}
+                  aria-selected={mode === "slash"}
+                  role="tab"
+                >
+                  Slash
+                </button>
+                <button
+                  type="button"
+                  className={`terminal-mode-button ${mode === "shell" ? "is-active" : ""}`}
+                  onClick={() => setMode("shell")}
+                  aria-selected={mode === "shell"}
+                  role="tab"
+                >
+                  Shell
+                </button>
+              </div>
+            )}
+
+            {slashMenuVisible && (
+              <div className="terminal-slash-menu">
+                {filteredSlashCommands.length > 0 ? (
+                  filteredSlashCommands.map((slashCommand, index) => (
+                    <button
+                      key={slashCommand.trigger}
+                      type="button"
+                      className={`terminal-slash-item ${index === selectedSlashIndex ? "terminal-slash-item-active" : ""}`}
+                      onMouseDown={(event) => event.preventDefault()}
+                      onMouseEnter={() => setSelectedSlashIndex(index)}
+                      onClick={() => void runInput(slashCommand.trigger)}
+                    >
+                      <span className="terminal-slash-item-trigger">{slashCommand.trigger}</span>
+                      <span className="terminal-slash-item-description">{slashCommand.description}</span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="terminal-slash-empty">No commands found.</div>
+                )}
+              </div>
+            )}
+
+            {!hasStarted && (
+              <>
+                <div className="terminal-idle-meta">
+                  <span>
+                    <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
+                  </span>
+                  <span>
+                    <strong>{isMobile ? "tap" : "type"}</strong> {idleCommandHint} to continue
+                  </span>
+                </div>
+                <div className="terminal-idle-tip">
+                  <span className="terminal-idle-tip-dot">●</span>
+                  <span>
+                    {isRuntimeLoading
+                      ? "Checking session..."
+                      : isAuthenticated
+                        ? "Session active. /exit returns to login window."
+                        : "Guest console mode. Only /login is available."}
+                  </span>
+                </div>
+              </>
+            )}
           </>
         )}
       </footer>
