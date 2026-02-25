@@ -52,7 +52,7 @@ export default function DayView({ dayDate, dayEvents, onSelectEvent }: DayViewPr
   }
 
   return (
-    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0e111d]/80">
+    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-white/10 bg-black/40">
       <div className="border-b border-white/10 bg-black/25 px-4 py-3">
         <p className="text-sm font-semibold text-zinc-100">{format(dayDate, "EEEE, d MMMM", { locale: ru })}</p>
       </div>

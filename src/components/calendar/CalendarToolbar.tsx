@@ -9,7 +9,11 @@ interface CalendarToolbarProps {
   onNext: () => void;
   onToday: () => void;
   onAdd: () => void;
-  onLogout: () => void;
+  onLogout?: () => void;
+  showTerminalLink?: boolean;
+  showLogout?: boolean;
+  onToggleSidebar?: () => void;
+  isSidebarVisible?: boolean;
 }
 
 const VIEW_OPTIONS: { id: CalendarView; label: string }[] = [
@@ -27,69 +31,86 @@ export default function CalendarToolbar({
   onToday,
   onAdd,
   onLogout,
+  showTerminalLink = true,
+  showLogout = true,
+  onToggleSidebar,
+  isSidebarVisible = false,
 }: CalendarToolbarProps) {
   return (
-    <header className="calendar-toolbar border-b border-white/10 bg-black/35 backdrop-blur-xl">
-      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
+    <header className="calendar-toolbar border-b border-white/10 bg-black/70 backdrop-blur-xl">
+      <div className="mx-auto flex w-full max-w-[1480px] flex-col gap-3 px-3 py-3 sm:px-5 xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/10"
-            >
-              ← Терминал
-            </Link>
+            {showTerminalLink ? (
+              <Link
+                href="/"
+                className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/10"
+              >
+                ← Терминал
+              </Link>
+            ) : null}
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-zinc-500">NetDen</p>
-              <h1 className="text-lg font-semibold text-zinc-100 sm:text-xl">Календарь</h1>
+              <h1 className="text-base font-semibold text-zinc-100 sm:text-lg">Календарь</h1>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {onToggleSidebar ? (
+              <button
+                type="button"
+                onClick={onToggleSidebar}
+                className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 lg:hidden"
+              >
+                {isSidebarVisible ? "Календарь" : "Панель"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onAdd}
-              className="rounded-xl border border-sky-400/35 bg-sky-500/15 px-3 py-2 text-xs font-semibold text-sky-200 transition-colors hover:bg-sky-500/25 sm:text-sm"
+              className="rounded-lg border border-sky-400/35 bg-sky-500/12 px-2.5 py-1.5 text-xs font-semibold text-sky-200 transition-colors hover:bg-sky-500/20 sm:text-sm"
             >
               + Добавить событие
             </button>
-            <button
-              type="button"
-              onClick={onLogout}
-              className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 sm:text-sm"
-            >
-              Выйти
-            </button>
+            {showLogout ? (
+              <button
+                type="button"
+                onClick={onLogout}
+                className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-white/10 sm:text-sm"
+              >
+                Выйти
+              </button>
+            ) : null}
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onPrev}
-              className="rounded-xl border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-200 transition-colors hover:bg-white/10"
+              className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-1 text-sm text-zinc-200 transition-colors hover:bg-white/10"
             >
               ←
             </button>
             <button
               type="button"
               onClick={onToday}
-              className="rounded-xl border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-200 transition-colors hover:bg-white/10"
+              className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-1 text-sm text-zinc-200 transition-colors hover:bg-white/10"
             >
               Сегодня
             </button>
             <button
               type="button"
               onClick={onNext}
-              className="rounded-xl border border-white/12 bg-white/5 px-3 py-1.5 text-sm text-zinc-200 transition-colors hover:bg-white/10"
+              className="rounded-lg border border-white/12 bg-white/5 px-2.5 py-1 text-sm text-zinc-200 transition-colors hover:bg-white/10"
             >
               →
             </button>
-            <span className="ml-2 text-sm font-medium text-zinc-200 sm:text-base">{periodLabel}</span>
+            <span className="ml-1 text-sm font-medium text-zinc-200 sm:text-base">{periodLabel}</span>
           </div>
 
-          <div className="inline-flex rounded-xl border border-white/12 bg-black/40 p-1">
+          <div className="inline-flex rounded-lg border border-white/12 bg-black/40 p-1">
             {VIEW_OPTIONS.map((option) => {
               const isActive = option.id === currentView;
 
@@ -98,9 +119,9 @@ export default function CalendarToolbar({
                   key={option.id}
                   type="button"
                   onClick={() => onViewChange(option.id)}
-                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+                  className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:text-sm ${
                     isActive
-                      ? "bg-white text-zinc-900 shadow-[0_8px_26px_-18px_rgba(255,255,255,0.95)]"
+                      ? "bg-white text-zinc-900 shadow-[0_8px_20px_-14px_rgba(255,255,255,0.95)]"
                       : "text-zinc-400 hover:bg-white/10 hover:text-zinc-100"
                   }`}
                 >

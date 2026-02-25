@@ -66,6 +66,43 @@ describe("terminal slash commands", () => {
     expect(result.action).toBe("undock");
   });
 
+  it("opens inline calendar from /calendar", () => {
+    const result = executeSlashCommand("/calendar", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("open_calendar");
+  });
+
+  it("opens inline calendar from calendar alias", () => {
+    const result = executeSlashCommand("calendar", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("open_calendar");
+  });
+
+  it("opens inline calendar from russian alias", () => {
+    const result = executeSlashCommand("календарь", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("open_calendar");
+  });
+
+  it("does not allow calendar command for guest mode", () => {
+    const result = executeSlashCommand("calendar", {
+      isAuthenticated: false,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBeUndefined();
+    expect(result.output.at(-1)).toContain("/login");
+  });
+
   it("returns unknown command guidance", () => {
     const result = executeSlashCommand("/unknown", {
       isAuthenticated: true,
