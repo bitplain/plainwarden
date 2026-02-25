@@ -426,15 +426,15 @@ export default function Terminal() {
       }
 
       setIsAuthenticated(false);
-      setShowLoginForm(true);
+      setShowLoginForm(false);
       setHasStarted(false);
       setMode("slash");
       setHistory([]);
       setCmdHistory([]);
       setLoginPassword("");
       setLoginError(null);
-      router.replace("/?login=1");
-      setTimeout(() => loginEmailRef.current?.focus(), 0);
+      router.replace("/");
+      setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
@@ -489,7 +489,7 @@ export default function Terminal() {
         }
       }
 
-      if (!hasStarted && commandToRun.trim().length > 0) {
+      if (!hasStarted && isAuthenticated && commandToRun.trim().length > 0) {
         setHasStarted(true);
       }
 
@@ -626,7 +626,7 @@ export default function Terminal() {
                 value={input}
                 onChange={(event) => {
                   const nextValue = event.target.value;
-                  if (!hasStarted && nextValue.trim().length > 0) {
+                  if (!hasStarted && isAuthenticated && nextValue.trim().length > 0) {
                     setHasStarted(true);
                   }
                   setInput(nextValue);
@@ -641,19 +641,12 @@ export default function Terminal() {
               />
 
               <div className="terminal-input-preview-row" aria-hidden>
-                <span className="terminal-input-preview-accent">Build</span>
-                <span className="terminal-input-preview-primary">MiniMax M2.5 Free</span>
-                <span className="terminal-input-preview-muted">OpenCode Zen</span>
+                <span
+                  className={`terminal-input-preview-mode terminal-input-preview-mode-${mode}`}
+                >
+                  {mode === "slash" ? "Slash mode" : "Shell mode"}
+                </span>
               </div>
-            </div>
-
-            <div className="terminal-mode-row">
-              <span className={`terminal-mode-label terminal-mode-label-${mode}`}>
-                {mode === "slash" ? "Slash mode" : "Shell mode"}
-              </span>
-              <span className="terminal-mode-meta">
-                {isMobile ? "Use Slash | Shell switcher" : "Press Tab to switch mode"}
-              </span>
             </div>
 
             {isMobile && (

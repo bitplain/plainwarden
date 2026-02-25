@@ -276,42 +276,16 @@ body {
   line-height: 1.2;
 }
 
-.terminal-input-preview-accent {
-  color: #39a9ff;
+.terminal-input-preview-mode {
+  font-weight: 500;
 }
 
-.terminal-input-preview-primary {
-  color: #e7ebf5;
+.terminal-input-preview-mode-slash {
+  color: color-mix(in srgb, var(--terminal-slash) 88%, #ebfff3);
 }
 
-.terminal-input-preview-muted {
-  color: #8e929f;
-}
-
-.terminal-mode-row {
-  margin-top: 0.46rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.7rem;
-  font-size: 0.78rem;
-  line-height: 1.3;
-}
-
-.terminal-mode-label {
-  color: #b9bfd3;
-}
-
-.terminal-mode-label-slash {
-  color: color-mix(in srgb, var(--terminal-slash) 86%, #d9ffe9);
-}
-
-.terminal-mode-label-shell {
-  color: color-mix(in srgb, var(--terminal-shell) 86%, #ffe2e2);
-}
-
-.terminal-mode-meta {
-  color: #7e8598;
+.terminal-input-preview-mode-shell {
+  color: color-mix(in srgb, var(--terminal-shell) 88%, #fff0f0);
 }
 
 .terminal-auth-shell {
