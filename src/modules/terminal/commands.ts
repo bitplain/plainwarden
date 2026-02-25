@@ -4,6 +4,7 @@ import { ALLOWLIST_HELP_LINES } from "@/modules/terminal/shell/allowlist";
 export interface SlashCommand {
   trigger: string;
   description: string;
+  aliases?: string[];
 }
 
 export interface SlashCommandContext {
@@ -12,20 +13,53 @@ export interface SlashCommandContext {
 }
 
 const SETUP_COMMANDS: SlashCommand[] = [
-  { trigger: "/setup", description: "Open setup wizard" },
+  { trigger: "/setup", description: "Open setup wizard", aliases: ["setup"] },
 ];
 
 const GUEST_COMMANDS: SlashCommand[] = [
-  { trigger: "/login", description: "Open login page" },
+  { trigger: "/login", description: "Open login page", aliases: ["login"] },
 ];
 
 const AUTH_COMMANDS: SlashCommand[] = [
-  { trigger: "/calendar", description: "Open calendar" },
-  { trigger: "/settings", description: "Open settings" },
-  { trigger: "/help", description: "Show command help" },
-  { trigger: "/clear", description: "Clear terminal history" },
-  { trigger: "/exit", description: "Logout and switch to guest console" },
+  { trigger: "/calendar", description: "Open calendar", aliases: ["calendar"] },
+  { trigger: "/settings", description: "Open settings", aliases: ["settings"] },
+  { trigger: "/help", description: "Show command help", aliases: ["help"] },
+  { trigger: "/clear", description: "Clear terminal history", aliases: ["clear"] },
+  {
+    trigger: "/end cli",
+    description: "Return terminal to centered state",
+    aliases: ["end cli", "endcli"],
+  },
+  { trigger: "/exit", description: "Logout and switch to guest console", aliases: ["exit"] },
 ];
+
+function normalizeCommandInput(rawInput: string): string {
+  const normalizedWhitespace = rawInput.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!normalizedWhitespace) return "";
+
+  const withoutPrefix = normalizedWhitespace.startsWith("/")
+    ? normalizedWhitespace.slice(1).trim()
+    : normalizedWhitespace;
+
+  if (!withoutPrefix) return "";
+  return `/${withoutPrefix}`;
+}
+
+function buildAllowedCommandMap(commands: SlashCommand[]): Map<string, SlashCommand> {
+  const allowed = new Map<string, SlashCommand>();
+
+  for (const command of commands) {
+    const aliases = [command.trigger, ...(command.aliases ?? [])];
+    for (const alias of aliases) {
+      const normalized = normalizeCommandInput(alias);
+      if (normalized) {
+        allowed.set(normalized, command);
+      }
+    }
+  }
+
+  return allowed;
+}
 
 function help(context: SlashCommandContext): TerminalCommandResult {
   const commands = getSlashCommands(context);
@@ -63,15 +97,17 @@ export function executeSlashCommand(
   rawInput: string,
   context: SlashCommandContext,
 ): TerminalCommandResult {
-  const normalized = rawInput.trim().toLowerCase();
+  const normalized = normalizeCommandInput(rawInput);
   if (!normalized) {
     return { output: [] };
   }
 
-  const allowed = new Set(getSlashCommands(context).map((command) => command.trigger));
+  const availableCommands = getSlashCommands(context);
+  const allowed = buildAllowedCommandMap(availableCommands);
+  const matchedCommand = allowed.get(normalized);
 
-  if (!allowed.has(normalized)) {
-    const available = [...allowed].join(", ");
+  if (!matchedCommand) {
+    const available = availableCommands.map((command) => command.trigger).join(", ");
     return {
       output: [
         `Unknown slash command: ${rawInput.trim()}`,
@@ -80,15 +116,15 @@ export function executeSlashCommand(
     };
   }
 
-  if (normalized === "/clear") {
+  if (matchedCommand.trigger === "/clear") {
     return { output: [], action: "clear" };
   }
 
-  if (normalized === "/help") {
+  if (matchedCommand.trigger === "/help") {
     return help(context);
   }
 
-  if (normalized === "/setup") {
+  if (matchedCommand.trigger === "/setup") {
     return {
       output: ["Opening setup wizard..."],
       action: "navigate",
@@ -96,7 +132,7 @@ export function executeSlashCommand(
     };
   }
 
-  if (normalized === "/calendar") {
+  if (matchedCommand.trigger === "/calendar") {
     return {
       output: ["Opening calendar..."],
       action: "navigate",
@@ -104,7 +140,7 @@ export function executeSlashCommand(
     };
   }
 
-  if (normalized === "/settings") {
+  if (matchedCommand.trigger === "/settings") {
     return {
       output: ["Opening settings..."],
       action: "navigate",
@@ -112,14 +148,21 @@ export function executeSlashCommand(
     };
   }
 
-  if (normalized === "/login") {
+  if (matchedCommand.trigger === "/login") {
     return {
       output: ["Opening login form..."],
       action: "login",
     };
   }
 
-  if (normalized === "/exit") {
+  if (matchedCommand.trigger === "/end cli") {
+    return {
+      output: ["Returning console to center..."],
+      action: "undock",
+    };
+  }
+
+  if (matchedCommand.trigger === "/exit") {
     return {
       output: ["Closing session..."],
       action: "logout",

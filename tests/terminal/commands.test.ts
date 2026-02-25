@@ -29,6 +29,15 @@ describe("terminal slash commands", () => {
     expect(result.action).toBe("login");
   });
 
+  it("accepts guest command without slash", () => {
+    const result = executeSlashCommand("login", {
+      isAuthenticated: false,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("login");
+  });
+
   it("handles /clear action for authenticated mode", () => {
     const result = executeSlashCommand("/clear", {
       isAuthenticated: true,
@@ -46,6 +55,15 @@ describe("terminal slash commands", () => {
     });
 
     expect(result.action).toBe("logout");
+  });
+
+  it("returns /end cli undock action for authenticated mode", () => {
+    const result = executeSlashCommand("end cli", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("undock");
   });
 
   it("returns unknown command guidance", () => {

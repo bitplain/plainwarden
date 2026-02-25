@@ -415,6 +415,14 @@ export default function Terminal() {
       return;
     }
 
+    if (result.action === "undock") {
+      setHasStarted(false);
+      setMode("slash");
+      setShowLoginForm(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
+      return;
+    }
+
     if (result.action === "logout") {
       try {
         await fetch("/api/auth/logout", {
@@ -709,7 +717,7 @@ export default function Terminal() {
                     {isRuntimeLoading
                       ? "Checking session..."
                       : isAuthenticated
-                        ? "Session active. /exit returns to login window."
+                        ? "Session active."
                         : "Guest console mode. Only /login is available."}
                   </span>
                 </div>
