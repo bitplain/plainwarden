@@ -1,13 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
-const KEY = "netden:cli-scale";
+const CLI_SCALE_KEY = "netden:cli-scale";
 const MIN = 0.8;
 const MAX = 1.2;
 const STEP = 0.01;
 const DEFAULT_SCALE = 1;
+
+const GITHUB_ORG_KEY = "netden:github:org";
+const GITHUB_TOKEN_KEY = "netden:github:token";
+const GITHUB_LAST_SYNC_KEY = "netden:github:last-sync";
+
+interface GitHubBillingMetric {
+  quantity: number;
+  unit: string | null;
+  netAmount: number;
+  rows: number;
+}
+
+interface GitHubBillingResponse {
+  copilotPremium: GitHubBillingMetric;
+  actions: GitHubBillingMetric;
+  codespaces: GitHubBillingMetric;
+  raw: {
+    hasUsage: boolean;
+    hasSummary: boolean;
+  };
+}
 
 function clampScale(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_SCALE;
@@ -18,13 +39,21 @@ function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function formatMoney(value: number): string {
+  if (!Number.isFinite(value)) return "0";
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function SettingsPage() {
   const [scale, setScale] = useState(() => {
     if (typeof window === "undefined") {
       return DEFAULT_SCALE;
     }
 
-    const raw = window.localStorage.getItem(KEY);
+    const raw = window.localStorage.getItem(CLI_SCALE_KEY);
     if (!raw) {
       return DEFAULT_SCALE;
     }
@@ -32,32 +61,152 @@ export default function SettingsPage() {
     return clampScale(Number(raw));
   });
 
+  const [org, setOrg] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(GITHUB_ORG_KEY) ?? "";
+  });
+
+  const [token, setToken] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(GITHUB_TOKEN_KEY) ?? "";
+  });
+
+  const [year, setYear] = useState("");
+  const [month, setMonth] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [billing, setBilling] = useState<GitHubBillingResponse | null>(null);
+  const [lastSync, setLastSync] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem(GITHUB_LAST_SYNC_KEY) ?? "";
+  });
+
+  const hasToken = token.trim().length > 0;
+
   const saveScale = (nextScale: number) => {
     const clamped = clampScale(nextScale);
     setScale(clamped);
-    window.localStorage.setItem(KEY, String(clamped));
+    window.localStorage.setItem(CLI_SCALE_KEY, String(clamped));
   };
 
   const resetScale = () => {
     setScale(DEFAULT_SCALE);
-    window.localStorage.setItem(KEY, String(DEFAULT_SCALE));
+    window.localStorage.setItem(CLI_SCALE_KEY, String(DEFAULT_SCALE));
   };
 
-  return (
-    <div className="min-h-dvh bg-black px-5 py-10 text-zinc-100 font-sans">
-      <div className="mx-auto w-full max-w-lg">
-        <div className="mb-6">
-          <div className="text-xs font-medium tracking-wide text-zinc-500">NetDen</div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Настройки</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Измените размер окна ввода CLI на главной странице.
-          </p>
-        </div>
+  const onLoadBilling = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (isLoading) return;
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-          <div className="flex items-center justify-between text-sm text-zinc-300">
-            <span>Размер окна ввода CLI</span>
-            <strong className="text-zinc-100">{formatPercent(scale)}</strong>
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      const normalizedOrg = org.trim();
+      const normalizedToken = token.trim();
+      if (!normalizedOrg || !normalizedToken) {
+        throw new Error("Укажите org и PAT для загрузки лимитов.");
+      }
+
+      const yearValue = year.trim() ? Number(year.trim()) : undefined;
+      const monthValue = month.trim() ? Number(month.trim()) : undefined;
+
+      const response = await fetch("/api/github/billing", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          org: normalizedOrg,
+          token: normalizedToken,
+          period: {
+            year: Number.isFinite(yearValue) ? yearValue : undefined,
+            month: Number.isFinite(monthValue) ? monthValue : undefined,
+          },
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { message?: string }
+        | GitHubBillingResponse
+        | null;
+
+      if (!response.ok) {
+        const message =
+          payload && "message" in payload && typeof payload.message === "string"
+            ? payload.message
+            : `Ошибка GitHub API (${response.status})`;
+        throw new Error(message);
+      }
+
+      const data = payload as GitHubBillingResponse;
+      setBilling(data);
+
+      const syncStamp = new Intl.DateTimeFormat("ru-RU", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }).format(new Date());
+      setLastSync(syncStamp);
+
+      window.localStorage.setItem(GITHUB_ORG_KEY, normalizedOrg);
+      window.localStorage.setItem(GITHUB_TOKEN_KEY, normalizedToken);
+      window.localStorage.setItem(GITHUB_LAST_SYNC_KEY, syncStamp);
+    } catch (loadError) {
+      const message = loadError instanceof Error ? loadError.message : "Не удалось получить billing";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const cards = useMemo(
+    () => [
+      {
+        key: "copilot",
+        title: "GitHub Copilot premium requests",
+        value: billing?.copilotPremium ?? null,
+      },
+      {
+        key: "actions",
+        title: "GitHub Actions billing",
+        value: billing?.actions ?? null,
+      },
+      {
+        key: "codespaces",
+        title: "GitHub Codespaces billing",
+        value: billing?.codespaces ?? null,
+      },
+    ],
+    [billing],
+  );
+
+  return (
+    <div className="home-page-shell">
+      <div className="home-page-grid">
+        <header className="home-header">
+          <div>
+            <p className="home-kicker">NetDen</p>
+            <h1 className="home-title">Настройки</h1>
+            <p className="home-subtitle">CLI масштаб и GitHub Billing для организации.</p>
+          </div>
+          <nav className="home-links">
+            <Link href="/" className="home-link">
+              Консоль
+            </Link>
+            <Link href="/home" className="home-link">
+              Главная
+            </Link>
+            <Link href="/notes" className="home-link">
+              Заметки
+            </Link>
+          </nav>
+        </header>
+
+        <section className="home-card">
+          <h2 className="home-card-title">Размер окна ввода CLI</h2>
+          <div className="home-card-head">
+            <span className="home-muted">Текущий масштаб</span>
+            <strong className="home-metric-value">{formatPercent(scale)}</strong>
           </div>
 
           <input
@@ -67,29 +216,102 @@ export default function SettingsPage() {
             step={STEP}
             value={scale}
             onChange={(event) => saveScale(Number(event.target.value))}
-            className="mt-5 w-full accent-[var(--terminal-slash)]"
+            className="settings-range"
           />
 
-          <div className="mt-3 flex items-center justify-between text-xs text-zinc-500">
+          <div className="settings-range-meta">
             <span>{formatPercent(MIN)}</span>
             <span>{formatPercent(DEFAULT_SCALE)}</span>
             <span>{formatPercent(MAX)}</span>
           </div>
 
-          <button
-            type="button"
-            onClick={resetScale}
-            className="mt-5 h-10 rounded-lg border border-white/10 bg-transparent px-4 text-sm text-zinc-200 transition hover:bg-white/5"
-          >
+          <button type="button" onClick={resetScale} className="notes-submit settings-reset">
             Сбросить размер
           </button>
-        </div>
+        </section>
 
-        <div className="mt-4 text-sm">
-          <Link href="/" className="text-zinc-300 transition hover:text-white">
-            ← Назад в терминал
-          </Link>
-        </div>
+        <section className="home-card">
+          <h2 className="home-card-title">GitHub интеграция</h2>
+          <form className="settings-grid" onSubmit={onLoadBilling}>
+            <label className="settings-field">
+              <span>Organization</span>
+              <input
+                className="notes-input"
+                value={org}
+                onChange={(event) => setOrg(event.target.value)}
+                placeholder="your-org"
+                autoComplete="off"
+              />
+            </label>
+
+            <label className="settings-field">
+              <span>Personal access token</span>
+              <input
+                className="notes-input"
+                type="password"
+                value={token}
+                onChange={(event) => setToken(event.target.value)}
+                placeholder="github_pat_***"
+                autoComplete="off"
+              />
+            </label>
+
+            <div className="settings-inline">
+              <label className="settings-field">
+                <span>Год (опционально)</span>
+                <input
+                  className="notes-input"
+                  value={year}
+                  onChange={(event) => setYear(event.target.value)}
+                  placeholder="2026"
+                  inputMode="numeric"
+                />
+              </label>
+
+              <label className="settings-field">
+                <span>Месяц (1-12)</span>
+                <input
+                  className="notes-input"
+                  value={month}
+                  onChange={(event) => setMonth(event.target.value)}
+                  placeholder="2"
+                  inputMode="numeric"
+                />
+              </label>
+            </div>
+
+            <button type="submit" className="notes-submit">
+              {isLoading ? "Загрузка..." : "Загрузить лимиты"}
+            </button>
+          </form>
+
+          {error ? <p className="notes-error">{error}</p> : null}
+
+          <div className="home-settings-grid">
+            {cards.map((card) => (
+              <div key={card.key} className="home-inline-card">
+                <p className="home-inline-title">{card.title}</p>
+                {card.value ? (
+                  <>
+                    <p className="home-inline-body">
+                      {card.value.quantity.toLocaleString("en-US")}
+                      {card.value.unit ? ` ${card.value.unit}` : ""}
+                    </p>
+                    <p className="home-inline-meta">Net amount: ${formatMoney(card.value.netAmount)}</p>
+                    <p className="home-inline-meta">Rows: {card.value.rows}</p>
+                  </>
+                ) : (
+                  <p className="home-inline-body">Нет данных</p>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <p className="home-muted">
+            PAT в localStorage: {hasToken ? "сохранён" : "не сохранён"}.
+            {lastSync ? ` Последняя синхронизация: ${lastSync}.` : ""}
+          </p>
+        </section>
       </div>
     </div>
   );

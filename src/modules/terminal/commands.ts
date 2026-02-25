@@ -26,6 +26,8 @@ const AUTH_COMMANDS: SlashCommand[] = [
     description: "Open calendar panel",
     aliases: ["calendar", "календарь"],
   },
+  { trigger: "/home", description: "Open home dashboard", aliases: ["home", "главная"] },
+  { trigger: "/notes", description: "Open notes", aliases: ["notes", "заметки"] },
   { trigger: "/settings", description: "Open settings", aliases: ["settings"] },
   { trigger: "/help", description: "Show command help", aliases: ["help"] },
   { trigger: "/clear", description: "Clear terminal history", aliases: ["clear"] },
@@ -151,10 +153,27 @@ export function executeSlashCommand(
     };
   }
 
+  if (matchedCommand.trigger === "/home") {
+    return {
+      output: ["Opening home..."],
+      action: "navigate",
+      navigateTo: "/home",
+    };
+  }
+
+  if (matchedCommand.trigger === "/notes") {
+    return {
+      output: ["Opening notes..."],
+      action: "navigate",
+      navigateTo: "/notes",
+    };
+  }
+
   if (matchedCommand.trigger === "/login") {
     return {
-      output: ["Opening login form..."],
+      output: [],
       action: "login",
+      silent: true,
     };
   }
 
@@ -167,9 +186,10 @@ export function executeSlashCommand(
 
   if (matchedCommand.trigger === "/exit") {
     return {
-      output: ["Closing session..."],
+      output: [],
       action: "logout",
       navigateTo: "/",
+      silent: true,
     };
   }
 
