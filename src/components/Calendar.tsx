@@ -200,11 +200,17 @@ export default function Calendar({ variant = "standalone", onBackToConsole }: Ca
     }
   };
 
+  const layoutClass = isEmbedded
+    ? "grid h-full w-full grid-cols-1 gap-0 lg:grid-cols-[320px_1fr]"
+    : "mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 gap-0 px-2 pb-2 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:grid-cols-[300px_1fr] xl:px-8";
+
   return (
     <div
       className={`calendar-page calendar-surface flex ${
-        isEmbedded ? "h-full min-h-0 rounded-sm border border-white/10 bg-black/55" : "h-dvh"
-      } flex-col bg-[var(--background)] text-[var(--foreground)] font-[family-name:var(--font-geist-sans)]`}
+        isEmbedded
+          ? "h-full min-h-0 bg-black/65 font-[family-name:var(--font-geist-mono)]"
+          : "h-dvh font-[family-name:var(--font-geist-sans)]"
+      } flex-col bg-[var(--background)] text-[var(--foreground)]`}
     >
       <CalendarToolbar
         currentView={view}
@@ -233,11 +239,7 @@ export default function Calendar({ variant = "standalone", onBackToConsole }: Ca
       ) : null}
 
       <div className={`min-h-0 flex-1 overflow-hidden ${isEmbedded ? "calendar-embedded-body" : ""}`}>
-        <div
-          className={`mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 gap-0 px-2 pb-2 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:grid-cols-[300px_1fr] ${
-            isEmbedded ? "xl:px-4" : "xl:px-8"
-          }`}
-        >
+        <div className={layoutClass}>
           <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0 lg:block`}>
             <CalendarSidebar
               anchorDate={anchorDate}
@@ -253,7 +255,9 @@ export default function Calendar({ variant = "standalone", onBackToConsole }: Ca
           <main
             className={`${
               isSidebarVisible ? "hidden lg:flex" : "flex"
-            } min-h-0 flex-col gap-2 rounded-sm border border-white/10 bg-black/35 p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
+            } min-h-0 flex-col gap-2 border border-white/10 bg-black/45 p-2 sm:p-3 lg:border-l-0 ${
+              isEmbedded ? "rounded-none" : "rounded-sm lg:rounded-l-none"
+            }`}
           >
             {(isAuthLoading || isEventsLoading) && (
               <div className="rounded-md border border-white/12 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">

@@ -616,6 +616,7 @@ export default function Terminal() {
             variant="embedded"
             onBackToConsole={() => {
               setIsCalendarOpen(false);
+              setHasStarted(false);
               setTimeout(() => inputRef.current?.focus(), 0);
             }}
           />
@@ -664,11 +665,7 @@ export default function Terminal() {
                 type="text"
                 value={input}
                 onChange={(event) => {
-                  const nextValue = event.target.value;
-                  if (!hasStarted && isAuthenticated && nextValue.trim().length > 0) {
-                    setHasStarted(true);
-                  }
-                  setInput(nextValue);
+                  setInput(event.target.value);
                   setSelectedSlashIndex(0);
                 }}
                 onKeyDown={handleKeyDown}

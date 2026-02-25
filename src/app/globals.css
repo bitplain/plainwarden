@@ -59,7 +59,7 @@ body {
 }
 
 .calendar-embedded-body {
-  padding-top: 0.2rem;
+  padding-top: 0;
 }
 
 .calendar-back-button {
@@ -206,7 +206,11 @@ body {
 
 .terminal-calendar-inner {
   height: 100%;
-  padding: 3.4rem 0.72rem calc(8.4rem + env(safe-area-inset-bottom, 0px));
+  padding: 3.1rem 0 calc(7.4rem + env(safe-area-inset-bottom, 0px));
+}
+
+.terminal-calendar-inner > .calendar-surface {
+  height: 100%;
 }
 
 .terminal-stream {
@@ -587,7 +591,7 @@ body {
   }
 
   .terminal-calendar-inner {
-    padding: 2.95rem 0.34rem calc(7.9rem + env(safe-area-inset-bottom, 0px));
+    padding: 2.7rem 0 calc(7.55rem + env(safe-area-inset-bottom, 0px));
   }
 
   .terminal-composer {
@@ -644,9 +648,10 @@ body {
   }
 
   .terminal-calendar-inner {
-    padding-left: 0.22rem;
-    padding-right: 0.22rem;
-    padding-bottom: calc(7.55rem + env(safe-area-inset-bottom, 0px));
+    padding-left: 0;
+    padding-right: 0;
+    padding-top: 2.58rem;
+    padding-bottom: calc(7.35rem + env(safe-area-inset-bottom, 0px));
   }
 
   .terminal-input-shell {
