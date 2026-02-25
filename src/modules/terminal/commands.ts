@@ -6,37 +6,78 @@ export interface SlashCommand {
   description: string;
 }
 
-const slashCommands: SlashCommand[] = [
+export interface SlashCommandContext {
+  isAuthenticated: boolean;
+  isSetupRequired: boolean;
+}
+
+const SETUP_COMMANDS: SlashCommand[] = [
   { trigger: "/setup", description: "Open setup wizard" },
-  { trigger: "/calendar", description: "Open calendar" },
-  { trigger: "/login", description: "Open login" },
-  { trigger: "/help", description: "Show command help" },
-  { trigger: "/clear", description: "Clear terminal history" },
 ];
 
-function help(): TerminalCommandResult {
+const GUEST_COMMANDS: SlashCommand[] = [
+  { trigger: "/login", description: "Open login page" },
+];
+
+const AUTH_COMMANDS: SlashCommand[] = [
+  { trigger: "/calendar", description: "Open calendar" },
+  { trigger: "/settings", description: "Open settings" },
+  { trigger: "/help", description: "Show command help" },
+  { trigger: "/clear", description: "Clear terminal history" },
+  { trigger: "/exit", description: "Logout and switch to guest console" },
+];
+
+function help(context: SlashCommandContext): TerminalCommandResult {
+  const commands = getSlashCommands(context);
+  const commandLines = commands.map((command) => `  ${command.trigger.padEnd(10, " ")}- ${command.description}`);
+
+  if (!context.isAuthenticated) {
+    return {
+      output: ["Available command:", ...commandLines],
+    };
+  }
+
   return {
     output: [
       "NetDen commands:",
-      "  /setup      - open setup wizard",
-      "  /calendar   - open calendar",
-      "  /login      - open login",
-      "  /clear      - clear terminal",
-      "  /help       - show help",
+      ...commandLines,
       "",
       ...ALLOWLIST_HELP_LINES,
     ],
   };
 }
 
-export function getSlashCommands(): SlashCommand[] {
-  return slashCommands;
+export function getSlashCommands(context: SlashCommandContext): SlashCommand[] {
+  if (context.isSetupRequired) {
+    return SETUP_COMMANDS;
+  }
+
+  if (!context.isAuthenticated) {
+    return GUEST_COMMANDS;
+  }
+
+  return AUTH_COMMANDS;
 }
 
-export function executeSlashCommand(rawInput: string): TerminalCommandResult {
+export function executeSlashCommand(
+  rawInput: string,
+  context: SlashCommandContext,
+): TerminalCommandResult {
   const normalized = rawInput.trim().toLowerCase();
   if (!normalized) {
     return { output: [] };
+  }
+
+  const allowed = new Set(getSlashCommands(context).map((command) => command.trigger));
+
+  if (!allowed.has(normalized)) {
+    const available = [...allowed].join(", ");
+    return {
+      output: [
+        `Unknown slash command: ${rawInput.trim()}`,
+        available ? `Available: ${available}` : "No commands available.",
+      ],
+    };
   }
 
   if (normalized === "/clear") {
@@ -44,7 +85,7 @@ export function executeSlashCommand(rawInput: string): TerminalCommandResult {
   }
 
   if (normalized === "/help") {
-    return help();
+    return help(context);
   }
 
   if (normalized === "/setup") {
@@ -63,6 +104,14 @@ export function executeSlashCommand(rawInput: string): TerminalCommandResult {
     };
   }
 
+  if (normalized === "/settings") {
+    return {
+      output: ["Opening settings..."],
+      action: "navigate",
+      navigateTo: "/settings",
+    };
+  }
+
   if (normalized === "/login") {
     return {
       output: ["Opening login..."],
@@ -71,7 +120,15 @@ export function executeSlashCommand(rawInput: string): TerminalCommandResult {
     };
   }
 
+  if (normalized === "/exit") {
+    return {
+      output: ["Closing session..."],
+      action: "logout",
+      navigateTo: "/",
+    };
+  }
+
   return {
-    output: [`Unknown slash command: ${rawInput.trim()}`, "Use /help to list available commands."],
+    output: [`Unknown slash command: ${rawInput.trim()}`],
   };
 }

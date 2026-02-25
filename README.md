@@ -14,7 +14,11 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
   - десктоп: `Tab`
   - мобильный: UI-переключатель `Slash | Shell`
 - `/setup` запускается явно командой из терминала на первом запуске
+- После завершения первичной инициализации маршрут `/setup` скрывается
 - После настройки БД и секрета — обязательная авторизация
+- Гостевая консоль после сброса сессии: доступна только команда `/login`
+- После входа доступна команда `/exit` для выхода обратно в гостевую консоль
+- Раздел `Настройки` (`/settings`) с регулировкой размера CLI-композера
 - Календарь (полный модуль с CRUD) перенесён в проект
 - Shell backend ограничен read-only allowlist + лимиты timeout/output
 - Модульный реестр: terminal/setup/auth/calendar
@@ -24,6 +28,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `/` — терминальная главная
 - `/setup` — мастер первичной инициализации
 - `/login` — вход
+- `/settings` — настройки интерфейса CLI (приватно)
 - `/calendar` — календарь (приватно)
 - `POST /api/terminal/run` — запуск allowlisted shell-команд
 - `GET|POST /api/events`

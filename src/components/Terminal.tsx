@@ -1,9 +1,13 @@
 "use client";
 
-import { KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TerminalMode } from "@/modules/core/types";
-import { executeSlashCommand, getSlashCommands } from "@/modules/terminal/commands";
+import {
+  executeSlashCommand,
+  getSlashCommands,
+  type SlashCommandContext,
+} from "@/modules/terminal/commands";
 
 interface HistoryEntry {
   command: string;
@@ -12,8 +16,29 @@ interface HistoryEntry {
   failed?: boolean;
 }
 
+interface SetupStateResponse {
+  setupRequired?: boolean;
+}
+
+const CLI_SCALE_KEY = "netden:cli-scale";
+const CLI_SCALE_MIN = 0.8;
+const CLI_SCALE_MAX = 1.2;
+const CLI_SCALE_DEFAULT = 1;
+
 function nextMode(current: TerminalMode): TerminalMode {
   return current === "slash" ? "shell" : "slash";
+}
+
+function clampCliScale(value: number): number {
+  if (!Number.isFinite(value)) return CLI_SCALE_DEFAULT;
+  return Math.min(CLI_SCALE_MAX, Math.max(CLI_SCALE_MIN, value));
+}
+
+function readCliScaleFromStorage(): number {
+  if (typeof window === "undefined") return CLI_SCALE_DEFAULT;
+  const raw = window.localStorage.getItem(CLI_SCALE_KEY);
+  if (!raw) return CLI_SCALE_DEFAULT;
+  return clampCliScale(Number(raw));
 }
 
 function formatShellOutput(input: {
@@ -58,12 +83,24 @@ export default function Terminal() {
   const [mode, setMode] = useState<TerminalMode>("slash");
   const [isRunning, setIsRunning] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSetupRequired, setIsSetupRequired] = useState(false);
+  const [isRuntimeLoading, setIsRuntimeLoading] = useState(true);
+  const [cliScale, setCliScale] = useState(CLI_SCALE_DEFAULT);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const slashCommands = useMemo(() => getSlashCommands(), []);
+  const commandContext = useMemo<SlashCommandContext>(
+    () => ({
+      isAuthenticated,
+      isSetupRequired,
+    }),
+    [isAuthenticated, isSetupRequired],
+  );
+
+  const slashCommands = useMemo(() => getSlashCommands(commandContext), [commandContext]);
   const slashMenuVisible = mode === "slash" && input.trim().startsWith("/");
   const slashQuery = input.trim().slice(1).toLowerCase();
 
@@ -90,6 +127,10 @@ export default function Terminal() {
   }, []);
 
   useEffect(() => {
+    setCliScale(readCliScaleFromStorage());
+  }, []);
+
+  useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
     const apply = () => setIsMobile(media.matches);
     apply();
@@ -98,7 +139,71 @@ export default function Terminal() {
     return () => media.removeEventListener("change", apply);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    const refreshRuntimeState = async () => {
+      setIsRuntimeLoading(true);
+
+      try {
+        const [setupResponse, meResponse] = await Promise.all([
+          fetch("/api/setup/state", { cache: "no-store" }),
+          fetch("/api/auth/me", { cache: "no-store" }),
+        ]);
+
+        const setupData: SetupStateResponse | null = await setupResponse
+          .json()
+          .catch(() => null);
+
+        if (!active) {
+          return;
+        }
+
+        setIsSetupRequired(setupData?.setupRequired === true);
+        setIsAuthenticated(meResponse.ok);
+      } catch {
+        if (!active) {
+          return;
+        }
+
+        setIsAuthenticated(false);
+      } finally {
+        if (active) {
+          setIsRuntimeLoading(false);
+        }
+      }
+    };
+
+    void refreshRuntimeState();
+
+    const onFocus = () => {
+      void refreshRuntimeState();
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onFocus);
+
+    return () => {
+      active = false;
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onFocus);
+    };
+  }, []);
+
   async function runShell(line: string) {
+    if (!isAuthenticated) {
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: line,
+          output: ["Unauthorized. Login first with /login."],
+          mode: "shell",
+          failed: true,
+        },
+      ]);
+      return;
+    }
+
     setIsRunning(true);
 
     try {
@@ -177,7 +282,8 @@ export default function Terminal() {
       return;
     }
 
-    const result = executeSlashCommand(trimmed);
+    const result = executeSlashCommand(trimmed, commandContext);
+
     if (result.action === "clear") {
       setHistory([]);
       setInput("");
@@ -197,8 +303,26 @@ export default function Terminal() {
     setInput("");
     setHistoryIndex(-1);
 
+    if (result.action === "logout") {
+      try {
+        await fetch("/api/auth/logout", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+        });
+      } catch {
+        // Session already invalidated in this case.
+      }
+
+      setIsAuthenticated(false);
+      setMode("slash");
+      setHasStarted(false);
+      router.push("/");
+      return;
+    }
+
     if (result.action === "navigate" && result.navigateTo) {
-      setTimeout(() => router.push(result.navigateTo!), 220);
+      const navigateTo = result.navigateTo;
+      setTimeout(() => router.push(navigateTo), 180);
     }
   }
 
@@ -243,6 +367,10 @@ export default function Terminal() {
         }
       }
 
+      if (!hasStarted && commandToRun.trim().length > 0) {
+        setHasStarted(true);
+      }
+
       void runInput(commandToRun);
       return;
     }
@@ -270,8 +398,21 @@ export default function Terminal() {
     }
   };
 
+  const rootStyle = useMemo(
+    () =>
+      ({
+        "--nd-cli-scale": String(cliScale),
+      }) as CSSProperties,
+    [cliScale],
+  );
+
+  const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
+
   return (
-    <div className={`terminal-page terminal-page-${mode} ${hasStarted ? "terminal-started" : "terminal-idle"}`}>
+    <div
+      className={`terminal-page terminal-page-${mode} ${hasStarted ? "terminal-started" : "terminal-idle"}`}
+      style={rootStyle}
+    >
       <div className="terminal-grid-overlay" aria-hidden />
 
       <header className={`terminal-brand ${hasStarted ? "terminal-brand-active" : ""}`}>
@@ -294,8 +435,8 @@ export default function Terminal() {
               </div>
               {entry.output.length > 0 && (
                 <div className={`terminal-output ${entry.failed ? "terminal-output-failed" : ""}`}>
-                  {entry.output.map((line, j) => (
-                    <div key={j} className="terminal-output-line">
+                  {entry.output.map((line, lineIndex) => (
+                    <div key={lineIndex} className="terminal-output-line">
                       {line || "\u00A0"}
                     </div>
                   ))}
@@ -303,11 +444,18 @@ export default function Terminal() {
               )}
             </div>
           ))}
+
           {hasStarted && history.length === 0 && (
             <div className="terminal-entry nd-animate-in">
               <div className="terminal-output">
-                <div className="terminal-output-line">System ready.</div>
-                <div className="terminal-output-line">Use /help for slash commands.</div>
+                {isRuntimeLoading ? (
+                  <div className="terminal-output-line">Checking runtime state...</div>
+                ) : (
+                  <>
+                    <div className="terminal-output-line">System ready.</div>
+                    <div className="terminal-output-line">Use {idleCommandHint} to continue.</div>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -322,8 +470,8 @@ export default function Terminal() {
             ref={inputRef}
             type="text"
             value={input}
-            onChange={(e) => {
-              const nextValue = e.target.value;
+            onChange={(event) => {
+              const nextValue = event.target.value;
               if (!hasStarted && nextValue.trim().length > 0) {
                 setHasStarted(true);
               }
@@ -332,11 +480,24 @@ export default function Terminal() {
             }}
             onKeyDown={handleKeyDown}
             className="terminal-input"
-            placeholder={mode === "shell" ? "Run allowlisted server command..." : "Type slash command, e.g. /setup"}
+            placeholder={
+              mode === "shell"
+                ? "Run allowlisted server command..."
+                : `Type command, e.g. ${idleCommandHint}`
+            }
             autoFocus
             spellCheck={false}
             aria-label="Terminal input"
           />
+        </div>
+
+        <div className="terminal-mode-row">
+          <span className={`terminal-mode-label terminal-mode-label-${mode}`}>
+            {mode === "slash" ? "Slash mode" : "Shell mode"}
+          </span>
+          <span className="terminal-mode-meta">
+            {isMobile ? "Use Slash | Shell switcher" : "Press Tab to switch mode"}
+          </span>
         </div>
 
         {isMobile && (
@@ -370,7 +531,7 @@ export default function Terminal() {
                   key={slashCommand.trigger}
                   type="button"
                   className={`terminal-slash-item ${index === selectedSlashIndex ? "terminal-slash-item-active" : ""}`}
-                  onMouseDown={(e) => e.preventDefault()}
+                  onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setSelectedSlashIndex(index)}
                   onClick={() => void runInput(slashCommand.trigger)}
                 >
@@ -379,7 +540,7 @@ export default function Terminal() {
                 </button>
               ))
             ) : (
-              <div className="terminal-slash-empty">No slash commands found.</div>
+              <div className="terminal-slash-empty">No commands found.</div>
             )}
           </div>
         )}
@@ -391,22 +552,20 @@ export default function Terminal() {
                 <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
               </span>
               <span>
-                <strong>{isMobile ? "tap" : "type"}</strong> /setup to initialize
+                <strong>{isMobile ? "tap" : "type"}</strong> {idleCommandHint} to continue
               </span>
             </div>
             <div className="terminal-idle-tip">
               <span className="terminal-idle-tip-dot">●</span>
-              <span>{isMobile ? "Mobile mode active: use Slash | Shell switcher." : "Desktop mode active: Tab toggles Slash/Shell."}</span>
+              <span>
+                {isRuntimeLoading
+                  ? "Checking session..."
+                  : isAuthenticated
+                    ? "Session active. /exit logs out to guest console."
+                    : "Guest console mode. Login required for calendar and shell."}
+              </span>
             </div>
           </>
-        )}
-
-        {hasStarted && (
-          <div className="terminal-status-bar">
-            <span>~/netden</span>
-            <span className={`terminal-status-center terminal-status-center-${mode}`}>{mode} mode</span>
-            <span>{isRunning ? "running..." : "ready"}</span>
-          </div>
         )}
       </footer>
     </div>

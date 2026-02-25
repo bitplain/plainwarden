@@ -36,11 +36,12 @@ export async function proxy(request: NextRequest) {
     if (!initialized) {
       return NextResponse.redirect(new URL(registerRoute, request.url));
     }
-    return NextResponse.redirect(new URL(session ? "/" : loginRoute, request.url));
+    // Setup is no longer available once initialization is complete.
+    return NextResponse.redirect(new URL(homeRoute, request.url));
   }
 
   if (!initialized) {
-    if (!isRegisterRoute) {
+    if (!isRegisterRoute && !isHomeRoute) {
       return NextResponse.redirect(new URL(registerRoute, request.url));
     }
     return NextResponse.next();
@@ -50,7 +51,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  if (!session && !isLoginRoute) {
+  if (!session) {
+    if (isHomeRoute || isLoginRoute) {
+      return NextResponse.next();
+    }
+
     const loginUrl = new URL(loginRoute, request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
