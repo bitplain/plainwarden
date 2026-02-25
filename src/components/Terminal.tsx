@@ -16,6 +16,7 @@ import {
   getSlashCommands,
   type SlashCommandContext,
 } from "@/modules/terminal/commands";
+import Calendar from "@/components/Calendar";
 
 interface HistoryEntry {
   command: string;
@@ -97,6 +98,7 @@ export default function Terminal() {
   const [isRuntimeLoading, setIsRuntimeLoading] = useState(true);
   const [cliScale, setCliScale] = useState(CLI_SCALE_DEFAULT);
   const [showLoginForm, setShowLoginForm] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -168,6 +170,7 @@ export default function Terminal() {
     if (params.get("login") === "1") {
       setShowLoginForm(true);
       setHasStarted(false);
+      setIsCalendarOpen(false);
     }
   }, []);
 
@@ -201,6 +204,7 @@ export default function Terminal() {
           setShowLoginForm(false);
         } else {
           setIsAuthenticated(false);
+          setIsCalendarOpen(false);
           if (setupRequired) {
             setShowLoginForm(false);
           } else if (wantsLogin) {
@@ -348,6 +352,7 @@ export default function Terminal() {
       setIsAuthenticated(true);
       setShowLoginForm(false);
       setHasStarted(true);
+      setIsCalendarOpen(false);
       setMode("slash");
       setInput("");
       setLoginPassword("");
@@ -407,11 +412,29 @@ export default function Terminal() {
     if (result.action === "login") {
       setShowLoginForm(true);
       setHasStarted(false);
+      setIsCalendarOpen(false);
       setMode("slash");
       setLoginError(null);
       setLoginPassword("");
       setTimeout(() => loginEmailRef.current?.focus(), 0);
       router.replace("/?login=1");
+      return;
+    }
+
+    if (result.action === "undock") {
+      setHasStarted(false);
+      setIsCalendarOpen(false);
+      setMode("slash");
+      setShowLoginForm(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
+      return;
+    }
+
+    if (result.action === "open_calendar") {
+      setHasStarted(true);
+      setIsCalendarOpen(true);
+      setShowLoginForm(false);
+      setTimeout(() => inputRef.current?.focus(), 0);
       return;
     }
 
@@ -428,6 +451,7 @@ export default function Terminal() {
       setIsAuthenticated(false);
       setShowLoginForm(false);
       setHasStarted(false);
+      setIsCalendarOpen(false);
       setMode("slash");
       setHistory([]);
       setCmdHistory([]);
@@ -529,7 +553,8 @@ export default function Terminal() {
   );
 
   const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
-  const historyVisible = hasStarted && !showLoginForm;
+  const historyVisible = hasStarted && !showLoginForm && !isCalendarOpen;
+  const calendarVisible = hasStarted && !showLoginForm && isCalendarOpen;
 
   return (
     <div
@@ -585,7 +610,21 @@ export default function Terminal() {
         </div>
       </div>
 
-      <footer className={`terminal-composer ${historyVisible ? "terminal-composer-active" : ""}`}>
+      <div className={`terminal-calendar-shell ${calendarVisible ? "terminal-calendar-shell-visible" : ""}`}>
+        <div className="terminal-calendar-inner">
+          <Calendar
+            variant="embedded"
+            onBackToConsole={() => {
+              setIsCalendarOpen(false);
+              setTimeout(() => inputRef.current?.focus(), 0);
+            }}
+          />
+        </div>
+      </div>
+
+      <footer
+        className={`terminal-composer ${historyVisible || calendarVisible ? "terminal-composer-active" : ""}`}
+      >
         {showLoginForm ? (
           <form className="terminal-auth-shell nd-animate-in" onSubmit={handleLoginSubmit}>
             <div className="terminal-auth-title">Login</div>
@@ -709,7 +748,7 @@ export default function Terminal() {
                     {isRuntimeLoading
                       ? "Checking session..."
                       : isAuthenticated
-                        ? "Session active. /exit returns to login window."
+                        ? "Session active."
                         : "Guest console mode. Only /login is available."}
                   </span>
                 </div>

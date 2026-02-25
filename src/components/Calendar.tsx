@@ -28,6 +28,13 @@ import {
 import { useNetdenStore } from "@/lib/store";
 import { CalendarEvent, CreateEventInput, EventStatus } from "@/lib/types";
 
+export type CalendarVariant = "standalone" | "embedded";
+
+interface CalendarProps {
+  variant?: CalendarVariant;
+  onBackToConsole?: () => void;
+}
+
 function matchesFilter(event: CalendarEvent, filter: CalendarFilter): boolean {
   if (filter === "all") {
     return true;
@@ -74,12 +81,15 @@ function buildUpcomingEvents(totalEvents: CalendarEvent[]): UpcomingEvent[] {
     .slice(0, 6);
 }
 
-export default function Calendar() {
+export default function Calendar({ variant = "standalone", onBackToConsole }: CalendarProps) {
+  const isEmbedded = variant === "embedded";
   const [view, setView] = useState<CalendarView>("month");
   const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
   const [filter, setFilter] = useState<CalendarFilter>("all");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
 
   const user = useNetdenStore((state) => state.user);
   const events = useNetdenStore((state) => state.events);
@@ -103,6 +113,21 @@ export default function Calendar() {
       void fetchEvents();
     }
   }, [user, fetchEvents]);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const apply = () => {
+      const isMobile = media.matches;
+      setIsMobileLayout(isMobile);
+      if (!isMobile) {
+        setIsSidebarVisible(false);
+      }
+    };
+    apply();
+
+    media.addEventListener("change", apply);
+    return () => media.removeEventListener("change", apply);
+  }, []);
 
   const selectedEvent = useMemo(
     () => events.find((event) => event.id === selectedEventId) ?? null,
@@ -163,10 +188,24 @@ export default function Calendar() {
 
   const handleSelectDate = (date: Date) => {
     setAnchorDate(normalizeToDay(date));
+    if (isMobileLayout) {
+      setIsSidebarVisible(false);
+    }
+  };
+
+  const handleFilterChange = (nextFilter: CalendarFilter) => {
+    setFilter(nextFilter);
+    if (isMobileLayout) {
+      setIsSidebarVisible(false);
+    }
   };
 
   return (
-    <div className="calendar-page flex h-dvh flex-col bg-[var(--background)] text-[var(--foreground)] font-[family-name:var(--font-geist-sans)]">
+    <div
+      className={`calendar-page calendar-surface flex ${
+        isEmbedded ? "h-full min-h-0 rounded-sm border border-white/10 bg-black/55" : "h-dvh"
+      } flex-col bg-[var(--background)] text-[var(--foreground)] font-[family-name:var(--font-geist-sans)]`}
+    >
       <CalendarToolbar
         currentView={view}
         periodLabel={periodLabel}
@@ -176,29 +215,54 @@ export default function Calendar() {
         onToday={handleToday}
         onAdd={() => setShowAddModal(true)}
         onLogout={handleLogout}
+        showTerminalLink={!isEmbedded}
+        showLogout={!isEmbedded}
+        onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
+        isSidebarVisible={isSidebarVisible}
       />
 
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <div className="mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 gap-0 px-4 pb-4 pt-4 sm:px-6 xl:px-8 lg:grid-cols-[320px_1fr]">
-          <CalendarSidebar
-            anchorDate={anchorDate}
-            eventsByDate={allEventsByDate}
-            categories={categories}
-            activeFilter={filter}
-            upcoming={upcoming}
-            onSelectDate={handleSelectDate}
-            onFilterChange={setFilter}
-          />
+      {isEmbedded && onBackToConsole ? (
+        <button
+          type="button"
+          onClick={onBackToConsole}
+          className="calendar-back-button"
+          aria-label="Вернуться к консоли"
+        >
+          ← Консоль
+        </button>
+      ) : null}
 
-          <main className="flex min-h-0 flex-col gap-3 rounded-b-2xl border border-white/10 bg-black/20 p-3 sm:p-4 lg:rounded-l-none lg:rounded-r-2xl lg:border-l-0">
+      <div className={`min-h-0 flex-1 overflow-hidden ${isEmbedded ? "calendar-embedded-body" : ""}`}>
+        <div
+          className={`mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 gap-0 px-2 pb-2 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:grid-cols-[300px_1fr] ${
+            isEmbedded ? "xl:px-4" : "xl:px-8"
+          }`}
+        >
+          <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0 lg:block`}>
+            <CalendarSidebar
+              anchorDate={anchorDate}
+              eventsByDate={allEventsByDate}
+              categories={categories}
+              activeFilter={filter}
+              upcoming={upcoming}
+              onSelectDate={handleSelectDate}
+              onFilterChange={handleFilterChange}
+            />
+          </div>
+
+          <main
+            className={`${
+              isSidebarVisible ? "hidden lg:flex" : "flex"
+            } min-h-0 flex-col gap-2 rounded-sm border border-white/10 bg-black/35 p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
+          >
             {(isAuthLoading || isEventsLoading) && (
-              <div className="rounded-xl border border-white/12 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
+              <div className="rounded-md border border-white/12 bg-white/[0.03] px-3 py-2 text-xs text-zinc-400">
                 Синхронизация данных...
               </div>
             )}
 
             {error && (
-              <div className="rounded-xl border border-red-500/35 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              <div className="rounded-md border border-red-500/35 bg-red-500/10 px-3 py-2 text-xs text-red-200">
                 {error}
               </div>
             )}
@@ -232,14 +296,16 @@ export default function Calendar() {
         </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-4 right-4 z-30 inline-flex h-12 w-12 items-center justify-center rounded-full border border-sky-300/45 bg-sky-500 text-2xl font-semibold text-zinc-950 shadow-[0_18px_42px_-24px_rgba(56,189,248,0.95)] md:hidden"
-        aria-label="Добавить событие"
-      >
-        +
-      </button>
+      {!isEmbedded && (
+        <button
+          type="button"
+          onClick={() => setShowAddModal(true)}
+          className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-full border border-sky-300/45 bg-sky-500 text-xl font-semibold text-zinc-950 shadow-[0_18px_42px_-24px_rgba(56,189,248,0.95)] md:hidden"
+          aria-label="Добавить событие"
+        >
+          +
+        </button>
+      )}
 
       {selectedEvent && (
         <EventModal

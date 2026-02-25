@@ -21,7 +21,7 @@ export default function WeekView({
   const today = new Date();
 
   return (
-    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#0e111d]/80">
+    <div className="calendar-card flex h-full min-h-0 flex-col overflow-hidden rounded-sm border border-white/10 bg-black/40">
       <div className="overflow-x-auto">
         <div className="grid min-w-[840px] grid-cols-7">
           {weekDates.map((day) => {

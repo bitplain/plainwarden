@@ -41,8 +41,8 @@ export default function CalendarSidebar({
   const today = new Date();
 
   return (
-    <aside className="flex h-full flex-col gap-4 overflow-y-auto border-r border-white/10 bg-black/25 p-4 sm:p-5">
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+    <aside className="flex h-full flex-col gap-3 overflow-y-auto border-r border-white/10 bg-black/45 p-3 sm:p-4">
+      <section className="rounded-sm border border-white/10 bg-black/35 p-3">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-100">Мини-календарь</h2>
           <span className="text-xs text-zinc-400">{format(anchorDate, "LLLL yyyy", { locale: ru })}</span>
@@ -71,7 +71,7 @@ export default function CalendarSidebar({
                 onClick={() => onSelectDate(day)}
                 className={`relative h-8 rounded-lg text-xs transition-colors ${
                   isCurrentDay
-                    ? "bg-sky-500 text-zinc-950"
+                    ? "bg-sky-500/90 text-zinc-950"
                     : isToday
                       ? "bg-sky-500/20 text-sky-200"
                       : isCurrentMonth
@@ -89,7 +89,7 @@ export default function CalendarSidebar({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="rounded-sm border border-white/10 bg-black/35 p-3">
         <h2 className="mb-3 text-sm font-semibold text-zinc-100">Категории</h2>
         <div className="space-y-2">
           {categories.map((category) => {
@@ -112,13 +112,13 @@ export default function CalendarSidebar({
         </div>
       </section>
 
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4">
+      <section className="rounded-sm border border-white/10 bg-black/35 p-3">
         <h2 className="mb-3 text-sm font-semibold text-zinc-100">Ближайшие</h2>
         <div className="space-y-2.5">
           {upcoming.length === 0 && <p className="text-sm text-zinc-500">Нет ближайших событий.</p>}
 
           {upcoming.map(({ event, startsAt }) => (
-            <article key={event.id} className="rounded-xl border border-white/10 bg-black/35 p-3">
+            <article key={event.id} className="rounded-md border border-white/10 bg-black/45 p-3">
               <div className="mb-1 flex items-start justify-between gap-2">
                 <p className="line-clamp-2 text-sm font-medium text-zinc-100">{event.title}</p>
                 <span
