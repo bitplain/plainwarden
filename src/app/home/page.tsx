@@ -68,6 +68,7 @@ function formatDate(date: string): string {
 }
 
 export default function HomeDashboardPage() {
+  const [isEmbedded, setIsEmbedded] = useState(false);
   const user = useNetdenStore((state) => state.user);
   const events = useNetdenStore((state) => state.events);
   const bootstrapAuth = useNetdenStore((state) => state.bootstrapAuth);
@@ -90,6 +91,9 @@ export default function HomeDashboardPage() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
+      const params = new URLSearchParams(window.location.search);
+      setIsEmbedded(params.get("embedded") === "1");
+
       setNotes(readNotes());
 
       const storedScale = window.localStorage.getItem(CLI_SCALE_KEY);
@@ -119,8 +123,8 @@ export default function HomeDashboardPage() {
   const latestNote = notes[0] ?? null;
 
   return (
-    <div className="home-page-shell">
-      <div className="home-page-grid">
+    <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
+      <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
         <header className="home-header">
           <div>
             <p className="home-kicker">NetDen</p>
@@ -129,20 +133,22 @@ export default function HomeDashboardPage() {
               Общий обзор: календарь, заметки, настройки и статус GitHub интеграции.
             </p>
           </div>
-          <nav className="home-links">
-            <Link href="/" className="home-link">
-              Консоль
-            </Link>
-            <Link href="/calendar" className="home-link">
-              Календарь
-            </Link>
-            <Link href="/notes" className="home-link">
-              Заметки
-            </Link>
-            <Link href="/settings" className="home-link">
-              Настройки
-            </Link>
-          </nav>
+          {!isEmbedded ? (
+            <nav className="home-links">
+              <Link href="/" className="home-link">
+                Консоль
+              </Link>
+              <Link href="/calendar" className="home-link">
+                Календарь
+              </Link>
+              <Link href="/notes" className="home-link">
+                Заметки
+              </Link>
+              <Link href="/settings" className="home-link">
+                Настройки
+              </Link>
+            </nav>
+          ) : null}
         </header>
 
         <section className="home-card">
