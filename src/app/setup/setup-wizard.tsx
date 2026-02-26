@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   SetupErrorResponse,
@@ -299,27 +300,39 @@ export function SetupWizard() {
   }
 
   return (
-    <div className="min-h-dvh bg-[radial-gradient(60%_80%_at_50%_0%,rgba(255,255,255,0.10),rgba(0,0,0,0)),linear-gradient(to_bottom,#09090b,#000)] px-5 py-10 text-zinc-100 font-sans">
-      <div className="mx-auto w-full max-w-xl">
-        <div className="mb-6">
-          <div className="text-xs font-medium tracking-wide text-zinc-500">NetDen</div>
-          <h1 className="mt-2 text-balance text-2xl font-semibold tracking-tight">Первичная настройка</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Мастер создаст базу приложения, DB-роль, первого пользователя и подготовит переменные
-            для Timeweb App Platform.
-          </p>
+    <div className="home-page-shell">
+      <div className="home-page-grid">
+        <header className="home-header">
+          <div className="home-header-left">
+            <Link href="/" className="home-back-link">
+              ← Терминал
+            </Link>
+            <div>
+              <p className="home-kicker">NetDen</p>
+              <h1 className="home-title">Первичная настройка</h1>
+              <p className="home-subtitle">
+                Мастер создаст базу приложения, DB-роль, первого пользователя и подготовит переменные
+                для Timeweb App Platform.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div className="home-card">
+          <div className="home-card-head">
+            <h2 className="home-card-title">Шаги</h2>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+            <StepPill active={step === 0}>Введение</StepPill>
+            <StepPill active={step === 1}>PostgreSQL</StepPill>
+            <StepPill active={step === 2}>Провижининг</StepPill>
+            <StepPill active={step === 3}>Первый пользователь</StepPill>
+            <StepPill active={step === 4}>Запуск</StepPill>
+            <StepPill active={step === 5}>Сводка</StepPill>
+          </div>
         </div>
 
-        <div className="mb-5 flex flex-wrap gap-2">
-          <StepPill active={step === 0}>Введение</StepPill>
-          <StepPill active={step === 1}>PostgreSQL</StepPill>
-          <StepPill active={step === 2}>Провижининг</StepPill>
-          <StepPill active={step === 3}>Первый пользователь</StepPill>
-          <StepPill active={step === 4}>Запуск</StepPill>
-          <StepPill active={step === 5}>Сводка</StepPill>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
+        <section className="home-card">
           {step === 0 ? (
             <div className="grid gap-4">
               <div className="rounded-xl border border-white/10 bg-black/20 p-4">
@@ -499,12 +512,12 @@ export function SetupWizard() {
                   : "Далее"}
             </Button>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-6 text-xs text-zinc-600">
+        <p className="home-muted">
           В этом режиме значения не сохраняются на диске контейнера: финальная сводка предназначена
           для ручного переноса в Timeweb Variables.
-        </div>
+        </p>
       </div>
     </div>
   );

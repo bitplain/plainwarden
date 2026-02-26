@@ -126,18 +126,22 @@ export default function HomeDashboardPage() {
     <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
       <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
         <header className="home-header">
-          <div>
-            <p className="home-kicker">NetDen</p>
-            <h1 className="home-title">Главная</h1>
-            <p className="home-subtitle">
-              Общий обзор: календарь, заметки, настройки и статус GitHub интеграции.
-            </p>
+          <div className="home-header-left">
+            {!isEmbedded ? (
+              <Link href="/" className="home-back-link">
+                ← Консоль
+              </Link>
+            ) : null}
+            <div>
+              <p className="home-kicker">NetDen</p>
+              <h1 className="home-title">Главная</h1>
+              <p className="home-subtitle">
+                Общий обзор: календарь, заметки, настройки и статус GitHub интеграции.
+              </p>
+            </div>
           </div>
           {!isEmbedded ? (
             <nav className="home-links">
-              <Link href="/" className="home-link">
-                Консоль
-              </Link>
               <Link href="/calendar" className="home-link">
                 Календарь
               </Link>

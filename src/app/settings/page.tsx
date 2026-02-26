@@ -248,16 +248,20 @@ export default function SettingsPage() {
     <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
       <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
         <header className="home-header">
-          <div>
-            <p className="home-kicker">NetDen</p>
-            <h1 className="home-title">Настройки</h1>
-            <p className="home-subtitle">CLI масштаб/толщина, GitHub Billing и управление HTTPS сертификатом.</p>
+          <div className="home-header-left">
+            {!isEmbedded ? (
+              <Link href="/" className="home-back-link">
+                ← Консоль
+              </Link>
+            ) : null}
+            <div>
+              <p className="home-kicker">NetDen</p>
+              <h1 className="home-title">Настройки</h1>
+              <p className="home-subtitle">CLI масштаб/толщина, GitHub Billing и управление HTTPS сертификатом.</p>
+            </div>
           </div>
           {!isEmbedded ? (
             <nav className="home-links">
-              <Link href="/" className="home-link">
-                Консоль
-              </Link>
               <Link href="/home" className="home-link">
                 Главная
               </Link>

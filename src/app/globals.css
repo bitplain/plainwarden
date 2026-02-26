@@ -199,7 +199,7 @@ body {
 .terminal-inline-page-back {
   position: absolute;
   top: 0.64rem;
-  right: 0.64rem;
+  left: 0.64rem;
   z-index: 30;
   border: 0.5px solid rgba(255, 255, 255, 0.16);
   background: rgba(8, 10, 14, 0.78);
@@ -651,6 +651,32 @@ body {
   border: 0.5px solid rgba(255, 255, 255, 0.12);
   background: rgba(9, 12, 20, 0.82);
   padding: 0.8rem;
+}
+
+.home-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home-back-link {
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.375rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #e4e4e7;
+  text-decoration: none;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.home-back-link:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .home-kicker {
@@ -1123,7 +1149,7 @@ body {
 
   .terminal-inline-page-back {
     top: 0.52rem;
-    right: 0.52rem;
+    left: 0.52rem;
   }
 
   .terminal-idle-meta {
@@ -1183,7 +1209,7 @@ body {
 
   .terminal-inline-page-back {
     top: 0.42rem;
-    right: 0.42rem;
+    left: 0.42rem;
     padding: 0.44rem 0.56rem;
     font-size: 0.74rem;
   }
