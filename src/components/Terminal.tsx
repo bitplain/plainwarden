@@ -684,7 +684,7 @@ export default function Terminal() {
       <div className="terminal-grid-overlay" aria-hidden />
 
       <header className={`terminal-brand ${hasStarted || showLoginForm ? "terminal-brand-active" : ""}`}>
-        <h1 className="terminal-brand-name">{windowTitle}</h1>
+        <h1 key={windowTitle} className="terminal-brand-name">{windowTitle}</h1>
       </header>
 
       <div
@@ -731,7 +731,7 @@ export default function Terminal() {
       </div>
 
       <div className={`terminal-calendar-shell ${panelVisible ? "terminal-calendar-shell-visible" : ""}`}>
-        <div className="terminal-calendar-inner">
+        <div className="terminal-calendar-inner nd-panel-enter" key={activePanel}>
           {activePanel === "calendar" ? (
             <Calendar variant="embedded" onBackToConsole={closePanelToConsole} />
           ) : activePanel === "home" || activePanel === "notes" || activePanel === "settings" ? (
@@ -760,33 +760,42 @@ export default function Terminal() {
       >
         {showLoginForm ? (
           <form className="terminal-auth-shell nd-animate-in" onSubmit={handleLoginSubmit}>
-            <div className="terminal-auth-title">Login</div>
+            <div className="terminal-auth-header">
+              <span className="terminal-auth-caret">›</span>
+              <span className="terminal-auth-title">Авторизация</span>
+            </div>
 
-            <input
-              ref={loginEmailRef}
-              type="email"
-              value={loginEmail}
-              onChange={(event) => setLoginEmail(event.target.value)}
-              className="terminal-auth-input"
-              placeholder="Email"
-              autoComplete="email"
-              required
-            />
+            <label className="terminal-auth-field">
+              <span className="terminal-auth-label">email</span>
+              <input
+                ref={loginEmailRef}
+                type="email"
+                value={loginEmail}
+                onChange={(event) => setLoginEmail(event.target.value)}
+                className="terminal-auth-input"
+                placeholder="user@example.com"
+                autoComplete="email"
+                required
+              />
+            </label>
 
-            <input
-              type="password"
-              value={loginPassword}
-              onChange={(event) => setLoginPassword(event.target.value)}
-              className="terminal-auth-input"
-              placeholder="Password"
-              autoComplete="current-password"
-              required
-            />
+            <label className="terminal-auth-field">
+              <span className="terminal-auth-label">пароль</span>
+              <input
+                type="password"
+                value={loginPassword}
+                onChange={(event) => setLoginPassword(event.target.value)}
+                className="terminal-auth-input"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+              />
+            </label>
 
             {loginError ? <div className="terminal-auth-error">{loginError}</div> : null}
 
             <button type="submit" className="terminal-auth-button" disabled={loginBusy}>
-              {loginBusy ? "Signing in..." : "Log in"}
+              {loginBusy ? "Подключение…" : "→ Войти"}
             </button>
           </form>
         ) : (
