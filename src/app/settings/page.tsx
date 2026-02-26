@@ -9,6 +9,11 @@ const MIN = 0.8;
 const MAX = 1.2;
 const STEP = 0.01;
 const DEFAULT_SCALE = 1;
+const CLI_STROKE_KEY = "netden:cli-stroke";
+const STROKE_MIN = 0.5;
+const STROKE_MAX = 2;
+const STROKE_STEP = 0.05;
+const DEFAULT_STROKE = 1;
 
 const GITHUB_ORG_KEY = "netden:github:org";
 const GITHUB_TOKEN_KEY = "netden:github:token";
@@ -40,6 +45,15 @@ function formatPercent(value: number): string {
   return `${Math.round(value * 100)}%`;
 }
 
+function clampStroke(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_STROKE;
+  return Math.min(STROKE_MAX, Math.max(STROKE_MIN, value));
+}
+
+function formatStroke(value: number): string {
+  return `${value.toFixed(2)}x`;
+}
+
 function formatMoney(value: number): string {
   if (!Number.isFinite(value)) return "0";
   return value.toLocaleString("en-US", {
@@ -60,6 +74,19 @@ export default function SettingsPage() {
     }
 
     return clampScale(Number(raw));
+  });
+
+  const [stroke, setStroke] = useState(() => {
+    if (typeof window === "undefined") {
+      return DEFAULT_STROKE;
+    }
+
+    const raw = window.localStorage.getItem(CLI_STROKE_KEY);
+    if (!raw) {
+      return DEFAULT_STROKE;
+    }
+
+    return clampStroke(Number(raw));
   });
 
   const [org, setOrg] = useState(() => {
@@ -93,6 +120,17 @@ export default function SettingsPage() {
   const resetScale = () => {
     setScale(DEFAULT_SCALE);
     window.localStorage.setItem(CLI_SCALE_KEY, String(DEFAULT_SCALE));
+  };
+
+  const saveStroke = (nextStroke: number) => {
+    const clamped = clampStroke(nextStroke);
+    setStroke(clamped);
+    window.localStorage.setItem(CLI_STROKE_KEY, String(clamped));
+  };
+
+  const resetStroke = () => {
+    setStroke(DEFAULT_STROKE);
+    window.localStorage.setItem(CLI_STROKE_KEY, String(DEFAULT_STROKE));
   };
 
   const onLoadBilling = async (event: FormEvent<HTMLFormElement>) => {
@@ -188,7 +226,7 @@ export default function SettingsPage() {
           <div>
             <p className="home-kicker">NetDen</p>
             <h1 className="home-title">Настройки</h1>
-            <p className="home-subtitle">CLI масштаб, GitHub Billing и управление HTTPS сертификатом.</p>
+            <p className="home-subtitle">CLI масштаб/толщина, GitHub Billing и управление HTTPS сертификатом.</p>
           </div>
           <nav className="home-links">
             <Link href="/" className="home-link">
@@ -204,31 +242,63 @@ export default function SettingsPage() {
         </header>
 
         <section className="home-card">
-          <h2 className="home-card-title">Размер окна ввода CLI</h2>
-          <div className="home-card-head">
-            <span className="home-muted">Текущий масштаб</span>
-            <strong className="home-metric-value">{formatPercent(scale)}</strong>
+          <h2 className="home-card-title">Параметры CLI</h2>
+
+          <div className="settings-range-block">
+            <div className="home-card-head">
+              <span className="home-muted">Размер окна ввода CLI</span>
+              <strong className="home-metric-value">{formatPercent(scale)}</strong>
+            </div>
+
+            <input
+              type="range"
+              min={MIN}
+              max={MAX}
+              step={STEP}
+              value={scale}
+              onChange={(event) => saveScale(Number(event.target.value))}
+              className="settings-range"
+            />
+
+            <div className="settings-range-meta">
+              <span>{formatPercent(MIN)}</span>
+              <span>{formatPercent(DEFAULT_SCALE)}</span>
+              <span>{formatPercent(MAX)}</span>
+            </div>
+
+            <button type="button" onClick={resetScale} className="notes-submit settings-reset">
+              Сбросить размер
+            </button>
           </div>
 
-          <input
-            type="range"
-            min={MIN}
-            max={MAX}
-            step={STEP}
-            value={scale}
-            onChange={(event) => saveScale(Number(event.target.value))}
-            className="settings-range"
-          />
+          <div className="settings-range-divider" aria-hidden />
 
-          <div className="settings-range-meta">
-            <span>{formatPercent(MIN)}</span>
-            <span>{formatPercent(DEFAULT_SCALE)}</span>
-            <span>{formatPercent(MAX)}</span>
+          <div className="settings-range-block">
+            <div className="home-card-head">
+              <span className="home-muted">Толщина командной строки</span>
+              <strong className="home-metric-value">{formatStroke(stroke)}</strong>
+            </div>
+
+            <input
+              type="range"
+              min={STROKE_MIN}
+              max={STROKE_MAX}
+              step={STROKE_STEP}
+              value={stroke}
+              onChange={(event) => saveStroke(Number(event.target.value))}
+              className="settings-range"
+            />
+
+            <div className="settings-range-meta">
+              <span>{formatStroke(STROKE_MIN)}</span>
+              <span>{formatStroke(DEFAULT_STROKE)}</span>
+              <span>{formatStroke(STROKE_MAX)}</span>
+            </div>
+
+            <button type="button" onClick={resetStroke} className="notes-submit settings-reset">
+              Сбросить толщину
+            </button>
           </div>
-
-          <button type="button" onClick={resetScale} className="notes-submit settings-reset">
-            Сбросить размер
-          </button>
         </section>
 
         <section className="home-card">

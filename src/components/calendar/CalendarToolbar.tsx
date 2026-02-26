@@ -14,6 +14,8 @@ interface CalendarToolbarProps {
   showLogout?: boolean;
   onToggleSidebar?: () => void;
   isSidebarVisible?: boolean;
+  showBackToConsole?: boolean;
+  onBackToConsole?: () => void;
 }
 
 const VIEW_OPTIONS: { id: CalendarView; label: string }[] = [
@@ -35,13 +37,23 @@ export default function CalendarToolbar({
   showLogout = true,
   onToggleSidebar,
   isSidebarVisible = false,
+  showBackToConsole = false,
+  onBackToConsole,
 }: CalendarToolbarProps) {
   return (
     <header className="calendar-toolbar border-b border-white/10 bg-black/70 backdrop-blur-xl">
       <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-5 xl:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {showTerminalLink ? (
+            {showBackToConsole && onBackToConsole ? (
+              <button
+                type="button"
+                onClick={onBackToConsole}
+                className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/10"
+              >
+                ← Консоль
+              </button>
+            ) : showTerminalLink ? (
               <Link
                 href="/"
                 className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:bg-white/10"

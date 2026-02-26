@@ -223,20 +223,11 @@ export default function Calendar({ variant = "standalone", onBackToConsole }: Ca
         onLogout={handleLogout}
         showTerminalLink={!isEmbedded}
         showLogout={!isEmbedded}
+        showBackToConsole={isEmbedded && Boolean(onBackToConsole)}
+        onBackToConsole={onBackToConsole}
         onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
         isSidebarVisible={isSidebarVisible}
       />
-
-      {isEmbedded && onBackToConsole ? (
-        <button
-          type="button"
-          onClick={onBackToConsole}
-          className="calendar-back-button"
-          aria-label="Вернуться к консоли"
-        >
-          ← Консоль
-        </button>
-      ) : null}
 
       <div className={`min-h-0 flex-1 overflow-hidden ${isEmbedded ? "calendar-embedded-body" : ""}`}>
         <div className={layoutClass}>
