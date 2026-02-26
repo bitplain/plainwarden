@@ -34,7 +34,7 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=${DATABASE_URL:-postgresql://netden:netdenpass@postgres:5432/netden?schema=public}
-      - NETDEN_SESSION_SECRET=${NETDEN_SESSION_SECRET:-local-session-secret-change-me}
+      - NETDEN_SESSION_SECRET=${NETDEN_SESSION_SECRET:-local-session-secret-change-me-32chars}
       - NEXT_PUBLIC_BUILD_SHA=${NEXT_PUBLIC_BUILD_SHA:-dev}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://proxy:2019}
 
