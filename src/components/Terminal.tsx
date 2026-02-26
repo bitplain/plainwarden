@@ -33,6 +33,10 @@ const CLI_SCALE_KEY = "netden:cli-scale";
 const CLI_SCALE_MIN = 0.8;
 const CLI_SCALE_MAX = 1.2;
 const CLI_SCALE_DEFAULT = 1;
+const CLI_STROKE_KEY = "netden:cli-stroke";
+const CLI_STROKE_MIN = 0.5;
+const CLI_STROKE_MAX = 2;
+const CLI_STROKE_DEFAULT = 1;
 const PROMPT_PLACEHOLDER = "Ask anything";
 type TerminalPanel = "none" | "calendar" | "home" | "notes" | "settings";
 
@@ -51,11 +55,23 @@ function clampCliScale(value: number): number {
   return Math.min(CLI_SCALE_MAX, Math.max(CLI_SCALE_MIN, value));
 }
 
+function clampCliStroke(value: number): number {
+  if (!Number.isFinite(value)) return CLI_STROKE_DEFAULT;
+  return Math.min(CLI_STROKE_MAX, Math.max(CLI_STROKE_MIN, value));
+}
+
 function readCliScaleFromStorage(): number {
   if (typeof window === "undefined") return CLI_SCALE_DEFAULT;
   const raw = window.localStorage.getItem(CLI_SCALE_KEY);
   if (!raw) return CLI_SCALE_DEFAULT;
   return clampCliScale(Number(raw));
+}
+
+function readCliStrokeFromStorage(): number {
+  if (typeof window === "undefined") return CLI_STROKE_DEFAULT;
+  const raw = window.localStorage.getItem(CLI_STROKE_KEY);
+  if (!raw) return CLI_STROKE_DEFAULT;
+  return clampCliStroke(Number(raw));
 }
 
 function formatShellOutput(input: {
@@ -104,6 +120,7 @@ export default function Terminal() {
   const [isSetupRequired, setIsSetupRequired] = useState(false);
   const [isRuntimeLoading, setIsRuntimeLoading] = useState(true);
   const [cliScale, setCliScale] = useState(CLI_SCALE_DEFAULT);
+  const [cliStroke, setCliStroke] = useState(CLI_STROKE_DEFAULT);
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [activePanel, setActivePanel] = useState<TerminalPanel>("none");
   const [loginEmail, setLoginEmail] = useState("");
@@ -158,6 +175,7 @@ export default function Terminal() {
 
   useEffect(() => {
     setCliScale(readCliScaleFromStorage());
+    setCliStroke(readCliStrokeFromStorage());
   }, []);
 
   useEffect(() => {
@@ -579,8 +597,9 @@ export default function Terminal() {
     () =>
       ({
         "--nd-cli-scale": String(cliScale),
+        "--nd-cli-stroke": String(cliStroke),
       }) as CSSProperties,
-    [cliScale],
+    [cliScale, cliStroke],
   );
 
   const idleCommandHint = isSetupRequired ? "/setup" : isAuthenticated ? "/help" : "/login";
