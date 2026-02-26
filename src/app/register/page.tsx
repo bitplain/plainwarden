@@ -43,60 +43,67 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-dvh bg-[radial-gradient(60%_80%_at_50%_0%,rgba(255,255,255,0.10),rgba(0,0,0,0)),linear-gradient(to_bottom,#09090b,#000)] px-5 py-10 text-zinc-100 font-sans">
-      <div className="mx-auto w-full max-w-sm">
-        <div className="mb-6">
-          <div className="text-xs font-medium tracking-wide text-zinc-500">NetDen</div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Первая регистрация</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Резервная регистрация первого пользователя (если setup не создал его автоматически).
-          </p>
-        </div>
+    <div className="home-page-shell">
+      <div className="home-page-grid">
+        <header className="home-header">
+          <div className="home-header-left">
+            <Link href="/" className="home-back-link">
+              ← Терминал
+            </Link>
+            <div>
+              <p className="home-kicker">NetDen</p>
+              <h1 className="home-title">Регистрация</h1>
+              <p className="home-subtitle">
+                Резервная регистрация первого пользователя (если setup не создал его автоматически).
+              </p>
+            </div>
+          </div>
+          <nav className="home-links">
+            <Link href="/login" className="home-link">
+              Вход
+            </Link>
+          </nav>
+        </header>
 
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]"
-        >
-          <div className="grid gap-3">
-            {formError ? (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-100">
-                {formError}
-              </div>
-            ) : null}
+        <section className="home-card">
+          <h2 className="home-card-title">Данные пользователя</h2>
 
-            <label className="grid gap-1.5">
-              <div className="text-sm font-medium text-zinc-200">Имя</div>
+          <form className="notes-form" onSubmit={handleSubmit}>
+            {formError ? <p className="notes-error">{formError}</p> : null}
+
+            <label className="settings-field">
+              <span>Имя</span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-white/15"
+                className="notes-input"
                 placeholder="Алекс"
                 autoComplete="name"
                 required
               />
             </label>
 
-            <label className="grid gap-1.5">
-              <div className="text-sm font-medium text-zinc-200">Email</div>
+            <label className="settings-field">
+              <span>Email</span>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-white/15"
+                className="notes-input"
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
               />
             </label>
 
-            <label className="grid gap-1.5">
-              <div className="text-sm font-medium text-zinc-200">Пароль</div>
+            <label className="settings-field">
+              <span>Пароль</span>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-white/15"
+                className="notes-input"
                 placeholder="Минимум 8 символов"
                 autoComplete="new-password"
                 minLength={8}
@@ -107,23 +114,14 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isAuthLoading}
-              className="h-10 w-full rounded-lg bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-zinc-200 disabled:opacity-50 disabled:pointer-events-none"
+              className="notes-submit"
             >
               {isAuthLoading ? "Создаём..." : "Создать пользователя"}
             </button>
-          </div>
-        </form>
+          </form>
+        </section>
 
-        <div className="mt-4 flex items-center justify-between text-sm text-zinc-400">
-          <Link href="/login" className="text-[var(--nd-accent)] hover:underline">
-            Уже есть аккаунт
-          </Link>
-          <Link href="/" className="hover:text-zinc-200 transition-colors">
-            ← Назад в терминал
-          </Link>
-        </div>
-
-        <p className="mt-3 text-[10px] text-zinc-500">Build: {buildSha}</p>
+        <p className="home-muted">Build: {buildSha}</p>
       </div>
     </div>
   );

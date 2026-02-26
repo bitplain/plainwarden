@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
   SetupErrorResponse,
@@ -20,62 +21,31 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="grid gap-1.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <div className="text-sm font-medium text-zinc-200">{label}</div>
-        {hint ? <div className="text-xs text-zinc-500">{hint}</div> : null}
-      </div>
+    <label className="settings-field">
+      <span>
+        {label}
+        {hint ? <span className="settings-hint">{hint}</span> : null}
+      </span>
       {children}
     </label>
   );
 }
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={[
-        "h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 text-sm text-zinc-100",
-        "placeholder:text-zinc-600 outline-none focus:ring-2 focus:ring-white/15",
-        props.className ?? "",
-      ].join(" ")}
-    />
-  );
+  return <input {...props} className="notes-input" />;
 }
 
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      {...props}
-      className={[
-        "h-10 w-full rounded-lg border border-white/10 bg-black/40 px-3 text-sm text-zinc-100",
-        "outline-none focus:ring-2 focus:ring-white/15",
-        props.className ?? "",
-      ].join(" ")}
-    />
-  );
+  return <select {...props} className="notes-input" />;
 }
 
 function Button({
   kind = "primary",
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "ghost" }) {
-  const classes =
-    kind === "primary"
-      ? "bg-white text-black hover:bg-zinc-200"
-      : "bg-transparent text-zinc-200 hover:bg-white/5 border border-white/10";
+  const cls = kind === "primary" ? "notes-submit" : "notes-submit settings-reset";
 
-  return (
-    <button
-      {...props}
-      className={[
-        "h-10 rounded-lg px-4 text-sm font-medium transition-colors",
-        "disabled:opacity-50 disabled:pointer-events-none",
-        classes,
-        props.className ?? "",
-      ].join(" ")}
-    />
-  );
+  return <button {...props} className={cls} />;
 }
 
 function StepPill({ active, children }: { active: boolean; children: string }) {
@@ -299,32 +269,44 @@ export function SetupWizard() {
   }
 
   return (
-    <div className="min-h-dvh bg-[radial-gradient(60%_80%_at_50%_0%,rgba(255,255,255,0.10),rgba(0,0,0,0)),linear-gradient(to_bottom,#09090b,#000)] px-5 py-10 text-zinc-100 font-sans">
-      <div className="mx-auto w-full max-w-xl">
-        <div className="mb-6">
-          <div className="text-xs font-medium tracking-wide text-zinc-500">NetDen</div>
-          <h1 className="mt-2 text-balance text-2xl font-semibold tracking-tight">Первичная настройка</h1>
-          <p className="mt-2 text-sm text-zinc-400">
-            Мастер создаст базу приложения, DB-роль, первого пользователя и подготовит переменные
-            для Timeweb App Platform.
-          </p>
+    <div className="home-page-shell">
+      <div className="home-page-grid">
+        <header className="home-header">
+          <div className="home-header-left">
+            <Link href="/" className="home-back-link">
+              ← Терминал
+            </Link>
+            <div>
+              <p className="home-kicker">NetDen</p>
+              <h1 className="home-title">Первичная настройка</h1>
+              <p className="home-subtitle">
+                Мастер создаст базу приложения, DB-роль, первого пользователя и подготовит переменные
+                для Timeweb App Platform.
+              </p>
+            </div>
+          </div>
+        </header>
+
+        <div className="home-card">
+          <div className="home-card-head">
+            <h2 className="home-card-title">Шаги</h2>
+          </div>
+          <div className="home-links">
+            <StepPill active={step === 0}>Введение</StepPill>
+            <StepPill active={step === 1}>PostgreSQL</StepPill>
+            <StepPill active={step === 2}>Провижининг</StepPill>
+            <StepPill active={step === 3}>Первый пользователь</StepPill>
+            <StepPill active={step === 4}>Запуск</StepPill>
+            <StepPill active={step === 5}>Сводка</StepPill>
+          </div>
         </div>
 
-        <div className="mb-5 flex flex-wrap gap-2">
-          <StepPill active={step === 0}>Введение</StepPill>
-          <StepPill active={step === 1}>PostgreSQL</StepPill>
-          <StepPill active={step === 2}>Провижининг</StepPill>
-          <StepPill active={step === 3}>Первый пользователь</StepPill>
-          <StepPill active={step === 4}>Запуск</StepPill>
-          <StepPill active={step === 5}>Сводка</StepPill>
-        </div>
-
-        <div className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.9)]">
+        <section className="home-card">
           {step === 0 ? (
-            <div className="grid gap-4">
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-                <div className="text-sm font-medium">Что будет сделано</div>
-                <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-zinc-400">
+            <div className="settings-grid">
+              <div className="acme-note">
+                <p className="home-inline-title">Что будет сделано</p>
+                <ul className="setup-list setup-list-disc">
                   <li>Создание/обновление DB-роли приложения.</li>
                   <li>Создание базы данных и применение миграций Prisma.</li>
                   <li>Создание первого пользователя с начальными событиями.</li>
@@ -332,15 +314,15 @@ export function SetupWizard() {
                   <li>Вывод сводки для вставки в Timeweb Variables.</li>
                 </ul>
               </div>
-              <div className="text-sm text-zinc-400">
+              <p className="home-muted">
                 После завершения setup обязательно обновите Variables и выполните redeploy.
-              </div>
+              </p>
             </div>
           ) : null}
 
           {step === 1 ? (
-            <div className="grid gap-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="settings-grid">
+              <div className="settings-inline">
                 <Field label="IP / host PostgreSQL" hint="например 127.0.0.1">
                   <Input value={pgHost} onChange={(e) => setPgHost(e.target.value)} autoFocus />
                 </Field>
@@ -374,7 +356,7 @@ export function SetupWizard() {
           ) : null}
 
           {step === 2 ? (
-            <div className="grid gap-4">
+            <div className="settings-grid">
               <Field label="Имя базы приложения" hint="буквы, цифры, _">
                 <Input value={dbName} onChange={(e) => setDbName(e.target.value)} autoFocus />
               </Field>
@@ -392,7 +374,7 @@ export function SetupWizard() {
           ) : null}
 
           {step === 3 ? (
-            <div className="grid gap-4">
+            <div className="settings-grid">
               <Field label="Имя первого пользователя">
                 <Input
                   value={adminName}
@@ -424,21 +406,21 @@ export function SetupWizard() {
           ) : null}
 
           {step === 4 ? (
-            <div className="grid gap-4">
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-300">
+            <div className="settings-grid">
+              <p className="acme-note">
                 Нажмите «Запустить setup». Мастер применит миграции, создаст первого пользователя и
                 сгенерирует итоговые секреты.
-              </div>
+              </p>
             </div>
           ) : null}
 
           {step === 5 ? (
-            <div className="grid gap-4">
+            <div className="settings-grid">
               {done && summary ? <SummaryTable summary={summary} /> : null}
 
-              <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-300">
-                <div className="font-medium text-zinc-100">Обязательные шаги после setup</div>
-                <ol className="mt-2 list-decimal space-y-1 pl-5">
+              <div className="acme-note">
+                <p className="home-inline-title">Обязательные шаги после setup</p>
+                <ol className="setup-list setup-list-decimal">
                   <li>Откройте Timeweb Apps → Variables.</li>
                   <li>Вставьте значения из сводки: DATABASE_URL и NETDEN_SESSION_SECRET.</li>
                   <li>Сделайте redeploy приложения.</li>
@@ -446,46 +428,42 @@ export function SetupWizard() {
                 </ol>
               </div>
 
-              <div className="flex flex-wrap gap-2">
-                <a
-                  className="inline-flex h-10 items-center rounded-lg border border-white/10 bg-transparent px-4 text-sm font-medium text-zinc-200 hover:bg-white/5"
-                  href="/login"
-                >
+              <nav className="home-links">
+                <a href="/login" className="home-link">
                   Открыть /login
                 </a>
-              </div>
+              </nav>
             </div>
           ) : null}
 
           {error ? (
-            <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-100">
-              <div>{error}</div>
+            <div className="notes-error">
+              <p>{error}</p>
               {needsRecovery ? (
-                <div className="mt-3 rounded-lg border border-white/15 bg-black/20 p-3 text-red-50">
-                  <div className="text-sm font-medium">Доступно восстановление</div>
-                  <p className="mt-1 text-xs text-red-100/90">
+                <div className="acme-note">
+                  <p className="home-inline-title">Доступно восстановление</p>
+                  <p className="home-muted">
                     Найдены существующие пользователи в БД. Можно восстановить setup-состояние без
                     удаления данных.
                   </p>
-                  <div className="mt-3">
+                  <div>
                     <Button
                       type="button"
                       onClick={() => {
                         void runRecovery();
                       }}
                       disabled={busy}
-                      className="h-9"
                     >
                       {busy ? "Восстанавливаем..." : "Восстановить из БД"}
                     </Button>
                   </div>
-                  <div className="mt-2 text-xs text-red-100/80">Endpoint: {recoveryEndpoint}</div>
+                  <p className="home-muted">Endpoint: {recoveryEndpoint}</p>
                 </div>
               ) : null}
             </div>
           ) : null}
 
-          <div className="mt-5 flex items-center justify-between gap-3">
+          <div className="home-card-head setup-nav">
             <Button kind="ghost" onClick={previousStep} disabled={busy || done || step === 0}>
               Назад
             </Button>
@@ -499,12 +477,12 @@ export function SetupWizard() {
                   : "Далее"}
             </Button>
           </div>
-        </div>
+        </section>
 
-        <div className="mt-6 text-xs text-zinc-600">
+        <p className="home-muted">
           В этом режиме значения не сохраняются на диске контейнера: финальная сводка предназначена
           для ручного переноса в Timeweb Variables.
-        </div>
+        </p>
       </div>
     </div>
   );
