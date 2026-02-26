@@ -12,11 +12,26 @@ interface Calendar2LocalState {
 const STORAGE_KEY = "calendar2-local-state";
 
 function generateId(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function nowISO(): string {
   return new Date().toISOString();
+}
+
+function isValidState(data: unknown): data is Calendar2LocalState {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
+  return (
+    Array.isArray(obj.kanbanCards) &&
+    Array.isArray(obj.notes) &&
+    Array.isArray(obj.timeBlocks)
+  );
 }
 
 function loadState(): Calendar2LocalState {
@@ -27,7 +42,10 @@ function loadState(): Calendar2LocalState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw) as Calendar2LocalState;
+      const parsed: unknown = JSON.parse(raw);
+      if (isValidState(parsed)) {
+        return parsed;
+      }
     }
   } catch {
     // Ignore parse errors

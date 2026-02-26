@@ -10,7 +10,6 @@ import {
   getMonthGridDates,
   getWeekDates,
   normalizeToDay,
-  parseEventDateTime,
   shiftAnchorDate,
   sortEventsByDateTime,
   toDateKey,
@@ -109,7 +108,7 @@ export default function Calendar2() {
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>({});
+  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -138,10 +137,6 @@ export default function Calendar2() {
   }, [user, fetchEvents]);
 
   useEffect(() => {
-    setEventPriorities(loadPriorities());
-  }, []);
-
-  useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
     const apply = () => {
       const mobile = media.matches;
@@ -154,6 +149,17 @@ export default function Calendar2() {
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
   }, []);
+
+  const handlePriorityChange = useCallback(
+    (eventId: string, priority: TaskPriority) => {
+      setEventPriorities((prev) => {
+        const next = { ...prev, [eventId]: priority };
+        savePriorities(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedEventId) ?? null,
@@ -183,23 +189,25 @@ export default function Calendar2() {
     [anchorDate, view],
   );
 
-  const handlePriorityChange = useCallback(
-    (eventId: string, priority: TaskPriority) => {
-      setEventPriorities((prev) => {
-        const next = { ...prev, [eventId]: priority };
-        savePriorities(next);
-        return next;
-      });
-    },
-    [],
-  );
+  // Build resolved priorities map: checks event ID first, then falls back to title::date key
+  const resolvedPriorities = useMemo(() => {
+    const resolved: Record<string, TaskPriority> = { ...eventPriorities };
+    for (const event of events) {
+      if (!resolved[event.id]) {
+        const fallbackKey = `${event.title}::${event.date}`;
+        if (eventPriorities[fallbackKey]) {
+          resolved[event.id] = eventPriorities[fallbackKey];
+        }
+      }
+    }
+    return resolved;
+  }, [events, eventPriorities]);
 
   const handleSaveEvent = async (input: CreateEventInput, priority: TaskPriority) => {
     await addEvent(input);
-    // Priority will be applied via the onSave callback; since we don't know the server-assigned ID
-    // beforehand, we store it keyed by a composite of title+date as a fallback
-    const compositeKey = `${input.title}::${input.date}`;
-    handlePriorityChange(compositeKey, priority);
+    // Store priority keyed by title::date as a secondary lookup
+    // until we can associate it with the server-assigned event ID
+    handlePriorityChange(`${input.title}::${input.date}`, priority);
   };
 
   const handleDeleteEvent = async (eventId: string) => {
@@ -255,7 +263,7 @@ export default function Calendar2() {
                 anchorDate={anchorDate}
                 days={monthGridDays}
                 eventsByDate={filteredEventsByDate}
-                eventPriorities={eventPriorities}
+                eventPriorities={resolvedPriorities}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -266,7 +274,7 @@ export default function Calendar2() {
                 weekDates={weekDates}
                 anchorDate={anchorDate}
                 eventsByDate={filteredEventsByDate}
-                eventPriorities={eventPriorities}
+                eventPriorities={resolvedPriorities}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -276,7 +284,7 @@ export default function Calendar2() {
               <Calendar2DayView
                 dayDate={anchorDate}
                 dayEvents={dayEvents}
-                eventPriorities={eventPriorities}
+                eventPriorities={resolvedPriorities}
                 onSelectEvent={setSelectedEventId}
               />
             )}
@@ -400,7 +408,7 @@ export default function Calendar2() {
         <EventModal2
           event={selectedEvent}
           mode="view"
-          eventPriorities={eventPriorities}
+          eventPriorities={resolvedPriorities}
           onClose={() => setSelectedEventId(null)}
           onDelete={handleDeleteEvent}
           onToggleStatus={handleToggleStatus}
@@ -413,7 +421,7 @@ export default function Calendar2() {
         <EventModal2
           mode="add"
           initialDate={addModalDate}
-          eventPriorities={eventPriorities}
+          eventPriorities={resolvedPriorities}
           onClose={() => setShowAddModal(false)}
           onSave={handleSaveEvent}
         />
