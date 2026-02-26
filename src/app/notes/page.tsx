@@ -78,6 +78,7 @@ function formatDateLabel(iso: string): string {
 }
 
 export default function NotesPage() {
+  const [isEmbedded, setIsEmbedded] = useState(false);
   const [notes, setNotes] = useState<LocalNote[]>([]);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -85,6 +86,8 @@ export default function NotesPage() {
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
+      const params = new URLSearchParams(window.location.search);
+      setIsEmbedded(params.get("embedded") === "1");
       setNotes(readNotes());
     });
 
@@ -131,8 +134,8 @@ export default function NotesPage() {
   };
 
   return (
-    <div className="home-page-shell">
-      <div className="home-page-grid">
+    <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
+      <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
         <header className="home-header">
           <div>
             <p className="home-kicker">NetDen</p>
@@ -141,17 +144,19 @@ export default function NotesPage() {
               Локальные заметки в браузере. Всего: {total}. {latestLabel}.
             </p>
           </div>
-          <nav className="home-links">
-            <Link href="/" className="home-link">
-              Консоль
-            </Link>
-            <Link href="/home" className="home-link">
-              Главная
-            </Link>
-            <Link href="/settings" className="home-link">
-              Настройки
-            </Link>
-          </nav>
+          {!isEmbedded ? (
+            <nav className="home-links">
+              <Link href="/" className="home-link">
+                Консоль
+              </Link>
+              <Link href="/home" className="home-link">
+                Главная
+              </Link>
+              <Link href="/settings" className="home-link">
+                Настройки
+              </Link>
+            </nav>
+          ) : null}
         </header>
 
         <section className="home-card">

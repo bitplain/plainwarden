@@ -646,12 +646,23 @@ body {
   font-family: var(--font-geist-mono);
 }
 
+.home-page-shell-embedded {
+  min-height: 100%;
+  background: #000;
+}
+
 .home-page-grid {
   width: min(1160px, 100% - 1.2rem);
   margin: 0 auto;
   padding: 1rem 0 1.6rem;
   display: grid;
   gap: 0.7rem;
+}
+
+.home-page-grid-embedded {
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.62rem 1rem;
 }
 
 .home-header {

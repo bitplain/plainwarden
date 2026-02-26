@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import TlsAcmeSettings from "@/components/settings/TlsAcmeSettings";
 
 const CLI_SCALE_KEY = "netden:cli-scale";
+const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
 const MIN = 0.8;
 const MAX = 1.2;
 const STEP = 0.01;
@@ -49,6 +50,7 @@ function formatMoney(value: number): string {
 }
 
 export default function SettingsPage() {
+  const [isEmbedded, setIsEmbedded] = useState(false);
   const [scale, setScale] = useState(() => {
     if (typeof window === "undefined") {
       return DEFAULT_SCALE;
@@ -84,15 +86,38 @@ export default function SettingsPage() {
 
   const hasToken = token.trim().length > 0;
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setIsEmbedded(params.get("embedded") === "1");
+  }, []);
+
   const saveScale = (nextScale: number) => {
     const clamped = clampScale(nextScale);
     setScale(clamped);
     window.localStorage.setItem(CLI_SCALE_KEY, String(clamped));
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: CLI_SETTINGS_MESSAGE,
+          scale: clamped,
+        },
+        window.location.origin,
+      );
+    }
   };
 
   const resetScale = () => {
     setScale(DEFAULT_SCALE);
     window.localStorage.setItem(CLI_SCALE_KEY, String(DEFAULT_SCALE));
+    if (window.parent && window.parent !== window) {
+      window.parent.postMessage(
+        {
+          type: CLI_SETTINGS_MESSAGE,
+          scale: DEFAULT_SCALE,
+        },
+        window.location.origin,
+      );
+    }
   };
 
   const onLoadBilling = async (event: FormEvent<HTMLFormElement>) => {
@@ -182,25 +207,27 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="home-page-shell">
-      <div className="home-page-grid">
+    <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
+      <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
         <header className="home-header">
           <div>
             <p className="home-kicker">NetDen</p>
             <h1 className="home-title">Настройки</h1>
             <p className="home-subtitle">CLI масштаб, GitHub Billing и управление HTTPS сертификатом.</p>
           </div>
-          <nav className="home-links">
-            <Link href="/" className="home-link">
-              Консоль
-            </Link>
-            <Link href="/home" className="home-link">
-              Главная
-            </Link>
-            <Link href="/notes" className="home-link">
-              Заметки
-            </Link>
-          </nav>
+          {!isEmbedded ? (
+            <nav className="home-links">
+              <Link href="/" className="home-link">
+                Консоль
+              </Link>
+              <Link href="/home" className="home-link">
+                Главная
+              </Link>
+              <Link href="/notes" className="home-link">
+                Заметки
+              </Link>
+            </nav>
+          ) : null}
         </header>
 
         <section className="home-card">

@@ -34,12 +34,13 @@ const CLI_SCALE_MIN = 0.8;
 const CLI_SCALE_MAX = 1.2;
 const CLI_SCALE_DEFAULT = 1;
 const PROMPT_PLACEHOLDER = "Ask anything";
+const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
 type TerminalPanel = "none" | "calendar" | "home" | "notes" | "settings";
 
 const PANEL_ROUTE_MAP: Record<Exclude<TerminalPanel, "none" | "calendar">, string> = {
-  home: "/home",
-  notes: "/notes",
-  settings: "/settings",
+  home: "/home?embedded=1",
+  notes: "/notes?embedded=1",
+  settings: "/settings?embedded=1",
 };
 
 function nextMode(current: TerminalMode): TerminalMode {
@@ -158,6 +159,52 @@ export default function Terminal() {
 
   useEffect(() => {
     setCliScale(readCliScaleFromStorage());
+  }, []);
+
+  useEffect(() => {
+    const syncScale = () => {
+      setCliScale(readCliScaleFromStorage());
+    };
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === null || event.key === CLI_SCALE_KEY) {
+        syncScale();
+      }
+    };
+
+    const onMessage = (event: MessageEvent<unknown>) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (typeof event.data !== "object" || event.data === null) {
+        return;
+      }
+
+      const payload = event.data as {
+        type?: string;
+        scale?: number;
+      };
+
+      if (payload.type !== CLI_SETTINGS_MESSAGE) {
+        return;
+      }
+
+      if (typeof payload.scale === "number") {
+        setCliScale(clampCliScale(payload.scale));
+        return;
+      }
+
+      syncScale();
+    };
+
+    window.addEventListener("storage", onStorage);
+    window.addEventListener("message", onMessage);
+
+    return () => {
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener("message", onMessage);
+    };
   }, []);
 
   useEffect(() => {
