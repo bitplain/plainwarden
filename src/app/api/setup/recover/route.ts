@@ -3,22 +3,12 @@ import { HttpError, readJsonBody } from "@/lib/server/validators";
 import { writeInstallState } from "@/modules/setup/install-state";
 import {
   buildSetupSummary,
+  handleSetupError,
   isDatabaseConfigured,
   provisionDatabase,
   validateSetupRecoverInput,
 } from "@/lib/server/setup";
-import { SetupErrorResponse, SetupRecoverResponse } from "@/lib/types";
-
-function handleSetupError(error: unknown) {
-  if (error instanceof HttpError) {
-    const body: SetupErrorResponse = { error: error.message };
-    return NextResponse.json(body, { status: error.status });
-  }
-
-  console.error("Unhandled setup recovery error:", error);
-  const body: SetupErrorResponse = { error: "Internal server error" };
-  return NextResponse.json(body, { status: 500 });
-}
+import { SetupRecoverResponse } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {

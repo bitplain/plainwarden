@@ -25,6 +25,9 @@ function getSessionSecret(): string {
   if (!secret) {
     throw new Error("NETDEN_SESSION_SECRET is required");
   }
+  if (secret.length < 32) {
+    throw new Error("NETDEN_SESSION_SECRET must be at least 32 characters");
+  }
   return secret;
 }
 

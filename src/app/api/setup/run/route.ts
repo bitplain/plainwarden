@@ -4,22 +4,12 @@ import { writeInstallState } from "@/modules/setup/install-state";
 import {
   buildSetupSummary,
   createInitialUserInDatabase,
+  handleSetupError,
   isDatabaseConfigured,
   provisionDatabase,
   validateSetupRunInput,
 } from "@/lib/server/setup";
-import { SetupErrorResponse, SetupRunResponse } from "@/lib/types";
-
-function handleSetupError(error: unknown) {
-  if (error instanceof HttpError) {
-    const body: SetupErrorResponse = { error: error.message };
-    return NextResponse.json(body, { status: error.status });
-  }
-
-  console.error("Unhandled setup error:", error);
-  const body: SetupErrorResponse = { error: "Internal server error" };
-  return NextResponse.json(body, { status: 500 });
-}
+import { SetupRunResponse } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
@@ -33,12 +23,14 @@ export async function POST(request: Request) {
     const provisioned = await provisionDatabase(input, "setup");
 
     if (provisioned.usersCount > 0) {
-      const conflict: SetupErrorResponse = {
-        error: "Users already exist in the selected database",
-        needsRecovery: true,
-        recoveryEndpoint: "/api/setup/recover",
-      };
-      return NextResponse.json(conflict, { status: 409 });
+      return NextResponse.json(
+        {
+          error: "Users already exist in the selected database",
+          needsRecovery: true,
+          recoveryEndpoint: "/api/setup/recover",
+        },
+        { status: 409 },
+      );
     }
 
     const initialUser = await createInitialUserInDatabase(

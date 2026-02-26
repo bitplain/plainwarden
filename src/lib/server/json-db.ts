@@ -50,19 +50,6 @@ function toPublicEvent(event: PrismaEvent): CalendarEvent {
   };
 }
 
-function sortCalendarEvents(events: CalendarEvent[]): CalendarEvent[] {
-  return [...events].sort((a, b) => {
-    const dateDiff = a.date.localeCompare(b.date);
-    if (dateDiff !== 0) {
-      return dateDiff;
-    }
-
-    const timeA = a.time ?? "99:99";
-    const timeB = b.time ?? "99:99";
-    return timeA.localeCompare(timeB);
-  });
-}
-
 export async function hasUsers(): Promise<boolean> {
   const count = await prisma.user.count();
   return count > 0;
@@ -149,7 +136,7 @@ export async function listEventsByUser(userId: string): Promise<CalendarEvent[]>
     orderBy: [{ date: "asc" }, { time: "asc" }],
   });
 
-  return sortCalendarEvents(events.map(toPublicEvent));
+  return events.map(toPublicEvent);
 }
 
 export async function createEventForUser(
@@ -176,7 +163,7 @@ export async function updateEventForUser(
   eventId: string,
   input: Partial<CreateEventInput>,
 ): Promise<CalendarEvent | null> {
-  const updateData: Prisma.EventUpdateManyMutationInput = {};
+  const updateData: Prisma.EventUpdateInput = {};
 
   if (input.title !== undefined) {
     updateData.title = input.title;
@@ -197,23 +184,21 @@ export async function updateEventForUser(
     updateData.status = input.status;
   }
 
-  const updated = await prisma.event.updateMany({
-    where: {
-      id: eventId,
-      userId,
-    },
-    data: updateData,
-  });
-
-  if (updated.count === 0) {
-    return null;
+  try {
+    const event = await prisma.event.update({
+      where: { id: eventId, userId },
+      data: updateData,
+    });
+    return toPublicEvent(event);
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return null;
+    }
+    throw error;
   }
-
-  const event = await prisma.event.findUnique({
-    where: { id: eventId },
-  });
-
-  return event ? toPublicEvent(event) : null;
 }
 
 export async function deleteEventForUser(userId: string, eventId: string): Promise<boolean> {

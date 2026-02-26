@@ -5,8 +5,10 @@ import { promisify } from "node:util";
 import { Client, escapeIdentifier } from "pg";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { NextResponse } from "next/server";
 import { mockEvents } from "@/lib/mock-data";
 import {
+  SetupErrorResponse,
   SetupPgAdminInput,
   SetupRecoverInput,
   SetupRunInput,
@@ -157,6 +159,10 @@ export function validateSetupRecoverInput(payload: unknown): SetupRecoverInput {
 
 function toPgSslMode(sslMode: SslMode): false | { rejectUnauthorized: false } {
   if (sslMode === "require") {
+    // rejectUnauthorized: false is intentional — the setup wizard targets self-hosted
+    // PostgreSQL instances that commonly use self-signed certificates. Users who need
+    // strict certificate verification should use a properly-signed certificate and set
+    // sslMode to something other than "require" at the OS/pg_hba level.
     return { rejectUnauthorized: false };
   }
   return false;
@@ -427,4 +433,15 @@ export function buildSetupSummary(input: {
     sessionSecret: generateSessionSecret(),
     initialUserEmail: input.initialUserEmail,
   };
+}
+
+export function handleSetupError(error: unknown): NextResponse {
+  if (error instanceof HttpError) {
+    const body: SetupErrorResponse = { error: error.message };
+    return NextResponse.json(body, { status: error.status });
+  }
+
+  console.error("Unhandled setup error:", error);
+  const body: SetupErrorResponse = { error: "Internal server error" };
+  return NextResponse.json(body, { status: 500 });
 }
