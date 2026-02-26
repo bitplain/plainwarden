@@ -860,6 +860,12 @@ body {
   background: rgba(32, 47, 86, 0.9);
 }
 
+.notes-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+  pointer-events: none;
+}
+
 .notes-error {
   margin: 0;
   color: #ffbbbb;
@@ -961,6 +967,31 @@ body {
 
 .settings-reset {
   width: fit-content;
+}
+
+.settings-hint {
+  margin-left: 0.5rem;
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+.setup-list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  color: #939cb8;
+  font-size: 0.82rem;
+}
+
+.setup-list-disc {
+  list-style: disc;
+}
+
+.setup-list-decimal {
+  list-style: decimal;
+}
+
+.setup-nav {
+  margin-top: 0.5rem;
 }
 
 .acme-badge {

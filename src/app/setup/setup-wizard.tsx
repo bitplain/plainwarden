@@ -24,7 +24,7 @@ function Field({
     <label className="settings-field">
       <span>
         {label}
-        {hint ? <span style={{ marginLeft: "0.5rem", opacity: 0.5, fontWeight: 400 }}>{hint}</span> : null}
+        {hint ? <span className="settings-hint">{hint}</span> : null}
       </span>
       {children}
     </label>
@@ -45,13 +45,7 @@ function Button({
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "ghost" }) {
   const cls = kind === "primary" ? "notes-submit" : "notes-submit settings-reset";
 
-  return (
-    <button
-      {...props}
-      className={cls}
-      style={{ opacity: props.disabled ? 0.5 : undefined, cursor: props.disabled ? "default" : undefined }}
-    />
-  );
+  return <button {...props} className={cls} />;
 }
 
 function StepPill({ active, children }: { active: boolean; children: string }) {
@@ -297,7 +291,7 @@ export function SetupWizard() {
           <div className="home-card-head">
             <h2 className="home-card-title">Шаги</h2>
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+          <div className="home-links">
             <StepPill active={step === 0}>Введение</StepPill>
             <StepPill active={step === 1}>PostgreSQL</StepPill>
             <StepPill active={step === 2}>Провижининг</StepPill>
@@ -312,7 +306,7 @@ export function SetupWizard() {
             <div className="settings-grid">
               <div className="acme-note">
                 <p className="home-inline-title">Что будет сделано</p>
-                <ul className="home-muted" style={{ marginTop: "0.4rem", paddingLeft: "1.2rem", listStyle: "disc" }}>
+                <ul className="setup-list setup-list-disc">
                   <li>Создание/обновление DB-роли приложения.</li>
                   <li>Создание базы данных и применение миграций Prisma.</li>
                   <li>Создание первого пользователя с начальными событиями.</li>
@@ -426,7 +420,7 @@ export function SetupWizard() {
 
               <div className="acme-note">
                 <p className="home-inline-title">Обязательные шаги после setup</p>
-                <ol className="home-muted" style={{ marginTop: "0.4rem", paddingLeft: "1.2rem", listStyle: "decimal" }}>
+                <ol className="setup-list setup-list-decimal">
                   <li>Откройте Timeweb Apps → Variables.</li>
                   <li>Вставьте значения из сводки: DATABASE_URL и NETDEN_SESSION_SECRET.</li>
                   <li>Сделайте redeploy приложения.</li>
@@ -443,16 +437,16 @@ export function SetupWizard() {
           ) : null}
 
           {error ? (
-            <div className="notes-error" style={{ marginTop: "0.5rem" }}>
+            <div className="notes-error">
               <p>{error}</p>
               {needsRecovery ? (
-                <div className="acme-note" style={{ marginTop: "0.5rem" }}>
+                <div className="acme-note">
                   <p className="home-inline-title">Доступно восстановление</p>
-                  <p className="home-muted" style={{ marginTop: "0.3rem" }}>
+                  <p className="home-muted">
                     Найдены существующие пользователи в БД. Можно восстановить setup-состояние без
                     удаления данных.
                   </p>
-                  <div style={{ marginTop: "0.5rem" }}>
+                  <div>
                     <Button
                       type="button"
                       onClick={() => {
@@ -463,13 +457,13 @@ export function SetupWizard() {
                       {busy ? "Восстанавливаем..." : "Восстановить из БД"}
                     </Button>
                   </div>
-                  <p className="home-muted" style={{ marginTop: "0.3rem" }}>Endpoint: {recoveryEndpoint}</p>
+                  <p className="home-muted">Endpoint: {recoveryEndpoint}</p>
                 </div>
               ) : null}
             </div>
           ) : null}
 
-          <div className="home-card-head" style={{ marginTop: "0.5rem" }}>
+          <div className="home-card-head setup-nav">
             <Button kind="ghost" onClick={previousStep} disabled={busy || done || step === 0}>
               Назад
             </Button>
