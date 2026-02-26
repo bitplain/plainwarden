@@ -8,6 +8,7 @@ export const terminalModule: NetdenModule = {
     "/setup",
     "/login",
     "/calendar",
+    "/calendar2",
     "/home",
     "/notes",
     "/settings",
