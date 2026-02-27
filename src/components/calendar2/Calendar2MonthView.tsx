@@ -13,6 +13,7 @@ interface Calendar2MonthViewProps {
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
   onQuickAdd: (date: Date) => void;
+  onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
 }
 
 const MONTH_DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
@@ -36,6 +37,7 @@ export default function Calendar2MonthView({
   onSelectDate,
   onSelectEvent,
   onQuickAdd,
+  onMoveEvent,
 }: Calendar2MonthViewProps) {
   const today = new Date();
 
@@ -66,6 +68,16 @@ export default function Calendar2MonthView({
             <div
               key={dateKey}
               onClick={() => onQuickAdd(day)}
+              onDragOver={(event) => {
+                event.preventDefault();
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                const draggedEventId = event.dataTransfer.getData("text/plain");
+                if (draggedEventId) {
+                  void onMoveEvent(draggedEventId, { date: dateKey });
+                }
+              }}
               className={`group cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left transition-colors last:border-r-0 ${
                 isCurrentDay
                   ? "bg-[var(--cal2-accent-soft)]"
@@ -101,6 +113,12 @@ export default function Calendar2MonthView({
                   <button
                     key={event.id}
                     type="button"
+                    draggable
+                    onDragStart={(dragEvent) => {
+                      dragEvent.stopPropagation();
+                      dragEvent.dataTransfer.effectAllowed = "move";
+                      dragEvent.dataTransfer.setData("text/plain", event.id);
+                    }}
                     onClick={(e) => {
                       e.stopPropagation();
                       onSelectEvent(event.id);

@@ -14,6 +14,7 @@ interface Calendar2WeekViewProps {
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
   onQuickAdd: (date: Date) => void;
+  onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
 }
 
 function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPriority>) {
@@ -35,6 +36,7 @@ export default function Calendar2WeekView({
   onSelectDate,
   onSelectEvent,
   onQuickAdd,
+  onMoveEvent,
 }: Calendar2WeekViewProps) {
   const today = new Date();
 
@@ -51,6 +53,16 @@ export default function Calendar2WeekView({
             return (
               <section
                 key={dateKey}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const draggedEventId = event.dataTransfer.getData("text/plain");
+                  if (draggedEventId) {
+                    void onMoveEvent(draggedEventId, { date: dateKey });
+                  }
+                }}
                 className="flex min-h-[520px] flex-col border-r border-[var(--cal2-border)] last:border-r-0"
               >
                 <button
@@ -94,6 +106,11 @@ export default function Calendar2WeekView({
                     <button
                       key={event.id}
                       type="button"
+                      draggable
+                      onDragStart={(dragEvent) => {
+                        dragEvent.dataTransfer.effectAllowed = "move";
+                        dragEvent.dataTransfer.setData("text/plain", event.id);
+                      }}
                       onClick={() => onSelectEvent(event.id)}
                       className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
                     >

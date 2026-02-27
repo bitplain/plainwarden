@@ -33,6 +33,7 @@ import EventModal2 from "./EventModal2";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
 type CalendarFilter = "all" | "event" | "task" | "pending" | "done";
+type EventMovePayload = { date: string; time?: string };
 
 function matchesFilter(event: CalendarEvent, filter: CalendarFilter): boolean {
   if (filter === "all") {
@@ -220,6 +221,45 @@ export default function Calendar2() {
     await updateEvent({ id: eventId, status: nextStatus });
   };
 
+  const handleUpdateEvent = async (
+    eventId: string,
+    input: CreateEventInput,
+    priority: TaskPriority,
+  ) => {
+    await updateEvent({
+      id: eventId,
+      title: input.title,
+      type: input.type,
+      date: input.date,
+      time: input.time,
+      description: input.description,
+    });
+    handlePriorityChange(eventId, priority);
+  };
+
+  const handleMoveEvent = async (eventId: string, payload: EventMovePayload) => {
+    const sourceEvent = events.find((event) => event.id === eventId);
+    if (!sourceEvent) {
+      return;
+    }
+
+    const nextDate = payload.date;
+    const nextTime = payload.time === undefined ? sourceEvent.time : payload.time;
+
+    if (
+      sourceEvent.date === nextDate &&
+      (sourceEvent.time ?? undefined) === (nextTime ?? undefined)
+    ) {
+      return;
+    }
+
+    await updateEvent({
+      id: eventId,
+      date: nextDate,
+      time: nextTime,
+    });
+  };
+
   const handleLogout = async () => {
     await logout();
     window.location.href = "/login";
@@ -268,6 +308,7 @@ export default function Calendar2() {
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
+                onMoveEvent={handleMoveEvent}
               />
             )}
             {view === "week" && (
@@ -279,6 +320,7 @@ export default function Calendar2() {
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
+                onMoveEvent={handleMoveEvent}
               />
             )}
             {view === "day" && (
@@ -287,6 +329,7 @@ export default function Calendar2() {
                 dayEvents={dayEvents}
                 eventPriorities={resolvedPriorities}
                 onSelectEvent={setSelectedEventId}
+                onMoveEvent={handleMoveEvent}
               />
             )}
           </div>
@@ -356,7 +399,7 @@ export default function Calendar2() {
       />
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        <div className="mx-auto grid h-full w-full max-w-[1480px] grid-cols-1 gap-0 px-2 pb-2 pt-2 sm:px-4 sm:pb-4 sm:pt-3 lg:grid-cols-[280px_1fr] xl:px-8">
+        <div className="grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 lg:grid-cols-[280px_1fr]">
           {/* Sidebar */}
           <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0 lg:block`}>
             <Calendar2Sidebar
@@ -417,6 +460,7 @@ export default function Calendar2() {
           onDelete={handleDeleteEvent}
           onToggleStatus={handleToggleStatus}
           onPriorityChange={handlePriorityChange}
+          onUpdate={handleUpdateEvent}
         />
       )}
 

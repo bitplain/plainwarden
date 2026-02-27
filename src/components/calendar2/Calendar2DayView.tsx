@@ -15,6 +15,7 @@ interface Calendar2DayViewProps {
   dayEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
   onSelectEvent: (eventId: string) => void;
+  onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
 }
 
 function getEventHour(event: CalendarEvent): number | null {
@@ -42,6 +43,7 @@ export default function Calendar2DayView({
   dayEvents,
   eventPriorities,
   onSelectEvent,
+  onMoveEvent,
 }: Calendar2DayViewProps) {
   const slots = getDaySlots(dayDate);
   const slottedEvents = new Map<number, CalendarEvent[]>();
@@ -60,6 +62,8 @@ export default function Calendar2DayView({
       slottedEvents.set(hour, list);
     }
   }
+
+  const dayDateKey = format(dayDate, "yyyy-MM-dd");
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
@@ -86,6 +90,11 @@ export default function Calendar2DayView({
                 <button
                   key={event.id}
                   type="button"
+                  draggable
+                  onDragStart={(dragEvent) => {
+                    dragEvent.dataTransfer.effectAllowed = "move";
+                    dragEvent.dataTransfer.setData("text/plain", event.id);
+                  }}
                   onClick={() => onSelectEvent(event.id)}
                   className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
                 >
@@ -106,6 +115,11 @@ export default function Calendar2DayView({
                 <button
                   key={event.id}
                   type="button"
+                  draggable
+                  onDragStart={(dragEvent) => {
+                    dragEvent.dataTransfer.effectAllowed = "move";
+                    dragEvent.dataTransfer.setData("text/plain", event.id);
+                  }}
                   onClick={() => onSelectEvent(event.id)}
                   className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
                 >
@@ -125,6 +139,19 @@ export default function Calendar2DayView({
             return (
               <div
                 key={slot.toISOString()}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const draggedEventId = event.dataTransfer.getData("text/plain");
+                  if (draggedEventId) {
+                    void onMoveEvent(draggedEventId, {
+                      date: dayDateKey,
+                      time: format(slot, "HH:mm"),
+                    });
+                  }
+                }}
                 className="grid grid-cols-[60px_1fr] items-start gap-3 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 py-2 sm:px-3"
               >
                 <div className="pt-1 text-[11px] font-medium text-[var(--cal2-text-secondary)]">
@@ -141,6 +168,11 @@ export default function Calendar2DayView({
                     <button
                       key={event.id}
                       type="button"
+                      draggable
+                      onDragStart={(dragEvent) => {
+                        dragEvent.dataTransfer.effectAllowed = "move";
+                        dragEvent.dataTransfer.setData("text/plain", event.id);
+                      }}
                       onClick={() => onSelectEvent(event.id)}
                       className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
                     >
