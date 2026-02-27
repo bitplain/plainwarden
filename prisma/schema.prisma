@@ -24,29 +24,48 @@ model User {
   passwordHash String
   createdAt    DateTime @default(now())
   events       Event[]
+  eventSeries  EventSeries[]
 }
 
 model Event {
-  id                  String      @id @default(uuid())
+  id                  String       @id @default(uuid())
   userId              String
-  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   title               String
   description         String
   date                String
   time                String?
   type                EventType
-  status              EventStatus @default(pending)
+  status              EventStatus  @default(pending)
   recurrenceSeriesId  String?
-  recurrenceFrequency String?
-  recurrenceInterval  Int?
-  recurrenceCount     Int?
-  recurrenceUntil     String?
-  recurrenceException Boolean     @default(false)
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  recurrenceSeries    EventSeries? @relation(fields: [recurrenceSeriesId], references: [id], onDelete: SetNull)
+  recurrenceException Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 
   @@index([userId, date, time])
   @@index([userId, recurrenceSeriesId, date])
+}
+
+model EventSeries {
+  id                  String      @id @default(uuid())
+  userId              String
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title               String
+  description         String
+  time                String?
+  type                EventType
+  status              EventStatus @default(pending)
+  startDate           String
+  recurrenceFrequency String
+  recurrenceInterval  Int
+  recurrenceCount     Int?
+  recurrenceUntil     String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  events              Event[]
+
+  @@index([userId, startDate])
 }
 
 model IntegrationConfig {

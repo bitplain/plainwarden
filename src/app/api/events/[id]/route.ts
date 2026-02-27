@@ -54,6 +54,12 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
     if (scope !== "this" && updatePayload.date !== undefined) {
       throw new HttpError(400, "date can only be changed with recurrenceScope='this'");
     }
+    if (scope === "this" && updatePayload.recurrence !== undefined) {
+      throw new HttpError(
+        400,
+        "recurrence can only be changed with recurrenceScope='all' or 'this_and_following'",
+      );
+    }
 
     const updated = await updateEventForUser(user.id, id, updatePayload, {
       scope,

@@ -176,6 +176,52 @@ describe("validateUpdateEventInput", () => {
     expect(result.recurrenceScope).toBe("all");
   });
 
+  it("accepts recurrence payload for series update", () => {
+    const result = validateUpdateEventInput({
+      title: "Updated",
+      recurrenceScope: "all",
+      recurrence: {
+        frequency: "weekly",
+        interval: 2,
+        count: 8,
+      },
+    });
+    expect(result.recurrenceScope).toBe("all");
+    expect(result.recurrence).toEqual({
+      frequency: "weekly",
+      interval: 2,
+      count: 8,
+      until: undefined,
+    });
+  });
+
+  it("rejects invalid recurrence payload in update", () => {
+    expect(() =>
+      validateUpdateEventInput({
+        title: "Updated",
+        recurrenceScope: "all",
+        recurrence: {
+          frequency: "hourly",
+          interval: 1,
+          count: 4,
+        },
+      }),
+    ).toThrow();
+  });
+
+  it("rejects recurrence update without recurrence scope", () => {
+    expect(() =>
+      validateUpdateEventInput({
+        title: "Updated",
+        recurrence: {
+          frequency: "weekly",
+          interval: 1,
+          count: 4,
+        },
+      }),
+    ).toThrow();
+  });
+
   it("rejects recurrence scope without mutable fields", () => {
     expect(() =>
       validateUpdateEventInput({

@@ -58,6 +58,7 @@ export interface UpdateEventInput {
   time?: string;
   description?: string;
   status?: EventStatus;
+  recurrence?: EventRecurrence;
   recurrenceScope?: RecurrenceScope;
 }
 
