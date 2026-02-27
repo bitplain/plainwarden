@@ -44,28 +44,28 @@ function renderMarkdown(text: string): string {
     .replace(/>/g, "&gt;");
 
   // Headings
-  html = html.replace(/^### (.+)$/gm, '<h3 class="text-sm font-bold text-zinc-200 mt-2 mb-1">$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2 class="text-base font-bold text-zinc-200 mt-2 mb-1">$1</h2>');
-  html = html.replace(/^# (.+)$/gm, '<h1 class="text-lg font-bold text-zinc-100 mt-2 mb-1">$1</h1>');
+  html = html.replace(/^### (.+)$/gm, '<h3 class="text-[12px] font-bold text-[var(--cal2-text-primary)] mt-2 mb-1">$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2 class="text-[13px] font-bold text-[var(--cal2-text-primary)] mt-2 mb-1">$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1 class="text-[14px] font-bold text-[var(--cal2-text-primary)] mt-2 mb-1">$1</h1>');
 
   // Bold and italic
   html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-zinc-200">$1</strong>');
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong class="text-[var(--cal2-text-primary)]">$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
 
   // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code class="rounded bg-white/[0.08] px-1 py-0.5 text-indigo-300 text-xs">$1</code>');
+  html = html.replace(/`([^`]+)`/g, '<code class="rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1 py-0.5 text-[var(--cal2-text-primary)] text-[10px]">$1</code>');
 
   // Unordered lists
   html = html.replace(
     /^[*-] (.+)$/gm,
-    '<li class="ml-4 list-disc text-zinc-300">$1</li>',
+    '<li class="ml-4 list-disc text-[var(--cal2-text-primary)]">$1</li>',
   );
 
   // Links — only allow http/https protocols to prevent XSS
   html = html.replace(
     /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline hover:text-indigo-300">$1</a>',
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#cfd4ff] underline hover:text-[var(--cal2-text-primary)]">$1</a>',
   );
 
   // Line breaks
@@ -140,16 +140,16 @@ export default function NotesPanel({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#12122a]/40">
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#16162a]/40 px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+      <div className="flex items-center justify-between border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
         <div>
-          <p className="text-sm font-semibold text-zinc-100">Заметки</p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Заметки</p>
+          <p className="text-[11px] text-[var(--cal2-text-secondary)]">
             {filteredNotes.length} {filteredNotes.length === 1 ? "заметка" : "заметок"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-lg border border-white/[0.06] bg-black/30 p-0.5">
+          <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-0.5">
             {(
               [
                 { id: "all", label: "Все" },
@@ -161,10 +161,10 @@ export default function NotesPanel({
                 key={opt.id}
                 type="button"
                 onClick={() => setFilter(opt.id)}
-                className={`rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+                className={`rounded-[4px] px-2 py-1 text-[11px] font-medium transition-colors ${
                   filter === opt.id
-                    ? "bg-indigo-500/20 text-indigo-200"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                    : "text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
                 }`}
               >
                 {opt.label}
@@ -174,7 +174,7 @@ export default function NotesPanel({
           <button
             type="button"
             onClick={() => setShowForm(!showForm)}
-            className="rounded-lg border border-indigo-400/30 bg-indigo-500/15 px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-indigo-500/25"
+            className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
           >
             {showForm ? "Отмена" : "+ Заметка"}
           </button>
@@ -184,14 +184,14 @@ export default function NotesPanel({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Add note form */}
         {showForm && (
-          <div className="border-b border-white/[0.06] bg-[#16162a]/30 p-4">
+          <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-4">
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Заголовок"
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-indigo-400/30"
+                className="h-9 w-full rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
               />
 
               <textarea
@@ -199,25 +199,25 @@ export default function NotesPanel({
                 value={form.content}
                 onChange={(e) => setForm((prev) => ({ ...prev, content: e.target.value }))}
                 rows={6}
-                className="w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-indigo-400/30"
+                className="w-full rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
               />
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs text-zinc-500">Привязать к дате</span>
+                  <span className="text-[11px] text-[var(--cal2-text-secondary)]">Привязать к дате</span>
                   <input
                     type="date"
                     value={form.linkedDate}
                     onChange={(e) =>
                       setForm((prev) => ({ ...prev, linkedDate: e.target.value }))
                     }
-                    className="h-9 rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                    className="h-9 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                   />
                 </label>
 
                 {events.length > 0 && (
                   <label className="grid gap-1">
-                    <span className="text-xs text-zinc-500">Привязать к событию</span>
+                    <span className="text-[11px] text-[var(--cal2-text-secondary)]">Привязать к событию</span>
                     <select
                       value={form.linkedEventId}
                       onChange={(e) =>
@@ -226,7 +226,7 @@ export default function NotesPanel({
                           linkedEventId: e.target.value,
                         }))
                       }
-                      className="h-9 rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                      className="h-9 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                     >
                       <option value="">Без привязки</option>
                       {events.map((event) => (
@@ -239,12 +239,12 @@ export default function NotesPanel({
                 )}
               </div>
 
-              {formError && <p className="text-xs text-red-300">{formError}</p>}
+              {formError && <p className="text-[11px] text-[#d9ddff]">{formError}</p>}
 
               <button
                 type="button"
                 onClick={handleAddNote}
-                className="w-full rounded-lg border border-indigo-400/30 bg-indigo-500/20 py-2 text-sm font-medium text-indigo-200 transition-colors hover:bg-indigo-500/30"
+                className="w-full rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
               >
                 Сохранить заметку
               </button>
@@ -255,8 +255,8 @@ export default function NotesPanel({
         {/* Notes list */}
         <div className="space-y-2 p-3 sm:p-4">
           {filteredNotes.length === 0 && (
-            <div className="rounded-xl border border-dashed border-white/[0.08] p-6 text-center">
-              <p className="text-sm text-zinc-600">
+            <div className="rounded-[8px] border border-dashed border-[var(--cal2-border)] p-6 text-center">
+              <p className="text-[12px] text-[var(--cal2-text-secondary)]">
                 {filter === "date"
                   ? `Нет заметок на ${format(anchorDate, "d MMMM", { locale: ru })}`
                   : filter === "event"
@@ -274,23 +274,23 @@ export default function NotesPanel({
             return (
               <div
                 key={note.id}
-                className="rounded-xl border border-white/[0.06] bg-[#16162a]/40 p-3 transition-colors hover:border-white/[0.1]"
+                className="rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-3 transition-colors hover:bg-[rgba(255,255,255,0.04)]"
               >
                 <div className="mb-2 flex items-start justify-between gap-2">
                   <div>
-                    <h3 className="text-sm font-semibold text-zinc-200">{note.title}</h3>
+                    <h3 className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">{note.title}</h3>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
                       {note.linkedDate && (
-                        <span className="rounded-md bg-indigo-500/10 px-1.5 py-0.5 text-[10px] text-indigo-300">
+                        <span className="rounded-[4px] border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-primary)]">
                           📅 {note.linkedDate}
                         </span>
                       )}
                       {linkedTitle && (
-                        <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-[10px] text-violet-300">
+                        <span className="rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-primary)]">
                           🔗 {linkedTitle}
                         </span>
                       )}
-                      <span className="text-[10px] text-zinc-600">
+                      <span className="text-[10px] text-[var(--cal2-text-secondary)]">
                         {format(new Date(note.updatedAt), "d MMM HH:mm", { locale: ru })}
                       </span>
                     </div>
@@ -306,7 +306,7 @@ export default function NotesPanel({
                           setPreviewNoteId(note.id);
                         }
                       }}
-                      className="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+                      className="rounded-[4px] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--cal2-text-primary)]"
                     >
                       {isPreviewing ? "Скрыть" : "Просмотр"}
                     </button>
@@ -320,14 +320,14 @@ export default function NotesPanel({
                           setEditContent(note.content);
                         }
                       }}
-                      className="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+                      className="rounded-[4px] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.06)] hover:text-[var(--cal2-text-primary)]"
                     >
                       {isEditing ? "Отмена" : "✎"}
                     </button>
                     <button
                       type="button"
                       onClick={() => onDeleteNote(note.id)}
-                      className="rounded-md px-1.5 py-0.5 text-[10px] text-zinc-500 transition-colors hover:text-red-300"
+                      className="rounded-[4px] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                     >
                       ✕
                     </button>
@@ -340,23 +340,23 @@ export default function NotesPanel({
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       rows={6}
-                      className="w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                      className="w-full rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                     />
                     <button
                       type="button"
                       onClick={() => handleSaveEdit(note.id)}
-                      className="rounded-lg border border-indigo-400/30 bg-indigo-500/20 px-4 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-indigo-500/30"
+                      className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-4 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
                     >
                       Сохранить
                     </button>
                   </div>
                 ) : isPreviewing ? (
                   <div
-                    className="prose-sm mt-2 text-sm text-zinc-400"
+                    className="prose-sm mt-2 text-[12px] text-[var(--cal2-text-secondary)]"
                     dangerouslySetInnerHTML={{ __html: renderMarkdown(note.content) }}
                   />
                 ) : (
-                  <p className="mt-1 line-clamp-3 text-sm text-zinc-500 whitespace-pre-wrap">
+                  <p className="mt-1 line-clamp-3 whitespace-pre-wrap text-[12px] text-[var(--cal2-text-secondary)]">
                     {note.content}
                   </p>
                 )}

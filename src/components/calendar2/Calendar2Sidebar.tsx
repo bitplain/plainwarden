@@ -23,13 +23,13 @@ interface Calendar2SidebarProps {
 const MINI_DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 const TONE_CLASSES: Record<string, string> = {
-  neutral: "bg-zinc-500/15 text-zinc-200 border-zinc-400/20",
-  sky: "bg-sky-500/15 text-sky-200 border-sky-400/20",
-  violet: "bg-violet-500/15 text-violet-200 border-violet-400/20",
-  amber: "bg-amber-500/15 text-amber-200 border-amber-400/20",
-  emerald: "bg-emerald-500/15 text-emerald-200 border-emerald-400/20",
-  rose: "bg-rose-500/15 text-rose-200 border-rose-400/20",
-  indigo: "bg-indigo-500/15 text-indigo-200 border-indigo-400/20",
+  neutral: "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)] border-[var(--cal2-border)]",
+  sky: "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)] border-[var(--cal2-border)]",
+  violet: "bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)] border-[rgba(94,106,210,0.42)]",
+  amber: "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)] border-[var(--cal2-border)]",
+  emerald: "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)] border-[var(--cal2-border)]",
+  rose: "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)] border-[var(--cal2-border)]",
+  indigo: "bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)] border-[rgba(94,106,210,0.42)]",
 };
 
 export default function Calendar2Sidebar({
@@ -49,12 +49,12 @@ export default function Calendar2Sidebar({
   const dateNotes = notes.filter((n) => n.linkedDate === dateKey);
 
   return (
-    <aside className="flex h-full flex-col gap-3 overflow-y-auto border-r border-white/[0.06] bg-[#0f0f1a]/80 p-3 sm:p-4">
+    <aside className="flex h-full flex-col gap-3 overflow-y-auto border-r border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-3 sm:p-4">
       {/* Mini calendar */}
-      <section className="rounded-xl border border-white/[0.06] bg-[#16162a]/60 p-3">
+      <section className="rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-3">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-zinc-100">Мини-календарь</h2>
-          <span className="text-xs text-zinc-500">
+          <h2 className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Мини-календарь</h2>
+          <span className="text-[11px] text-[var(--cal2-text-secondary)]">
             {format(anchorDate, "LLLL yyyy", { locale: ru })}
           </span>
         </div>
@@ -63,7 +63,7 @@ export default function Calendar2Sidebar({
           {MINI_DAY_NAMES.map((name) => (
             <div
               key={name}
-              className="text-[10px] font-semibold uppercase tracking-[0.11em] text-zinc-500"
+              className="text-[10px] font-semibold uppercase tracking-[0.11em] text-[var(--cal2-text-secondary)]"
             >
               {name}
             </div>
@@ -83,19 +83,19 @@ export default function Calendar2Sidebar({
                 key={key}
                 type="button"
                 onClick={() => onSelectDate(day)}
-                className={`relative h-7 rounded-md text-xs transition-colors ${
+                className={`relative h-7 rounded-[4px] border text-[11px] transition-colors ${
                   isCurrentDay
-                    ? "bg-indigo-500/80 text-white font-medium"
+                    ? "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] font-medium text-[var(--cal2-text-primary)]"
                     : isToday
-                      ? "bg-indigo-500/20 text-indigo-200"
+                      ? "border-[rgba(94,106,210,0.35)] bg-[rgba(94,106,210,0.1)] text-[#ccd2ff]"
                       : isCurrentMonth
-                        ? "text-zinc-300 hover:bg-white/[0.06]"
-                        : "text-zinc-600 hover:bg-white/[0.04]"
+                        ? "border-transparent text-[var(--cal2-text-primary)] hover:bg-[rgba(255,255,255,0.05)]"
+                        : "border-transparent text-[var(--cal2-text-disabled)] hover:bg-[rgba(255,255,255,0.03)]"
                 }`}
               >
                 {format(day, "d")}
                 {hasEvents && (
-                  <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-indigo-400" />
+                  <span className="absolute bottom-0.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full bg-[var(--cal2-accent)]" />
                 )}
               </button>
             );
@@ -105,8 +105,8 @@ export default function Calendar2Sidebar({
 
       {/* Categories */}
       {activeTab === "calendar" && (
-        <section className="rounded-xl border border-white/[0.06] bg-[#16162a]/60 p-3">
-          <h2 className="mb-3 text-sm font-semibold text-zinc-100">Фильтры</h2>
+        <section className="rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-3">
+          <h2 className="mb-3 text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Фильтры</h2>
           <div className="space-y-1.5">
             {categories.map((cat) => {
               const isActive = cat.id === activeFilter;
@@ -115,14 +115,16 @@ export default function Calendar2Sidebar({
                   key={cat.id}
                   type="button"
                   onClick={() => onFilterChange(cat.id)}
-                  className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-sm transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-[6px] border px-3 py-2 text-[12px] transition-colors ${
                     isActive
                       ? TONE_CLASSES[cat.tone] ?? TONE_CLASSES.neutral
-                      : "border-white/[0.06] bg-transparent text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200"
+                      : "border-[var(--cal2-border)] bg-transparent text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
                   }`}
                 >
                   <span>{cat.label}</span>
-                  <span className="rounded-md bg-black/30 px-2 py-0.5 text-xs">{cat.count}</span>
+                  <span className="rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] px-2 py-0.5 text-[10px]">
+                    {cat.count}
+                  </span>
                 </button>
               );
             })}
@@ -132,18 +134,18 @@ export default function Calendar2Sidebar({
 
       {/* Notes for selected date */}
       {dateNotes.length > 0 && (
-        <section className="rounded-xl border border-white/[0.06] bg-[#16162a]/60 p-3">
-          <h2 className="mb-3 text-sm font-semibold text-zinc-100">
+        <section className="rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-3">
+          <h2 className="mb-3 text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">
             Заметки на {format(anchorDate, "d MMM", { locale: ru })}
           </h2>
           <div className="space-y-2">
             {dateNotes.map((note) => (
               <div
                 key={note.id}
-                className="rounded-lg border border-white/[0.06] bg-black/20 p-2.5"
+                className="rounded-[6px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.03)] p-2.5"
               >
-                <p className="text-sm font-medium text-zinc-200">{note.title}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-zinc-500">{note.content}</p>
+                <p className="text-[12px] font-medium leading-[1.2] text-[var(--cal2-text-primary)]">{note.title}</p>
+                <p className="mt-1 line-clamp-2 text-[11px] text-[var(--cal2-text-secondary)]">{note.content}</p>
               </div>
             ))}
           </div>

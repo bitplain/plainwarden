@@ -44,22 +44,22 @@ export default function Calendar2Toolbar({
   isSidebarVisible,
 }: Calendar2ToolbarProps) {
   return (
-    <header className="border-b border-white/[0.08] bg-[#1a1a2e]/90 backdrop-blur-xl">
-      <div className="flex w-full flex-col gap-3 px-3 py-3 sm:px-5 xl:px-6">
+    <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+      <div className="flex w-full flex-col gap-2.5 px-3 py-3 sm:px-5 xl:px-6">
         {/* Top row: branding + actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
             <Link
               href="/"
-              className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 hover:text-zinc-100"
+              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
             >
               ← Терминал
             </Link>
             <div>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-indigo-400/70">
+              <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--cal2-text-secondary)]">
                 NetDen
               </p>
-              <h1 className="text-base font-semibold text-zinc-100 sm:text-lg">
+              <h1 className="text-[15px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)] sm:text-base">
                 Календарь 2.0
               </h1>
             </div>
@@ -69,21 +69,21 @@ export default function Calendar2Toolbar({
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 lg:hidden"
+              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] lg:hidden"
             >
               {isSidebarVisible ? "Скрыть" : "Панель"}
             </button>
             <button
               type="button"
               onClick={onAdd}
-              className="rounded-lg border border-indigo-400/30 bg-indigo-500/15 px-2.5 py-1.5 text-xs font-semibold text-indigo-200 transition-colors hover:bg-indigo-500/25 sm:text-sm"
+              className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] sm:text-[12px]"
             >
               + Добавить
             </button>
             <button
               type="button"
               onClick={onLogout}
-              className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition-colors hover:bg-white/10 sm:text-sm"
+              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] sm:text-[12px]"
             >
               Выйти
             </button>
@@ -92,7 +92,7 @@ export default function Calendar2Toolbar({
 
         {/* Tabs row */}
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex rounded-lg border border-white/[0.08] bg-black/30 p-0.5">
+          <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
             {TAB_OPTIONS.map((tab) => {
               const isActive = tab.id === activeTab;
               return (
@@ -100,10 +100,10 @@ export default function Calendar2Toolbar({
                   key={tab.id}
                   type="button"
                   onClick={() => onTabChange(tab.id)}
-                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+                  className={`rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px] ${
                     isActive
-                      ? "bg-indigo-500/20 text-indigo-200 shadow-[0_0_12px_-4px_rgba(99,102,241,0.4)]"
-                      : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                      ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                      : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
                   }`}
                 >
                   {tab.label}
@@ -119,30 +119,30 @@ export default function Calendar2Toolbar({
                 <button
                   type="button"
                   onClick={onPrev}
-                  className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1 text-sm text-zinc-300 transition-colors hover:bg-white/10"
+                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                 >
                   ←
                 </button>
                 <button
                   type="button"
                   onClick={onToday}
-                  className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1 text-sm text-zinc-300 transition-colors hover:bg-white/10"
+                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                 >
                   Сегодня
                 </button>
                 <button
                   type="button"
                   onClick={onNext}
-                  className="rounded-lg border border-white/[0.08] bg-white/5 px-2.5 py-1 text-sm text-zinc-300 transition-colors hover:bg-white/10"
+                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                 >
                   →
                 </button>
-                <span className="ml-1.5 text-sm font-medium text-zinc-200 sm:text-base">
+                <span className="ml-1.5 text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)] sm:text-[14px]">
                   {periodLabel}
                 </span>
               </div>
 
-              <div className="inline-flex rounded-lg border border-white/[0.08] bg-black/30 p-0.5">
+              <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
                 {VIEW_OPTIONS.map((option) => {
                   const isActive = option.id === currentView;
                   return (
@@ -150,10 +150,10 @@ export default function Calendar2Toolbar({
                       key={option.id}
                       type="button"
                       onClick={() => onViewChange(option.id)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors sm:text-sm ${
+                      className={`rounded-[4px] px-2.5 py-1 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px] ${
                         isActive
-                          ? "bg-indigo-500/20 text-indigo-200 shadow-[0_0_12px_-4px_rgba(99,102,241,0.4)]"
-                          : "text-zinc-400 hover:bg-white/[0.06] hover:text-zinc-200"
+                          ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                          : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
                       }`}
                     >
                       {option.label}

@@ -116,10 +116,10 @@ export default function KanbanBoard({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#12122a]/40">
-      <div className="border-b border-white/[0.06] bg-[#16162a]/40 px-4 py-3">
-        <p className="text-sm font-semibold text-zinc-100">Канбан-доска</p>
-        <p className="text-xs text-zinc-500">Перетащите карточки между колонками</p>
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+      <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
+        <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Канбан-доска</p>
+        <p className="text-[11px] text-[var(--cal2-text-secondary)]">Перетащите карточки между колонками</p>
       </div>
 
       <div className="min-h-0 flex-1 overflow-x-auto p-3">
@@ -134,16 +134,16 @@ export default function KanbanBoard({
                 onDragOver={(e) => handleDragOver(e, column.id)}
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, column.id)}
-                className={`flex flex-col rounded-xl border p-2.5 transition-colors ${
+                className={`flex flex-col rounded-[8px] border p-2.5 transition-colors ${
                   isDragOver
-                    ? "border-indigo-400/30 bg-indigo-500/[0.06]"
-                    : "border-white/[0.06] bg-[#16162a]/30"
+                    ? "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)]"
+                    : "border-[var(--cal2-border)] bg-[var(--cal2-surface-2)]"
                 }`}
               >
                 <div className="mb-2.5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-zinc-200">{column.label}</h3>
-                    <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+                    <h3 className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">{column.label}</h3>
+                    <span className="rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--cal2-text-secondary)]">
                       {columnCards.length}
                     </span>
                   </div>
@@ -160,7 +160,7 @@ export default function KanbanBoard({
                         setFormError(null);
                       }
                     }}
-                    className="rounded-md px-1.5 py-0.5 text-xs text-zinc-500 transition-colors hover:bg-white/[0.06] hover:text-zinc-300"
+                    className="rounded-[4px] px-1.5 py-0.5 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.05)] hover:text-[var(--cal2-text-primary)]"
                   >
                     +
                   </button>
@@ -168,7 +168,7 @@ export default function KanbanBoard({
 
                 {/* Add card form */}
                 {addingToColumn === column.id && (
-                  <div className="mb-2.5 rounded-lg border border-white/[0.08] bg-black/20 p-2.5">
+                  <div className="mb-2.5 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2.5">
                     <div className="space-y-2">
                       <input
                         type="text"
@@ -177,7 +177,7 @@ export default function KanbanBoard({
                         onChange={(e) =>
                           setForm((prev) => ({ ...prev, title: e.target.value }))
                         }
-                        className="h-8 w-full rounded-md border border-white/[0.08] bg-black/30 px-2.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-indigo-400/30"
+                        className="h-8 w-full rounded-[4px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
                       />
 
                       <textarea
@@ -186,7 +186,7 @@ export default function KanbanBoard({
                         onChange={(e) =>
                           setForm((prev) => ({ ...prev, description: e.target.value }))
                         }
-                        className="min-h-14 w-full rounded-md border border-white/[0.08] bg-black/30 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-indigo-400/30"
+                        className="min-h-14 w-full rounded-[4px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
                       />
 
                       <select
@@ -197,7 +197,7 @@ export default function KanbanBoard({
                             priority: e.target.value as TaskPriority,
                           }))
                         }
-                        className="h-8 w-full rounded-md border border-white/[0.08] bg-black/30 px-2 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                        className="h-8 w-full rounded-[4px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                       >
                         {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
                           <option key={key} value={key}>
@@ -215,7 +215,7 @@ export default function KanbanBoard({
                               linkedEventId: e.target.value,
                             }))
                           }
-                          className="h-8 w-full rounded-md border border-white/[0.08] bg-black/30 px-2 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                          className="h-8 w-full rounded-[4px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                         >
                           <option value="">Без привязки к событию</option>
                           {events.map((event) => (
@@ -227,14 +227,14 @@ export default function KanbanBoard({
                       )}
 
                       {formError && (
-                        <p className="text-xs text-red-300">{formError}</p>
+                        <p className="text-[11px] text-[#d9ddff]">{formError}</p>
                       )}
 
                       <div className="flex gap-2">
                         <button
                           type="button"
                           onClick={() => handleAddCard(column.id)}
-                          className="flex-1 rounded-md border border-indigo-400/30 bg-indigo-500/20 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-indigo-500/30"
+                          className="flex-1 rounded-[4px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
                         >
                           Создать
                         </button>
@@ -244,7 +244,7 @@ export default function KanbanBoard({
                             setAddingToColumn(null);
                             setFormError(null);
                           }}
-                          className="flex-1 rounded-md border border-white/[0.08] bg-white/[0.04] py-1.5 text-xs text-zinc-400 transition-colors hover:bg-white/[0.08]"
+                          className="flex-1 rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] py-1.5 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                         >
                           Отмена
                         </button>
@@ -256,7 +256,7 @@ export default function KanbanBoard({
                 {/* Cards */}
                 <div className="space-y-2 overflow-y-auto">
                   {columnCards.length === 0 && !addingToColumn && (
-                    <p className="py-4 text-center text-xs text-zinc-600">Пусто</p>
+                    <p className="py-4 text-center text-[11px] text-[var(--cal2-text-secondary)]">Пусто</p>
                   )}
 
                   {columnCards.map((card) => {
@@ -270,25 +270,25 @@ export default function KanbanBoard({
                         draggable
                         onDragStart={(e) => handleDragStart(e, card.id)}
                         onDragEnd={handleDragEnd}
-                        className={`cursor-grab rounded-lg border border-white/[0.06] bg-[#1a1a30]/60 p-2.5 transition-all hover:border-white/[0.1] active:cursor-grabbing ${
+                        className={`cursor-grab rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2.5 transition-colors hover:bg-[rgba(255,255,255,0.04)] active:cursor-grabbing ${
                           isDragging ? "opacity-40" : "opacity-100"
                         }`}
                       >
                         <div className="mb-1.5 flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium text-zinc-200">
+                          <p className="text-[13px] font-medium leading-[1.2] text-[var(--cal2-text-primary)]">
                             {card.title}
                           </p>
                           <button
                             type="button"
                             onClick={() => onDeleteCard(card.id)}
-                            className="flex-shrink-0 text-xs text-zinc-600 transition-colors hover:text-red-300"
+                            className="flex-shrink-0 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                           >
                             ✕
                           </button>
                         </div>
 
                         {card.description && (
-                          <p className="mb-1.5 line-clamp-2 text-xs text-zinc-500">
+                          <p className="mb-1.5 line-clamp-2 text-[11px] text-[var(--cal2-text-secondary)]">
                             {card.description}
                           </p>
                         )}
@@ -301,7 +301,7 @@ export default function KanbanBoard({
                           </span>
 
                           {linkedTitle && (
-                            <span className="rounded-md border border-indigo-400/20 bg-indigo-500/10 px-1.5 py-0.5 text-[10px] text-indigo-300">
+                            <span className="rounded-[4px] border border-[rgba(94,106,210,0.4)] bg-[var(--cal2-accent-soft)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-primary)]">
                               📅 {linkedTitle}
                             </span>
                           )}

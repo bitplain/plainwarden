@@ -30,6 +30,7 @@ import DailyPlanner from "./DailyPlanner";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
 import EventModal2 from "./EventModal2";
+import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
 type CalendarFilter = "all" | "event" | "task" | "pending" | "done";
 
@@ -332,7 +333,10 @@ export default function Calendar2() {
   };
 
   return (
-    <div className="flex h-dvh flex-col bg-[#0a0a14] font-[family-name:var(--font-geist-sans)] text-[var(--foreground)]">
+    <div
+      style={CALENDAR2_LINEAR_VARS}
+      className="flex h-dvh flex-col bg-[var(--cal2-bg)] font-[family-name:var(--font-geist-sans)] text-[13px] leading-[1.3] text-[var(--cal2-text-primary)]"
+    >
       <Calendar2Toolbar
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -371,16 +375,16 @@ export default function Calendar2() {
           <main
             className={`${
               isSidebarVisible ? "hidden lg:flex" : "flex"
-            } min-h-0 flex-col gap-2 border border-white/[0.06] bg-[#0f0f1a]/60 p-2 sm:p-3 lg:border-l-0 rounded-sm lg:rounded-l-none`}
+            } min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
           >
             {(isAuthLoading || isEventsLoading) && (
-              <div className="rounded-lg border border-white/[0.08] bg-white/[0.02] px-3 py-2 text-xs text-zinc-500">
+              <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-3 py-2 text-[11px] text-[var(--cal2-text-secondary)]">
                 Синхронизация данных...
               </div>
             )}
 
             {error && (
-              <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-200">
+              <div className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[11px] text-[#d9ddff]">
                 {error}
               </div>
             )}
@@ -397,7 +401,7 @@ export default function Calendar2() {
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
-        className="fixed bottom-4 right-4 z-30 inline-flex h-12 w-12 items-center justify-center rounded-full border border-indigo-400/40 bg-indigo-500 text-xl font-semibold text-white shadow-[0_16px_40px_-20px_rgba(99,102,241,0.9)] md:hidden"
+        className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
         aria-label="Добавить"
       >
         +
