@@ -1,7 +1,6 @@
 "use client";
 
 import { startOfDay } from "date-fns";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNetdenStore } from "@/lib/store";
 import type { CalendarEvent, CreateEventInput, EventStatus } from "@/lib/types";
@@ -15,20 +14,12 @@ import {
   sortEventsByDateTime,
   toDateKey,
 } from "@/components/calendar/date-utils";
-import type {
-  Calendar2Tab,
-  Calendar2View,
-  SidebarCategory,
-  TaskPriority,
-} from "./calendar2-types";
+import type { SidebarCategory, TaskPriority } from "./calendar2-types";
 import {
   buildCalendar2EventFilters,
   type Calendar2CategoryFilter,
 } from "./calendar2-query-filters";
-import {
-  buildCalendar2UrlQuery,
-  parseCalendar2UrlState,
-} from "./calendar2-url-state";
+import { useCalendar2UrlStore } from "./calendar2-url-store";
 import { useCalendar2Store } from "./calendar2-store";
 import Calendar2Toolbar from "./Calendar2Toolbar";
 import Calendar2Sidebar from "./Calendar2Sidebar";
@@ -103,33 +94,21 @@ function toDayStart(dateKey: string): Date {
 }
 
 export default function Calendar2() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { state: urlState, setState: setUrlState } = useCalendar2UrlStore();
+  const activeTab = urlState.tab;
+  const view = urlState.view;
+  const categoryFilter = urlState.category;
+  const searchQuery = urlState.q;
+  const dateFrom = urlState.dateFrom;
+  const dateTo = urlState.dateTo;
+  const anchorDate = useMemo(() => toDayStart(urlState.date), [urlState.date]);
 
-  const fallbackDateKey = useMemo(() => toDateKey(startOfDay(new Date())), []);
-  const initialUrlState = useMemo(() => {
-    if (typeof window === "undefined") {
-      return parseCalendar2UrlState(new URLSearchParams(), fallbackDateKey);
-    }
-    return parseCalendar2UrlState(new URLSearchParams(window.location.search), fallbackDateKey);
-  }, [fallbackDateKey]);
-
-  const [activeTab, setActiveTab] = useState<Calendar2Tab>(initialUrlState.tab);
-  const [view, setView] = useState<Calendar2View>(initialUrlState.view);
-  const [anchorDate, setAnchorDate] = useState<Date>(() => toDayStart(initialUrlState.date));
-  const [categoryFilter, setCategoryFilter] = useState<Calendar2CategoryFilter>(
-    initialUrlState.category,
-  );
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(initialUrlState.q);
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialUrlState.q);
-  const [dateFrom, setDateFrom] = useState(initialUrlState.dateFrom);
-  const [dateTo, setDateTo] = useState(initialUrlState.dateTo);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
 
   // Global store
@@ -170,40 +149,6 @@ export default function Calendar2() {
       }),
     [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
   );
-
-  useEffect(() => {
-    const currentQuery = searchParams.toString();
-    const nextQuery = buildCalendar2UrlQuery({
-      currentSearchParams: new URLSearchParams(currentQuery),
-      state: {
-        q: searchQuery,
-        tab: activeTab,
-        view,
-        category: categoryFilter,
-        dateFrom,
-        dateTo,
-        date: toDateKey(anchorDate),
-      },
-    });
-
-    if (nextQuery === currentQuery) {
-      return;
-    }
-
-    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
-    router.replace(nextUrl, { scroll: false });
-  }, [
-    router,
-    pathname,
-    searchParams,
-    activeTab,
-    view,
-    categoryFilter,
-    searchQuery,
-    dateFrom,
-    dateTo,
-    anchorDate,
-  ]);
 
   useEffect(() => {
     if (!user) {
@@ -339,17 +284,41 @@ export default function Calendar2() {
   };
 
   const handlePrev = () => {
-    setAnchorDate((prev) => normalizeToDay(shiftAnchorDate(prev, view, "prev")));
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        date: toDateKey(normalizeToDay(shiftAnchorDate(toDayStart(prev.date), prev.view, "prev"))),
+      }),
+      "push",
+    );
   };
   const handleNext = () => {
-    setAnchorDate((prev) => normalizeToDay(shiftAnchorDate(prev, view, "next")));
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        date: toDateKey(normalizeToDay(shiftAnchorDate(toDayStart(prev.date), prev.view, "next"))),
+      }),
+      "push",
+    );
   };
   const handleToday = () => {
-    setAnchorDate(startOfDay(new Date()));
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        date: toDateKey(startOfDay(new Date())),
+      }),
+      "push",
+    );
   };
 
   const handleSelectDate = (date: Date) => {
-    setAnchorDate(normalizeToDay(date));
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        date: toDateKey(normalizeToDay(date)),
+      }),
+      "push",
+    );
     if (isMobileLayout) {
       setIsSidebarVisible(false);
     }
@@ -361,18 +330,29 @@ export default function Calendar2() {
   };
 
   const handleFilterChange = (nextFilter: string) => {
-    setCategoryFilter(nextFilter as Calendar2CategoryFilter);
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        category: nextFilter as Calendar2CategoryFilter,
+      }),
+      "push",
+    );
     if (isMobileLayout) {
       setIsSidebarVisible(false);
     }
   };
 
   const handleClearCalendarFilters = () => {
-    setCategoryFilter("all");
-    setSearchQuery("");
-    setDebouncedSearchQuery("");
-    setDateFrom("");
-    setDateTo("");
+    setUrlState(
+      (prev) => ({
+        ...prev,
+        category: "all",
+        q: "",
+        dateFrom: "",
+        dateTo: "",
+      }),
+      "push",
+    );
   };
 
   const renderContent = () => {
@@ -463,10 +443,26 @@ export default function Calendar2() {
     >
       <Calendar2Toolbar
         activeTab={activeTab}
-        onTabChange={setActiveTab}
+        onTabChange={(nextTab) =>
+          setUrlState(
+            (prev) => ({
+              ...prev,
+              tab: nextTab,
+            }),
+            "push",
+          )
+        }
         currentView={view}
         periodLabel={periodLabel}
-        onViewChange={setView}
+        onViewChange={(nextView) =>
+          setUrlState(
+            (prev) => ({
+              ...prev,
+              view: nextView,
+            }),
+            "push",
+          )
+        }
         onPrev={handlePrev}
         onNext={handleNext}
         onToday={handleToday}
@@ -476,11 +472,26 @@ export default function Calendar2() {
         }}
         onLogout={handleLogout}
         searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(value) =>
+          setUrlState((prev) => ({
+            ...prev,
+            q: value,
+          }))
+        }
         dateFromValue={dateFrom}
         dateToValue={dateTo}
-        onDateFromChange={setDateFrom}
-        onDateToChange={setDateTo}
+        onDateFromChange={(value) =>
+          setUrlState((prev) => ({
+            ...prev,
+            dateFrom: value,
+          }))
+        }
+        onDateToChange={(value) =>
+          setUrlState((prev) => ({
+            ...prev,
+            dateTo: value,
+          }))
+        }
         onClearCalendarFilters={handleClearCalendarFilters}
         onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
         isSidebarVisible={isSidebarVisible}
