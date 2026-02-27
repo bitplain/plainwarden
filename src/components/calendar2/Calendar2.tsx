@@ -20,6 +20,10 @@ import type {
   SidebarCategory,
   TaskPriority,
 } from "./calendar2-types";
+import {
+  buildCalendar2EventFilters,
+  type Calendar2CategoryFilter,
+} from "./calendar2-query-filters";
 import { useCalendar2Store } from "./calendar2-store";
 import Calendar2Toolbar from "./Calendar2Toolbar";
 import Calendar2Sidebar from "./Calendar2Sidebar";
@@ -32,18 +36,7 @@ import NotesPanel from "./NotesPanel";
 import EventModal2 from "./EventModal2";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
-type CalendarFilter = "all" | "event" | "task" | "pending" | "done";
 type EventMovePayload = { date: string; time?: string };
-
-function matchesFilter(event: CalendarEvent, filter: CalendarFilter): boolean {
-  if (filter === "all") {
-    return true;
-  }
-  if (filter === "event" || filter === "task") {
-    return event.type === filter;
-  }
-  return (event.status ?? "pending") === filter;
-}
 
 function buildCategories(events: CalendarEvent[]): SidebarCategory[] {
   return [
@@ -104,7 +97,7 @@ export default function Calendar2() {
   const [activeTab, setActiveTab] = useState<Calendar2Tab>("calendar");
   const [view, setView] = useState<Calendar2View>("month");
   const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
-  const [filter, setFilter] = useState<CalendarFilter>("all");
+  const [categoryFilter, setCategoryFilter] = useState<Calendar2CategoryFilter>("all");
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
@@ -112,6 +105,8 @@ export default function Calendar2() {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
 
   // Global store
@@ -142,13 +137,29 @@ export default function Calendar2() {
     return () => window.clearTimeout(timer);
   }, [searchQuery]);
 
+  const calendarQueryFilters = useMemo(
+    () =>
+      buildCalendar2EventFilters({
+        q: debouncedSearchQuery,
+        category: categoryFilter,
+        dateFrom,
+        dateTo,
+      }),
+    [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
+  );
+
   useEffect(() => {
-    if (user) {
-      void fetchEvents({
-        q: debouncedSearchQuery || undefined,
-      });
+    if (!user) {
+      return;
     }
-  }, [user, fetchEvents, debouncedSearchQuery]);
+
+    if (activeTab !== "calendar") {
+      void fetchEvents();
+      return;
+    }
+
+    void fetchEvents(calendarQueryFilters);
+  }, [user, fetchEvents, activeTab, calendarQueryFilters]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -181,20 +192,13 @@ export default function Calendar2() {
   );
 
   const allSorted = useMemo(() => sortEventsByDateTime(events), [events]);
-
-  const filtered = useMemo(
-    () => allSorted.filter((e) => matchesFilter(e, filter)),
-    [allSorted, filter],
-  );
-
-  const allEventsByDate = useMemo(() => buildEventsByDate(allSorted), [allSorted]);
-  const filteredEventsByDate = useMemo(() => buildEventsByDate(filtered), [filtered]);
+  const eventsByDate = useMemo(() => buildEventsByDate(allSorted), [allSorted]);
 
   const monthGridDays = useMemo(() => getMonthGridDates(anchorDate), [anchorDate]);
   const weekDates = useMemo(() => getWeekDates(anchorDate), [anchorDate]);
   const dayEvents = useMemo(
-    () => filteredEventsByDate[toDateKey(anchorDate)] ?? [],
-    [filteredEventsByDate, anchorDate],
+    () => eventsByDate[toDateKey(anchorDate)] ?? [],
+    [eventsByDate, anchorDate],
   );
 
   const categories = useMemo(() => buildCategories(events), [events]);
@@ -300,10 +304,18 @@ export default function Calendar2() {
   };
 
   const handleFilterChange = (nextFilter: string) => {
-    setFilter(nextFilter as CalendarFilter);
+    setCategoryFilter(nextFilter as Calendar2CategoryFilter);
     if (isMobileLayout) {
       setIsSidebarVisible(false);
     }
+  };
+
+  const handleClearCalendarFilters = () => {
+    setCategoryFilter("all");
+    setSearchQuery("");
+    setDebouncedSearchQuery("");
+    setDateFrom("");
+    setDateTo("");
   };
 
   const renderContent = () => {
@@ -315,7 +327,7 @@ export default function Calendar2() {
               <Calendar2MonthView
                 anchorDate={anchorDate}
                 days={monthGridDays}
-                eventsByDate={filteredEventsByDate}
+                eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
@@ -327,7 +339,7 @@ export default function Calendar2() {
               <Calendar2WeekView
                 weekDates={weekDates}
                 anchorDate={anchorDate}
-                eventsByDate={filteredEventsByDate}
+                eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
@@ -408,6 +420,11 @@ export default function Calendar2() {
         onLogout={handleLogout}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
+        dateFromValue={dateFrom}
+        dateToValue={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        onClearCalendarFilters={handleClearCalendarFilters}
         onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
         isSidebarVisible={isSidebarVisible}
       />
@@ -418,9 +435,9 @@ export default function Calendar2() {
           <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0 lg:block`}>
             <Calendar2Sidebar
               anchorDate={anchorDate}
-              eventsByDate={allEventsByDate}
+              eventsByDate={eventsByDate}
               categories={categories}
-              activeFilter={filter}
+              activeFilter={categoryFilter}
               onSelectDate={handleSelectDate}
               onFilterChange={handleFilterChange}
               notes={localStore.notes}
