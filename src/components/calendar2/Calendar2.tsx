@@ -132,6 +132,7 @@ export default function Calendar2() {
 
   // Local store for kanban, notes, time blocks
   const localStore = useCalendar2Store();
+  const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
 
   useEffect(() => {
     void bootstrapAuth();
@@ -153,6 +154,16 @@ export default function Calendar2() {
         dateFrom,
         dateTo,
       }),
+    [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
+  );
+  const hasActiveCalendarFilters = useMemo(
+    () =>
+      Boolean(
+        debouncedSearchQuery ||
+          categoryFilter !== "all" ||
+          dateFrom ||
+          dateTo,
+      ),
     [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
   );
 
@@ -228,6 +239,25 @@ export default function Calendar2() {
     }
     return resolved;
   }, [events, eventPriorities]);
+
+  useEffect(() => {
+    if (!user || isAuthLoading || isEventsLoading) {
+      return;
+    }
+
+    const removeStaleSyncedCards =
+      activeTab !== "calendar" || !hasActiveCalendarFilters;
+    syncTaskEventsToKanban(events, resolvedPriorities, { removeStaleSyncedCards });
+  }, [
+    user,
+    isAuthLoading,
+    isEventsLoading,
+    activeTab,
+    hasActiveCalendarFilters,
+    events,
+    resolvedPriorities,
+    syncTaskEventsToKanban,
+  ]);
 
   const handleSaveEvent = async (input: CreateEventInput, priority: TaskPriority) => {
     await addEvent(input);

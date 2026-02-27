@@ -6,6 +6,7 @@ export type Calendar2Tab = "calendar" | "planner" | "kanban" | "notes";
 export type TaskPriority = "urgent" | "high" | "medium" | "low";
 
 export type KanbanColumn = "backlog" | "in_progress" | "review" | "done";
+export type KanbanCardSource = "manual" | "event_sync";
 
 export interface KanbanCard {
   id: string;
@@ -14,6 +15,7 @@ export interface KanbanCard {
   column: KanbanColumn;
   priority: TaskPriority;
   linkedEventId?: string;
+  source?: KanbanCardSource;
   createdAt: string;
 }
 

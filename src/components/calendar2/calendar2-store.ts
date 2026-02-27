@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import type { CalendarEvent } from "@/lib/types";
 import type { KanbanCard, KanbanColumn, Note, TaskPriority, TimeBlock } from "./calendar2-types";
 
 interface Calendar2LocalState {
@@ -20,6 +21,107 @@ function generateId(): string {
 
 function nowISO(): string {
   return new Date().toISOString();
+}
+
+interface SyncTaskEventsToKanbanCardsInput {
+  cards: KanbanCard[];
+  events: CalendarEvent[];
+  priorities: Record<string, TaskPriority>;
+  removeStaleSyncedCards?: boolean;
+  now?: string;
+}
+
+function getSyncedTaskColumn(event: CalendarEvent): KanbanColumn {
+  return (event.status ?? "pending") === "done" ? "done" : "backlog";
+}
+
+export function syncTaskEventsToKanbanCards(
+  input: SyncTaskEventsToKanbanCardsInput,
+): KanbanCard[] {
+  const shouldRemoveStaleSyncedCards = input.removeStaleSyncedCards ?? true;
+  const taskEvents = input.events.filter((event) => event.type === "task");
+  const taskEventsById = new Map(taskEvents.map((event) => [event.id, event]));
+  const cardsByEventId = new Map<string, number>();
+  const dedupedCards: KanbanCard[] = [];
+  const createdAt = input.now ?? nowISO();
+  let hasChanges = false;
+
+  for (const card of input.cards) {
+    if (!card.linkedEventId) {
+      dedupedCards.push(card);
+      continue;
+    }
+
+    const linkedTaskEvent = taskEventsById.get(card.linkedEventId);
+    if (!linkedTaskEvent) {
+      if (card.source === "event_sync" && shouldRemoveStaleSyncedCards) {
+        hasChanges = true;
+        continue;
+      }
+      dedupedCards.push(card);
+      continue;
+    }
+
+    const existingIndex = cardsByEventId.get(card.linkedEventId);
+    if (existingIndex === undefined) {
+      cardsByEventId.set(card.linkedEventId, dedupedCards.length);
+      dedupedCards.push(card);
+      continue;
+    }
+
+    const existingCard = dedupedCards[existingIndex];
+    if (existingCard.source === "event_sync" && card.source !== "event_sync") {
+      dedupedCards[existingIndex] = card;
+    }
+    hasChanges = true;
+  }
+
+  for (const taskEvent of taskEvents) {
+    const existingIndex = cardsByEventId.get(taskEvent.id);
+    const mappedPriority = input.priorities[taskEvent.id];
+
+    if (existingIndex === undefined) {
+      dedupedCards.push({
+        id: generateId(),
+        title: taskEvent.title,
+        description: taskEvent.description,
+        column: getSyncedTaskColumn(taskEvent),
+        priority: mappedPriority ?? "medium",
+        linkedEventId: taskEvent.id,
+        source: "event_sync",
+        createdAt,
+      });
+      hasChanges = true;
+      continue;
+    }
+
+    const existingCard = dedupedCards[existingIndex];
+    const nextCard: KanbanCard = {
+      ...existingCard,
+      title: taskEvent.title,
+      description: taskEvent.description,
+      priority: mappedPriority ?? existingCard.priority,
+      linkedEventId: taskEvent.id,
+      column:
+        (taskEvent.status ?? "pending") === "done"
+          ? "done"
+          : existingCard.column,
+    };
+
+    if (
+      nextCard.title !== existingCard.title ||
+      nextCard.description !== existingCard.description ||
+      nextCard.priority !== existingCard.priority ||
+      nextCard.column !== existingCard.column ||
+      nextCard.linkedEventId !== existingCard.linkedEventId ||
+      nextCard.source !== existingCard.source
+    ) {
+      dedupedCards[existingIndex] = nextCard;
+      hasChanges = true;
+    }
+  }
+
+  return hasChanges ? dedupedCards : input.cards;
 }
 
 function isValidState(data: unknown): data is Calendar2LocalState {
@@ -76,7 +178,11 @@ function emitChange(): void {
 }
 
 function setState(updater: (prev: Calendar2LocalState) => Calendar2LocalState): void {
-  currentState = updater(currentState);
+  const nextState = updater(currentState);
+  if (Object.is(nextState, currentState)) {
+    return;
+  }
+  currentState = nextState;
   saveState(currentState);
   emitChange();
 }
@@ -104,6 +210,7 @@ export function useCalendar2Store() {
       const card: KanbanCard = {
         id: generateId(),
         ...input,
+        source: "manual",
         createdAt: nowISO(),
       };
       setState((prev) => ({ ...prev, kanbanCards: [...prev.kanbanCards, card] }));
@@ -132,6 +239,28 @@ export function useCalendar2Store() {
       kanbanCards: prev.kanbanCards.map((card) => (card.id === id ? { ...card, column } : card)),
     }));
   }, []);
+
+  const syncTaskEventsToKanban = useCallback(
+    (
+      events: CalendarEvent[],
+      priorities: Record<string, TaskPriority>,
+      options?: { removeStaleSyncedCards?: boolean },
+    ) => {
+      setState((prev) => {
+        const nextCards = syncTaskEventsToKanbanCards({
+          cards: prev.kanbanCards,
+          events,
+          priorities,
+          removeStaleSyncedCards: options?.removeStaleSyncedCards,
+        });
+        if (nextCards === prev.kanbanCards) {
+          return prev;
+        }
+        return { ...prev, kanbanCards: nextCards };
+      });
+    },
+    [],
+  );
 
   const addNote = useCallback(
     (input: { title: string; content: string; linkedDate?: string; linkedEventId?: string }) => {
@@ -194,6 +323,7 @@ export function useCalendar2Store() {
     updateKanbanCard,
     deleteKanbanCard,
     moveKanbanCard,
+    syncTaskEventsToKanban,
     addNote,
     updateNote,
     deleteNote,
