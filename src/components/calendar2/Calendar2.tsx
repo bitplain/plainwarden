@@ -1,6 +1,7 @@
 "use client";
 
 import { startOfDay } from "date-fns";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNetdenStore } from "@/lib/store";
 import type { CalendarEvent, CreateEventInput, EventStatus } from "@/lib/types";
@@ -24,6 +25,10 @@ import {
   buildCalendar2EventFilters,
   type Calendar2CategoryFilter,
 } from "./calendar2-query-filters";
+import {
+  buildCalendar2UrlQuery,
+  parseCalendar2UrlState,
+} from "./calendar2-url-state";
 import { useCalendar2Store } from "./calendar2-store";
 import Calendar2Toolbar from "./Calendar2Toolbar";
 import Calendar2Sidebar from "./Calendar2Sidebar";
@@ -93,20 +98,38 @@ function savePriorities(priorities: Record<string, TaskPriority>): void {
   }
 }
 
+function toDayStart(dateKey: string): Date {
+  return startOfDay(new Date(`${dateKey}T00:00:00`));
+}
+
 export default function Calendar2() {
-  const [activeTab, setActiveTab] = useState<Calendar2Tab>("calendar");
-  const [view, setView] = useState<Calendar2View>("month");
-  const [anchorDate, setAnchorDate] = useState<Date>(() => startOfDay(new Date()));
-  const [categoryFilter, setCategoryFilter] = useState<Calendar2CategoryFilter>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const fallbackDateKey = useMemo(() => toDateKey(startOfDay(new Date())), []);
+  const initialUrlState = useMemo(() => {
+    if (typeof window === "undefined") {
+      return parseCalendar2UrlState(new URLSearchParams(), fallbackDateKey);
+    }
+    return parseCalendar2UrlState(new URLSearchParams(window.location.search), fallbackDateKey);
+  }, [fallbackDateKey]);
+
+  const [activeTab, setActiveTab] = useState<Calendar2Tab>(initialUrlState.tab);
+  const [view, setView] = useState<Calendar2View>(initialUrlState.view);
+  const [anchorDate, setAnchorDate] = useState<Date>(() => toDayStart(initialUrlState.date));
+  const [categoryFilter, setCategoryFilter] = useState<Calendar2CategoryFilter>(
+    initialUrlState.category,
+  );
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [searchQuery, setSearchQuery] = useState(initialUrlState.q);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialUrlState.q);
+  const [dateFrom, setDateFrom] = useState(initialUrlState.dateFrom);
+  const [dateTo, setDateTo] = useState(initialUrlState.dateTo);
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
 
   // Global store
@@ -147,6 +170,40 @@ export default function Calendar2() {
       }),
     [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
   );
+
+  useEffect(() => {
+    const currentQuery = searchParams.toString();
+    const nextQuery = buildCalendar2UrlQuery({
+      currentSearchParams: new URLSearchParams(currentQuery),
+      state: {
+        q: searchQuery,
+        tab: activeTab,
+        view,
+        category: categoryFilter,
+        dateFrom,
+        dateTo,
+        date: toDateKey(anchorDate),
+      },
+    });
+
+    if (nextQuery === currentQuery) {
+      return;
+    }
+
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+  }, [
+    router,
+    pathname,
+    searchParams,
+    activeTab,
+    view,
+    categoryFilter,
+    searchQuery,
+    dateFrom,
+    dateTo,
+    anchorDate,
+  ]);
 
   useEffect(() => {
     if (!user) {
