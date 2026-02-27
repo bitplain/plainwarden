@@ -110,6 +110,8 @@ export default function Calendar2() {
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
 
   // Global store
@@ -133,10 +135,20 @@ export default function Calendar2() {
   }, [bootstrapAuth]);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
     if (user) {
-      void fetchEvents();
+      void fetchEvents({
+        q: debouncedSearchQuery || undefined,
+      });
     }
-  }, [user, fetchEvents]);
+  }, [user, fetchEvents, debouncedSearchQuery]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -394,6 +406,8 @@ export default function Calendar2() {
           setShowAddModal(true);
         }}
         onLogout={handleLogout}
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
         onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
         isSidebarVisible={isSidebarVisible}
       />

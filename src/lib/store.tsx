@@ -8,6 +8,7 @@ import {
   AuthUser,
   CalendarEvent,
   CreateEventInput,
+  EventListFilters,
   LoginInput,
   RegisterInput,
   UpdateEventInput,
@@ -27,7 +28,7 @@ interface NetdenState {
   register: (input: RegisterInput) => Promise<void>;
   logout: () => Promise<void>;
 
-  fetchEvents: () => Promise<void>;
+  fetchEvents: (filters?: EventListFilters) => Promise<void>;
   addEvent: (input: CreateEventInput) => Promise<void>;
   updateEvent: (input: UpdateEventInput) => Promise<void>;
   deleteEvent: (id: string) => Promise<void>;
@@ -136,7 +137,7 @@ export const createNetdenStore = () =>
       }
     },
 
-    fetchEvents: async () => {
+    fetchEvents: async (filters) => {
       if (!get().isAuthenticated) {
         set({ events: [] });
         return;
@@ -144,7 +145,7 @@ export const createNetdenStore = () =>
 
       set({ isEventsLoading: true, error: null });
       try {
-        const events = await api.getEvents();
+        const events = await api.getEvents(filters);
         set({ events: sortEvents(events), isEventsLoading: false });
       } catch (error) {
         set({ isEventsLoading: false, error: getErrorMessage(error) });

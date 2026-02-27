@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
 import { createEventForUser, listEventsByUser } from "@/lib/server/json-db";
+import { parseEventListFilters } from "@/lib/server/event-filters";
 import {
   HttpError,
   handleRouteError,
@@ -23,7 +24,8 @@ export async function GET(request: NextRequest) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const events = await listEventsByUser(user.id);
+    const filters = parseEventListFilters(request.nextUrl.searchParams);
+    const events = await listEventsByUser(user.id, filters);
     return NextResponse.json(events);
   } catch (error) {
     return handleRouteError(error);
