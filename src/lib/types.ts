@@ -47,6 +47,14 @@ export interface UpdateEventInput {
   status?: EventStatus;
 }
 
+export interface EventListFilters {
+  q?: string;
+  type?: EventType;
+  status?: EventStatus;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export interface LoginInput {
   email: string;
   password: string;

@@ -1,6 +1,7 @@
 import { Event as PrismaEvent, Prisma, User as PrismaUser } from "@prisma/client";
 import { mockEvents } from "@/lib/mock-data";
-import { CalendarEvent, CreateEventInput, PersistedUser } from "@/lib/types";
+import { CalendarEvent, CreateEventInput, EventListFilters, PersistedUser } from "@/lib/types";
+import { buildEventListWhereInput } from "@/lib/server/event-filters";
 import prisma from "@/lib/server/prisma";
 
 export class DbConflictError extends Error {
@@ -130,9 +131,12 @@ export async function seedEventsForUser(userId: string): Promise<void> {
   });
 }
 
-export async function listEventsByUser(userId: string): Promise<CalendarEvent[]> {
+export async function listEventsByUser(
+  userId: string,
+  filters: EventListFilters = {},
+): Promise<CalendarEvent[]> {
   const events = await prisma.event.findMany({
-    where: { userId },
+    where: buildEventListWhereInput(userId, filters),
     orderBy: [{ date: "asc" }, { time: "asc" }],
   });
 

@@ -14,6 +14,8 @@ interface Calendar2ToolbarProps {
   onLogout: () => void;
   onToggleSidebar: () => void;
   isSidebarVisible: boolean;
+  searchValue: string;
+  onSearchChange: (value: string) => void;
 }
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
@@ -42,6 +44,8 @@ export default function Calendar2Toolbar({
   onLogout,
   onToggleSidebar,
   isSidebarVisible,
+  searchValue,
+  onSearchChange,
 }: Calendar2ToolbarProps) {
   return (
     <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
@@ -161,6 +165,19 @@ export default function Calendar2Toolbar({
                   );
                 })}
               </div>
+
+              <label className="inline-flex h-[30px] min-w-[220px] items-center rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2">
+                <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  Поиск
+                </span>
+                <input
+                  type="text"
+                  value={searchValue}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder="Название или описание"
+                  className="h-full w-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)]"
+                />
+              </label>
             </div>
           )}
         </div>
