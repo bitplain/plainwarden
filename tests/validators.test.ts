@@ -29,6 +29,17 @@ describe("validateLoginInput", () => {
   it("rejects non-object payload", () => {
     expect(() => validateLoginInput("string")).toThrow();
   });
+
+  it("rejects email longer than 255 characters", () => {
+    const longEmail = "a".repeat(251) + "@b.co";
+    expect(() => validateLoginInput({ email: longEmail, password: "pass1234" })).toThrow();
+  });
+
+  it("rejects password longer than 1024 characters", () => {
+    expect(() =>
+      validateLoginInput({ email: "user@example.com", password: "a".repeat(1025) }),
+    ).toThrow();
+  });
 });
 
 describe("validateRegisterInput", () => {
@@ -50,6 +61,17 @@ describe("validateRegisterInput", () => {
 
   it("rejects invalid email", () => {
     expect(() => validateRegisterInput({ ...valid, email: "bad-email" })).toThrow();
+  });
+
+  it("rejects email longer than 255 characters", () => {
+    const longEmail = "a".repeat(251) + "@b.co";
+    expect(() => validateRegisterInput({ ...valid, email: longEmail })).toThrow();
+  });
+
+  it("rejects password longer than 1024 characters", () => {
+    expect(() =>
+      validateRegisterInput({ ...valid, password: "a".repeat(1025) }),
+    ).toThrow();
   });
 });
 
