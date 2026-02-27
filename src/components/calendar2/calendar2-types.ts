@@ -57,11 +57,34 @@ export const KANBAN_COLUMNS: { id: KanbanColumn; label: string }[] = [
   { id: "done", label: "Готово" },
 ];
 
-export const PRIORITY_CONFIG: Record<TaskPriority, { label: string; color: string; border: string; bg: string }> = {
-  urgent: { label: "Срочно", color: "text-red-300", border: "border-red-400/30", bg: "bg-red-500/12" },
-  high: { label: "Высокий", color: "text-orange-300", border: "border-orange-400/30", bg: "bg-orange-500/12" },
-  medium: { label: "Средний", color: "text-yellow-300", border: "border-yellow-400/30", bg: "bg-yellow-500/12" },
-  low: { label: "Низкий", color: "text-emerald-300", border: "border-emerald-400/30", bg: "bg-emerald-500/12" },
+export const PRIORITY_CONFIG: Record<
+  TaskPriority,
+  { label: string; color: string; border: string; bg: string }
+> = {
+  urgent: {
+    label: "Срочно",
+    color: "text-[#d6dbff]",
+    border: "border-[rgba(94,106,210,0.44)]",
+    bg: "bg-[rgba(94,106,210,0.22)]",
+  },
+  high: {
+    label: "Высокий",
+    color: "text-[var(--cal2-text-primary)]",
+    border: "border-[rgba(255,255,255,0.14)]",
+    bg: "bg-[rgba(255,255,255,0.07)]",
+  },
+  medium: {
+    label: "Средний",
+    color: "text-[#c2c2c2]",
+    border: "border-[rgba(255,255,255,0.1)]",
+    bg: "bg-[rgba(255,255,255,0.05)]",
+  },
+  low: {
+    label: "Низкий",
+    color: "text-[var(--cal2-text-secondary)]",
+    border: "border-[rgba(255,255,255,0.08)]",
+    bg: "bg-[rgba(255,255,255,0.04)]",
+  },
 };
 
 export const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];

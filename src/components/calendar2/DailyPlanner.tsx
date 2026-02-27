@@ -123,18 +123,18 @@ export default function DailyPlanner({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#12122a]/40">
-      <div className="flex items-center justify-between border-b border-white/[0.06] bg-[#16162a]/40 px-4 py-3">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+      <div className="flex items-center justify-between border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
         <div>
-          <p className="text-sm font-semibold text-zinc-100">
+          <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">
             {format(anchorDate, "EEEE, d MMMM", { locale: ru })}
           </p>
-          <p className="text-xs text-zinc-500">Ежедневник</p>
+          <p className="text-[11px] text-[var(--cal2-text-secondary)]">Ежедневник</p>
         </div>
         <button
           type="button"
           onClick={() => setShowForm(!showForm)}
-          className="rounded-lg border border-indigo-400/30 bg-indigo-500/15 px-3 py-1.5 text-xs font-medium text-indigo-200 transition-colors hover:bg-indigo-500/25"
+          className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
         >
           {showForm ? "Отмена" : "+ Блок"}
         </button>
@@ -143,40 +143,40 @@ export default function DailyPlanner({
       <div className="min-h-0 flex-1 overflow-y-auto">
         {/* Add time block form */}
         {showForm && (
-          <div className="border-b border-white/[0.06] bg-[#16162a]/30 p-4">
+          <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-4">
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Название блока"
                 value={form.title}
                 onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-                className="h-9 w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-400/30"
+                className="h-9 w-full rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none transition-colors placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
               />
 
               <textarea
                 placeholder="Описание (опционально)"
                 value={form.description}
                 onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-                className="min-h-16 w-full rounded-lg border border-white/[0.08] bg-black/30 px-3 py-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-600 focus:border-indigo-400/30"
+                className="min-h-16 w-full rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] text-[var(--cal2-text-primary)] outline-none transition-colors placeholder:text-[var(--cal2-text-disabled)] focus:border-[rgba(94,106,210,0.42)]"
               />
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="grid gap-1">
-                  <span className="text-xs text-zinc-500">Начало</span>
+                  <span className="text-[11px] text-[var(--cal2-text-secondary)]">Начало</span>
                   <input
                     type="time"
                     value={form.startTime}
                     onChange={(e) => setForm((prev) => ({ ...prev, startTime: e.target.value }))}
-                    className="h-9 rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                    className="h-9 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                   />
                 </label>
                 <label className="grid gap-1">
-                  <span className="text-xs text-zinc-500">Конец</span>
+                  <span className="text-[11px] text-[var(--cal2-text-secondary)]">Конец</span>
                   <input
                     type="time"
                     value={form.endTime}
                     onChange={(e) => setForm((prev) => ({ ...prev, endTime: e.target.value }))}
-                    className="h-9 rounded-lg border border-white/[0.08] bg-black/30 px-3 text-sm text-zinc-100 outline-none focus:border-indigo-400/30"
+                    className="h-9 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
                   />
                 </label>
               </div>
@@ -186,9 +186,9 @@ export default function DailyPlanner({
                   type="checkbox"
                   checked={form.isRecurring}
                   onChange={(e) => setForm((prev) => ({ ...prev, isRecurring: e.target.checked }))}
-                  className="accent-indigo-500"
+                  className="accent-[var(--cal2-accent)]"
                 />
-                <span className="text-sm text-zinc-300">Повторяющийся</span>
+                <span className="text-[12px] text-[var(--cal2-text-primary)]">Повторяющийся</span>
               </label>
 
               {form.isRecurring && (
@@ -198,10 +198,10 @@ export default function DailyPlanner({
                       key={index}
                       type="button"
                       onClick={() => toggleRecurringDay(index)}
-                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                      className={`rounded-[4px] border px-2.5 py-1 text-[10px] font-medium transition-colors ${
                         form.recurringDays.includes(index)
-                          ? "bg-indigo-500/25 text-indigo-200 border border-indigo-400/30"
-                          : "bg-white/[0.04] text-zinc-500 border border-white/[0.06] hover:text-zinc-300"
+                          ? "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                          : "border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
                       }`}
                     >
                       {name}
@@ -211,13 +211,13 @@ export default function DailyPlanner({
               )}
 
               {formError && (
-                <p className="text-xs text-red-300">{formError}</p>
+                <p className="text-[11px] text-[#d9ddff]">{formError}</p>
               )}
 
               <button
                 type="button"
                 onClick={handleSubmit}
-                className="w-full rounded-lg border border-indigo-400/30 bg-indigo-500/20 py-2 text-sm font-medium text-indigo-200 transition-colors hover:bg-indigo-500/30"
+                className="w-full rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
               >
                 Создать блок
               </button>
@@ -235,11 +235,11 @@ export default function DailyPlanner({
             return (
               <div
                 key={hour}
-                className={`grid grid-cols-[52px_1fr] gap-3 border-b border-white/[0.04] py-1.5 ${
+                className={`grid grid-cols-[52px_1fr] gap-3 border-b border-[var(--cal2-border)] py-1.5 ${
                   hasContent ? "min-h-[52px]" : "min-h-[36px]"
                 }`}
               >
-                <div className="pt-1 text-xs font-medium text-zinc-600">
+                <div className="pt-1 text-[11px] font-medium text-[var(--cal2-text-secondary)]">
                   {formatHour(hour)}
                 </div>
                 <div className="space-y-1">
@@ -252,22 +252,22 @@ export default function DailyPlanner({
                     return (
                       <div
                         key={block.id}
-                        className="flex items-start justify-between rounded-lg border border-indigo-400/20 bg-indigo-500/10 px-2.5 py-1.5"
+                        className="flex items-start justify-between rounded-[6px] border border-[rgba(94,106,210,0.4)] bg-[var(--cal2-accent-soft)] px-2.5 py-1.5"
                       >
                         <div>
-                          <p className="text-sm font-medium text-indigo-200">{block.title}</p>
-                          <p className="text-[11px] text-indigo-300/60">
+                          <p className="text-[13px] font-medium leading-[1.2] text-[var(--cal2-text-primary)]">{block.title}</p>
+                          <p className="text-[10px] text-[#cdd2ff]">
                             {block.startTime} — {block.endTime}
                             {block.isRecurring && " · ↻"}
                           </p>
                           {block.description && (
-                            <p className="mt-1 text-xs text-zinc-400">{block.description}</p>
+                            <p className="mt-1 text-[11px] text-[var(--cal2-text-secondary)]">{block.description}</p>
                           )}
                         </div>
                         <button
                           type="button"
                           onClick={() => onDeleteTimeBlock(block.id)}
-                          className="ml-2 text-xs text-zinc-500 transition-colors hover:text-red-300"
+                          className="ml-2 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                         >
                           ✕
                         </button>
@@ -280,14 +280,14 @@ export default function DailyPlanner({
                       key={event.id}
                       type="button"
                       onClick={() => onSelectEvent(event.id)}
-                      className={`w-full rounded-lg border px-2.5 py-1.5 text-left transition-colors hover:brightness-125 ${
+                      className={`w-full rounded-[6px] border px-2.5 py-1.5 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${
                         event.type === "event"
-                          ? "border-sky-400/25 bg-sky-500/12 text-sky-200"
-                          : "border-violet-400/25 bg-violet-500/12 text-violet-200"
+                          ? "border-[rgba(94,106,210,0.4)] bg-[var(--cal2-accent-soft)] text-[#d6dbff]"
+                          : "border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)]"
                       }`}
                     >
-                      <p className="text-[11px] text-white/40">{event.time}</p>
-                      <p className="text-sm font-medium">{event.title}</p>
+                      <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time}</p>
+                      <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
                     </button>
                   ))}
                 </div>

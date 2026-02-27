@@ -23,8 +23,8 @@ function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPrio
     return `${config.bg} ${config.border} ${config.color}`;
   }
   return event.type === "event"
-    ? "bg-indigo-500/12 border-indigo-400/25 text-indigo-200"
-    : "bg-violet-500/12 border-violet-400/25 text-violet-200";
+    ? "bg-[var(--cal2-accent-soft)] border-[rgba(94,106,210,0.4)] text-[#d6dbff]"
+    : "bg-[rgba(255,255,255,0.06)] border-[var(--cal2-border)] text-[var(--cal2-text-primary)]";
 }
 
 export default function Calendar2WeekView({
@@ -39,7 +39,7 @@ export default function Calendar2WeekView({
   const today = new Date();
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-white/[0.06] bg-[#12122a]/40">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
       <div className="overflow-x-auto">
         <div className="grid min-w-[840px] grid-cols-7">
           {weekDates.map((day) => {
@@ -51,26 +51,26 @@ export default function Calendar2WeekView({
             return (
               <section
                 key={dateKey}
-                className="flex min-h-[520px] flex-col border-r border-white/[0.06] last:border-r-0"
+                className="flex min-h-[520px] flex-col border-r border-[var(--cal2-border)] last:border-r-0"
               >
                 <button
                   type="button"
                   onClick={() => onSelectDate(day)}
-                  className={`border-b border-white/[0.06] px-3 py-3 text-left transition-colors ${
+                  className={`border-b border-[var(--cal2-border)] px-3 py-3 text-left transition-colors ${
                     isSelected
-                      ? "bg-indigo-500/[0.1]"
-                      : "bg-[#16162a]/30 hover:bg-white/[0.03]"
+                      ? "bg-[var(--cal2-accent-soft)]"
+                      : "bg-[var(--cal2-surface-2)] hover:bg-[rgba(255,255,255,0.03)]"
                   }`}
                 >
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                  <p className="text-[10px] uppercase tracking-[0.14em] text-[var(--cal2-text-secondary)]">
                     {format(day, "EEEE", { locale: ru })}
                   </p>
-                  <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-zinc-100">
+                  <p className="mt-1 flex items-center gap-2 text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">
                     <span
-                      className={`inline-flex h-7 min-w-7 items-center justify-center rounded-lg px-2 text-xs ${
+                      className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[4px] px-2 text-[11px] ${
                         isToday
-                          ? "bg-indigo-500 text-white"
-                          : "bg-white/[0.06] text-zinc-200"
+                          ? "border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-[var(--cal2-text-primary)]"
+                          : "border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] text-[var(--cal2-text-primary)]"
                       }`}
                     >
                       {format(day, "d")}
@@ -84,7 +84,7 @@ export default function Calendar2WeekView({
                     <button
                       type="button"
                       onClick={() => onQuickAdd(day)}
-                      className="w-full rounded-lg border border-dashed border-white/[0.08] px-2 py-3 text-xs text-zinc-600 transition-colors hover:border-indigo-400/20 hover:text-indigo-300"
+                      className="w-full rounded-[6px] border border-dashed border-[var(--cal2-border)] px-2 py-3 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:border-[rgba(94,106,210,0.4)] hover:text-[var(--cal2-text-primary)]"
                     >
                       + Добавить
                     </button>
@@ -95,12 +95,12 @@ export default function Calendar2WeekView({
                       key={event.id}
                       type="button"
                       onClick={() => onSelectEvent(event.id)}
-                      className={`w-full rounded-lg border px-2.5 py-2 text-left transition-colors hover:brightness-125 ${getEventStyle(event, eventPriorities)}`}
+                      className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
                     >
-                      <p className="text-[11px] text-white/40">{event.time ?? "—"}</p>
-                      <p className="mt-0.5 text-sm font-medium">{event.title}</p>
+                      <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
+                      <p className="mt-0.5 text-[13px] font-medium leading-[1.2]">{event.title}</p>
                       {event.status === "done" && (
-                        <span className="mt-1 inline-block rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] text-emerald-300">
+                        <span className="mt-1 inline-block rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)]">
                           ✓
                         </span>
                       )}
