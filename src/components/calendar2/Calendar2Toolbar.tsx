@@ -16,6 +16,11 @@ interface Calendar2ToolbarProps {
   isSidebarVisible: boolean;
   searchValue: string;
   onSearchChange: (value: string) => void;
+  dateFromValue: string;
+  dateToValue: string;
+  onDateFromChange: (value: string) => void;
+  onDateToChange: (value: string) => void;
+  onClearCalendarFilters: () => void;
 }
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
@@ -46,6 +51,11 @@ export default function Calendar2Toolbar({
   isSidebarVisible,
   searchValue,
   onSearchChange,
+  dateFromValue,
+  dateToValue,
+  onDateFromChange,
+  onDateToChange,
+  onClearCalendarFilters,
 }: Calendar2ToolbarProps) {
   return (
     <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
@@ -118,7 +128,7 @@ export default function Calendar2Toolbar({
 
           {/* Calendar navigation — only visible on calendar tab */}
           {activeTab === "calendar" && (
-            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
@@ -178,6 +188,38 @@ export default function Calendar2Toolbar({
                   className="h-full w-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)]"
                 />
               </label>
+
+              <label className="inline-flex h-[30px] items-center rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2">
+                <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  От
+                </span>
+                <input
+                  type="date"
+                  value={dateFromValue}
+                  onChange={(event) => onDateFromChange(event.target.value)}
+                  className="h-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none"
+                />
+              </label>
+
+              <label className="inline-flex h-[30px] items-center rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2">
+                <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  До
+                </span>
+                <input
+                  type="date"
+                  value={dateToValue}
+                  onChange={(event) => onDateToChange(event.target.value)}
+                  className="h-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={onClearCalendarFilters}
+                className="h-[30px] rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+              >
+                Сброс
+              </button>
             </div>
           )}
         </div>
