@@ -2,6 +2,7 @@ import {
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
+  EventListFilters,
   LoginInput,
   RegisterInput,
   UpdateEventInput,
@@ -50,8 +51,18 @@ class ApiClient {
     return (await response.json()) as T;
   }
 
-  async getEvents(): Promise<CalendarEvent[]> {
-    return this.request<CalendarEvent[]>("/events");
+  async getEvents(filters: EventListFilters = {}): Promise<CalendarEvent[]> {
+    const searchParams = new URLSearchParams();
+
+    if (filters.q) searchParams.set("q", filters.q);
+    if (filters.type) searchParams.set("type", filters.type);
+    if (filters.status) searchParams.set("status", filters.status);
+    if (filters.dateFrom) searchParams.set("dateFrom", filters.dateFrom);
+    if (filters.dateTo) searchParams.set("dateTo", filters.dateTo);
+
+    const query = searchParams.toString();
+    const endpoint = query ? `/events?${query}` : "/events";
+    return this.request<CalendarEvent[]>(endpoint);
   }
 
   async createEvent(input: CreateEventInput): Promise<CalendarEvent> {
