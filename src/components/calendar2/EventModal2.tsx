@@ -112,6 +112,24 @@ function buildRecurrenceFromForm(formData: EventFormData): EventRecurrence | und
   };
 }
 
+function isSameRecurrence(
+  left: EventRecurrence | undefined,
+  right: EventRecurrence | undefined,
+): boolean {
+  if (!left && !right) {
+    return true;
+  }
+  if (!left || !right) {
+    return false;
+  }
+  return (
+    left.frequency === right.frequency &&
+    left.interval === right.interval &&
+    (left.count ?? undefined) === (right.count ?? undefined) &&
+    (left.until ?? undefined) === (right.until ?? undefined)
+  );
+}
+
 function formToPayload(formData: EventFormData, includeRecurrence: boolean): CreateEventInput {
   return {
     title: formData.title.trim(),
@@ -155,6 +173,10 @@ export default function EventModal2({
 
   const currentPriority = event ? eventPriorities[event.id] ?? "medium" : "medium";
   const hasRecurringSeries = Boolean(event?.recurrenceSeriesId);
+  const isSeriesWideEdit =
+    mode === "view" && isEditMode && hasRecurringSeries && applyScope !== "this";
+  const shouldEditRecurrence =
+    mode === "add" || isSeriesWideEdit;
   const timeConflicts = useMemo(
     () =>
       findTimeConflicts(existingEvents, {
@@ -197,7 +219,7 @@ export default function EventModal2({
       nextErrors.date = "Укажите дату";
     }
 
-    if (mode === "add" && formData.recurrenceFrequency !== "none") {
+    if (shouldEditRecurrence && formData.recurrenceFrequency !== "none") {
       if (!formData.recurrenceCount && !formData.recurrenceUntil) {
         nextErrors.recurrence = "Укажите число повторений или дату окончания";
       } else if (formData.recurrenceUntil && formData.recurrenceUntil < formData.date) {
@@ -254,8 +276,13 @@ export default function EventModal2({
     }
 
     setIsSubmitting(true);
+    const nextRecurrence = buildRecurrenceFromForm(formData);
+    const recurrenceChanged = !isSameRecurrence(event.recurrence, nextRecurrence);
+    const includeRecurrence =
+      hasRecurringSeries && applyScope !== "this" && recurrenceChanged;
+
     try {
-      await onUpdate(event.id, formToPayload(formData, false), formData.priority, applyScope);
+      await onUpdate(event.id, formToPayload(formData, includeRecurrence), formData.priority, applyScope);
       setIsEditMode(false);
     } catch (error) {
       setSubmitError(
@@ -389,10 +416,16 @@ export default function EventModal2({
             type="date"
             value={formData.date}
             onChange={(e) => handleChange("date", e.target.value)}
-            className={`h-10 rounded-[6px] border bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)] ${
+            disabled={isSeriesWideEdit}
+            className={`h-10 rounded-[6px] border bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)] ${
               errors.date ? "border-[rgba(94,106,210,0.45)]" : "border-[var(--cal2-border)]"
             }`}
           />
+          {isSeriesWideEdit && (
+            <span className="text-[10px] text-[var(--cal2-text-secondary)]">
+              Дата недоступна для выбранного scope
+            </span>
+          )}
           {errors.date && (
             <span className="text-[11px] text-[#d9ddff]">{errors.date}</span>
           )}
@@ -411,7 +444,7 @@ export default function EventModal2({
         </label>
       </div>
 
-      {mode === "add" && (
+      {shouldEditRecurrence && (
         <div className="grid gap-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <label className="grid gap-1.5">

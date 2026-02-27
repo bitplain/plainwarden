@@ -265,9 +265,10 @@ export default function Calendar2() {
       id: eventId,
       title: input.title,
       type: input.type,
-      date: input.date,
+      ...(scope === "this" ? { date: input.date } : {}),
       time: input.time,
       description: input.description,
+      recurrence: input.recurrence,
       recurrenceScope: scope,
     });
     handlePriorityChange(eventId, priority);

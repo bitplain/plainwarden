@@ -312,8 +312,22 @@ export function validateUpdateEventInput(body: unknown): Omit<UpdateEventInput, 
   if (body.status !== undefined) {
     payload.status = readEventStatus(body.status);
   }
+  if (body.recurrence !== undefined) {
+    payload.recurrence = readRecurrence(body.recurrence);
+  }
   if (body.recurrenceScope !== undefined) {
     payload.recurrenceScope = readRecurrenceScope(body.recurrenceScope);
+  }
+
+  if (payload.recurrence && (!payload.recurrenceScope || payload.recurrenceScope === "this")) {
+    throw new HttpError(
+      400,
+      "recurrence updates require recurrenceScope='all' or recurrenceScope='this_and_following'",
+    );
+  }
+
+  if (payload.recurrence?.until && payload.date && payload.recurrence.until < payload.date) {
+    throw new HttpError(400, "recurrence.until must be on or after date");
   }
 
   const hasMutableFields = Object.keys(payload).some((key) => key !== "recurrenceScope");
@@ -328,6 +342,16 @@ export function handleRouteError(error: unknown) {
   if (error instanceof HttpError) {
     const body: ApiErrorResponse = { message: error.message };
     return NextResponse.json(body, { status: error.status });
+  }
+
+  if (error instanceof Error && error.name === "DbConflictError") {
+    const body: ApiErrorResponse = { message: error.message };
+    return NextResponse.json(body, { status: 409 });
+  }
+
+  if (error instanceof Error && error.name === "DbStateError") {
+    const body: ApiErrorResponse = { message: error.message };
+    return NextResponse.json(body, { status: 400 });
   }
 
   console.error("Unhandled route error:", error);

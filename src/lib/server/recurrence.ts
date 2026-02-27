@@ -1,4 +1,4 @@
-import { addDays, addMonths, addWeeks, format, parseISO } from "date-fns";
+import { addDays, addMonths, addWeeks, format, parseISO, subDays } from "date-fns";
 import type { EventRecurrence } from "@/lib/types";
 
 const MAX_RECURRENCE_OCCURRENCES = 400;
@@ -43,4 +43,12 @@ export function generateRecurrenceDates(startDate: string, recurrence: EventRecu
   }
 
   return occurrences;
+}
+
+export function dayBeforeDate(dateKey: string): string {
+  const date = parseISO(dateKey);
+  if (!isValidDateValue(date)) {
+    throw new Error("Invalid date");
+  }
+  return format(subDays(date, 1), "yyyy-MM-dd");
 }

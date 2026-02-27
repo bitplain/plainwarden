@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateRecurrenceDates } from "@/lib/server/recurrence";
+import { dayBeforeDate, generateRecurrenceDates } from "@/lib/server/recurrence";
 
 describe("generateRecurrenceDates", () => {
   it("generates daily occurrences by count", () => {
@@ -30,5 +30,9 @@ describe("generateRecurrenceDates", () => {
         count: 2,
       }),
     ).toThrow();
+  });
+
+  it("computes day before target date", () => {
+    expect(dayBeforeDate("2026-03-01")).toBe("2026-02-28");
   });
 });
