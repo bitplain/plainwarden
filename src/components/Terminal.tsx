@@ -4,6 +4,7 @@ import {
   CSSProperties,
   FormEvent,
   KeyboardEvent,
+  memo,
   useEffect,
   useMemo,
   useRef,
@@ -17,6 +18,26 @@ import {
   type SlashCommandContext,
 } from "@/modules/terminal/commands";
 import Calendar from "@/components/Calendar";
+
+const LiveClock = memo(function LiveClock() {
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return (
+    <span className="terminal-idle-clock">
+      {new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(now)}
+    </span>
+  );
+});
 
 interface HistoryEntry {
   command: string;
@@ -128,7 +149,6 @@ export default function Terminal() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginBusy, setLoginBusy] = useState(false);
-  const [clockNow, setClockNow] = useState(() => new Date());
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -232,11 +252,6 @@ export default function Terminal() {
 
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, []);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setClockNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
   }, []);
 
   useEffect(() => {
@@ -665,16 +680,6 @@ export default function Terminal() {
             : currentTerminalWindow === "settings"
               ? "Настройки"
         : "NetDen";
-  const idleClock = useMemo(
-    () =>
-      new Intl.DateTimeFormat("ru-RU", {
-        hour: "2-digit",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: false,
-      }).format(clockNow),
-    [clockNow],
-  );
 
   return (
     <div
@@ -877,7 +882,7 @@ export default function Terminal() {
                     <span>
                       <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
                     </span>
-                    <span className="terminal-idle-clock">{idleClock}</span>
+                    <LiveClock />
                   </span>
                   <span>
                     <strong>type</strong> /help to continue
