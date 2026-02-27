@@ -113,8 +113,8 @@ export function validateSetupRunInput(payload: unknown): SetupRunInput {
   assertRecord(payload.siteAdmin, "siteAdmin must be an object");
 
   const appPassword = readOptionalString(payload.provision.appPassword, "provision.appPassword", 128);
-  if (appPassword && appPassword.length < 8) {
-    throw new HttpError(400, "provision.appPassword must be at least 8 characters");
+  if (appPassword && appPassword.length < 12) {
+    throw new HttpError(400, "provision.appPassword must be at least 12 characters");
   }
 
   const siteAdmin: SetupSiteAdminInput = {
@@ -123,8 +123,8 @@ export function validateSetupRunInput(payload: unknown): SetupRunInput {
     password: readRequiredString(payload.siteAdmin.password, "siteAdmin.password", 256),
   };
 
-  if (siteAdmin.password.length < 8) {
-    throw new HttpError(400, "siteAdmin.password must be at least 8 characters");
+  if (siteAdmin.password.length < 12) {
+    throw new HttpError(400, "siteAdmin.password must be at least 12 characters");
   }
 
   return {
@@ -143,8 +143,8 @@ export function validateSetupRecoverInput(payload: unknown): SetupRecoverInput {
   assertRecord(payload.provision, "provision must be an object");
 
   const appPassword = readOptionalString(payload.provision.appPassword, "provision.appPassword", 128);
-  if (appPassword && appPassword.length < 8) {
-    throw new HttpError(400, "provision.appPassword must be at least 8 characters");
+  if (appPassword && appPassword.length < 12) {
+    throw new HttpError(400, "provision.appPassword must be at least 12 characters");
   }
 
   return {

@@ -7,6 +7,12 @@ import {
   readJsonBody,
   validateCreateEventInput,
 } from "@/lib/server/validators";
+import { getRateLimitResponse } from "@/lib/server/rate-limit";
+
+const CREATE_EVENT_RATE_LIMIT = {
+  maxRequests: 60,
+  windowMs: 60 * 1000,
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,6 +38,9 @@ export async function POST(request: NextRequest) {
     if (!user) {
       throw new HttpError(401, "Unauthorized");
     }
+
+    const rateLimitResponse = getRateLimitResponse(request, "events:create", CREATE_EVENT_RATE_LIMIT);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const body = await readJsonBody(request);
     const input = validateCreateEventInput(body);

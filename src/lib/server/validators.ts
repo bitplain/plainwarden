@@ -114,6 +114,11 @@ export async function readJsonBody(
     throw new HttpError(413, `Payload too large. Max size is ${maxSizeKB}KB`);
   }
 
+  const contentType = request.headers.get("content-type");
+  if (!contentType || !contentType.includes("application/json")) {
+    throw new HttpError(415, "Content-Type must be application/json");
+  }
+
   let rawBody = "";
   try {
     rawBody = await request.text();
@@ -161,8 +166,8 @@ export function validateRegisterInput(body: unknown): RegisterInput {
     throw new HttpError(400, "email must be valid");
   }
 
-  if (password.length < 8) {
-    throw new HttpError(400, "password must be at least 8 characters");
+  if (password.length < 12) {
+    throw new HttpError(400, "password must be at least 12 characters");
   }
 
   return { name, email, password };
