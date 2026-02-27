@@ -10,6 +10,7 @@ import {
   CreateEventInput,
   EventListFilters,
   LoginInput,
+  RecurrenceScope,
   RegisterInput,
   UpdateEventInput,
 } from "@/lib/types";
@@ -31,7 +32,7 @@ interface NetdenState {
   fetchEvents: (filters?: EventListFilters) => Promise<void>;
   addEvent: (input: CreateEventInput) => Promise<void>;
   updateEvent: (input: UpdateEventInput) => Promise<void>;
-  deleteEvent: (id: string) => Promise<void>;
+  deleteEvent: (id: string, options?: { recurrenceScope?: RecurrenceScope }) => Promise<void>;
 
   clearError: () => void;
 }
@@ -179,10 +180,10 @@ export const createNetdenStore = () =>
       }
     },
 
-    deleteEvent: async (id) => {
+    deleteEvent: async (id, options) => {
       set({ error: null });
       try {
-        await api.deleteEvent(id);
+        await api.deleteEvent(id, options);
         set((state) => ({ events: state.events.filter((event) => event.id !== id) }));
       } catch (error) {
         set({ error: getErrorMessage(error) });

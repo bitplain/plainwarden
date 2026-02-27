@@ -122,6 +122,35 @@ describe("validateCreateEventInput", () => {
   it("rejects time in invalid format", () => {
     expect(() => validateCreateEventInput({ ...valid, time: "2:30pm" })).toThrow();
   });
+
+  it("accepts recurrence with count", () => {
+    const result = validateCreateEventInput({
+      ...valid,
+      recurrence: {
+        frequency: "weekly",
+        interval: 1,
+        count: 4,
+      },
+    });
+    expect(result.recurrence).toEqual({
+      frequency: "weekly",
+      interval: 1,
+      count: 4,
+      until: undefined,
+    });
+  });
+
+  it("rejects recurrence without count or until", () => {
+    expect(() =>
+      validateCreateEventInput({
+        ...valid,
+        recurrence: {
+          frequency: "daily",
+          interval: 1,
+        },
+      }),
+    ).toThrow();
+  });
 });
 
 describe("validateUpdateEventInput", () => {
@@ -137,5 +166,21 @@ describe("validateUpdateEventInput", () => {
   it("accepts status update", () => {
     const result = validateUpdateEventInput({ status: "done" });
     expect(result.status).toBe("done");
+  });
+
+  it("accepts recurrence scope with mutable fields", () => {
+    const result = validateUpdateEventInput({
+      title: "Updated",
+      recurrenceScope: "all",
+    });
+    expect(result.recurrenceScope).toBe("all");
+  });
+
+  it("rejects recurrence scope without mutable fields", () => {
+    expect(() =>
+      validateUpdateEventInput({
+        recurrenceScope: "this_and_following",
+      }),
+    ).toThrow();
   });
 });

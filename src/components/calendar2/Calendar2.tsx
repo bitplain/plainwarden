@@ -4,7 +4,12 @@ import { startOfDay } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { buildEventListQueryString } from "@/lib/event-filter-query";
 import { useNetdenStore } from "@/lib/store";
-import type { CalendarEvent, CreateEventInput, EventStatus } from "@/lib/types";
+import type {
+  CalendarEvent,
+  CreateEventInput,
+  EventStatus,
+  RecurrenceScope,
+} from "@/lib/types";
 import {
   buildEventsByDate,
   formatPeriodLabel,
@@ -229,21 +234,32 @@ export default function Calendar2() {
     // Store priority keyed by title::date as a secondary lookup
     // until we can associate it with the server-assigned event ID
     handlePriorityChange(`${input.title}::${input.date}`, priority);
+    await fetchEvents(calendarQueryFilters);
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    await deleteEvent(eventId);
+  const handleDeleteEvent = async (
+    eventId: string,
+    scope: RecurrenceScope = "this",
+  ) => {
+    await deleteEvent(eventId, { recurrenceScope: scope });
+    await fetchEvents(calendarQueryFilters);
     setSelectedEventId(null);
   };
 
-  const handleToggleStatus = async (eventId: string, nextStatus: EventStatus) => {
-    await updateEvent({ id: eventId, status: nextStatus });
+  const handleToggleStatus = async (
+    eventId: string,
+    nextStatus: EventStatus,
+    scope: RecurrenceScope = "this",
+  ) => {
+    await updateEvent({ id: eventId, status: nextStatus, recurrenceScope: scope });
+    await fetchEvents(calendarQueryFilters);
   };
 
   const handleUpdateEvent = async (
     eventId: string,
     input: CreateEventInput,
     priority: TaskPriority,
+    scope: RecurrenceScope = "this",
   ) => {
     await updateEvent({
       id: eventId,
@@ -252,8 +268,10 @@ export default function Calendar2() {
       date: input.date,
       time: input.time,
       description: input.description,
+      recurrenceScope: scope,
     });
     handlePriorityChange(eventId, priority);
+    await fetchEvents(calendarQueryFilters);
   };
 
   const handleMoveEvent = async (eventId: string, payload: EventMovePayload) => {
@@ -276,7 +294,9 @@ export default function Calendar2() {
       id: eventId,
       date: nextDate,
       time: nextTime,
+      recurrenceScope: "this",
     });
+    await fetchEvents(calendarQueryFilters);
   };
 
   const handleLogout = async () => {
