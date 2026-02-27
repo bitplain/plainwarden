@@ -48,7 +48,7 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
 
     const body = await readJsonBody(request);
     const input = validateUpdateEventInput(body);
-    const { recurrenceScope, ...updatePayload } = input;
+    const { recurrenceScope, revision, ...updatePayload } = input;
     const scope = recurrenceScope ?? "this";
 
     if (scope !== "this" && updatePayload.date !== undefined) {
@@ -63,6 +63,7 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
 
     const updated = await updateEventForUser(user.id, id, updatePayload, {
       scope,
+      revision,
     });
     if (!updated) {
       throw new HttpError(404, "Event not found");

@@ -18,9 +18,11 @@ export interface CalendarEvent {
   time?: string; // HH:MM
   type: EventType;
   status?: EventStatus;
+  categoryId?: string;
   recurrenceSeriesId?: string;
   recurrenceException?: boolean;
   recurrence?: EventRecurrence;
+  revision?: number;
 }
 
 export interface PersistedEvent extends CalendarEvent {
@@ -47,6 +49,7 @@ export interface CreateEventInput {
   time?: string;
   description: string;
   status?: EventStatus;
+  categoryId?: string;
   recurrence?: EventRecurrence;
 }
 
@@ -58,8 +61,10 @@ export interface UpdateEventInput {
   time?: string;
   description?: string;
   status?: EventStatus;
+  categoryId?: string;
   recurrence?: EventRecurrence;
   recurrenceScope?: RecurrenceScope;
+  revision?: number;
 }
 
 export interface EventListFilters {

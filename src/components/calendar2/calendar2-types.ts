@@ -40,6 +40,36 @@ export interface TimeBlock {
   recurringDays?: number[];
 }
 
+export interface CalendarCategory {
+  id: string;
+  label: string;
+  color: string;
+  createdAt: string;
+}
+
+export type NotificationKind = "reminder" | "overdue" | "info";
+
+export interface AppNotification {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  eventId?: string;
+  read: boolean;
+  createdAt: string;
+}
+
+export type AuditAction = "create" | "update" | "delete" | "convert";
+
+export interface AuditEntry {
+  id: string;
+  action: AuditAction;
+  eventId: string;
+  eventTitle: string;
+  detail?: string;
+  timestamp: string;
+}
+
 export interface SidebarCategory {
   id: string;
   label: string;

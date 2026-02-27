@@ -37,9 +37,11 @@ model Event {
   time                String?
   type                EventType
   status              EventStatus  @default(pending)
+  categoryId          String?
   recurrenceSeriesId  String?
   recurrenceSeries    EventSeries? @relation(fields: [recurrenceSeriesId], references: [id], onDelete: SetNull)
   recurrenceException Boolean      @default(false)
+  revision            Int          @default(0)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 

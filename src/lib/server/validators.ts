@@ -268,6 +268,10 @@ export function validateCreateEventInput(body: unknown): CreateEventInput {
   const time = readTime(body.time);
   const status = body.status === undefined ? "pending" : readEventStatus(body.status);
   const recurrence = readRecurrence(body.recurrence);
+  const categoryId =
+    body.categoryId !== undefined
+      ? readString(body.categoryId, "categoryId", { required: false, maxLength: 50 }) || undefined
+      : undefined;
 
   if (recurrence?.until && recurrence.until < date) {
     throw new HttpError(400, "recurrence.until must be on or after date");
@@ -280,6 +284,7 @@ export function validateCreateEventInput(body: unknown): CreateEventInput {
     date,
     time,
     status,
+    categoryId,
     recurrence,
   };
 }
@@ -312,11 +317,19 @@ export function validateUpdateEventInput(body: unknown): Omit<UpdateEventInput, 
   if (body.status !== undefined) {
     payload.status = readEventStatus(body.status);
   }
+  if (body.categoryId !== undefined) {
+    payload.categoryId =
+      readString(body.categoryId, "categoryId", { required: false, maxLength: 50 }) || undefined;
+  }
   if (body.recurrence !== undefined) {
     payload.recurrence = readRecurrence(body.recurrence);
   }
   if (body.recurrenceScope !== undefined) {
     payload.recurrenceScope = readRecurrenceScope(body.recurrenceScope);
+  }
+  if (body.revision !== undefined) {
+    const rev = readPositiveInteger(body.revision, "revision", { min: 0 });
+    payload.revision = rev ?? 0;
   }
 
   if (payload.recurrence && (!payload.recurrenceScope || payload.recurrenceScope === "this")) {
@@ -330,7 +343,9 @@ export function validateUpdateEventInput(body: unknown): Omit<UpdateEventInput, 
     throw new HttpError(400, "recurrence.until must be on or after date");
   }
 
-  const hasMutableFields = Object.keys(payload).some((key) => key !== "recurrenceScope");
+  const hasMutableFields = Object.keys(payload).some(
+    (key) => key !== "recurrenceScope" && key !== "revision",
+  );
   if (!hasMutableFields) {
     throw new HttpError(400, "At least one field must be provided for update");
   }
