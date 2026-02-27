@@ -11,6 +11,7 @@ interface Calendar2ToolbarProps {
   onNext: () => void;
   onToday: () => void;
   onAdd: () => void;
+  onExportIcs: () => void;
   onLogout: () => void;
   onToggleSidebar: () => void;
   isSidebarVisible: boolean;
@@ -46,6 +47,7 @@ export default function Calendar2Toolbar({
   onNext,
   onToday,
   onAdd,
+  onExportIcs,
   onLogout,
   onToggleSidebar,
   isSidebarVisible,
@@ -219,6 +221,14 @@ export default function Calendar2Toolbar({
                 className="h-[30px] rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
               >
                 Сброс
+              </button>
+
+              <button
+                type="button"
+                onClick={onExportIcs}
+                className="h-[30px] rounded-[6px] border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] px-2.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
+              >
+                Export .ics
               </button>
             </div>
           )}

@@ -2,6 +2,7 @@
 
 import { startOfDay } from "date-fns";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildEventListQueryString } from "@/lib/event-filter-query";
 import { useNetdenStore } from "@/lib/store";
 import type { CalendarEvent, CreateEventInput, EventStatus } from "@/lib/types";
 import {
@@ -355,6 +356,12 @@ export default function Calendar2() {
     );
   };
 
+  const handleExportIcs = () => {
+    const query = buildEventListQueryString(calendarQueryFilters);
+    const endpoint = query ? `/api/events/export.ics?${query}` : "/api/events/export.ics";
+    window.open(endpoint, "_blank", "noopener,noreferrer");
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "calendar":
@@ -470,6 +477,7 @@ export default function Calendar2() {
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
+        onExportIcs={handleExportIcs}
         onLogout={handleLogout}
         searchValue={searchQuery}
         onSearchChange={(value) =>
