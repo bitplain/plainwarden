@@ -8,12 +8,14 @@ import type {
   EventType,
 } from "@/lib/types";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
+import { findTimeConflicts } from "./conflict-utils";
 
 interface EventModal2Props {
   event?: CalendarEvent | null;
   mode: "view" | "add";
   initialDate?: string;
   eventPriorities: Record<string, TaskPriority>;
+  existingEvents?: CalendarEvent[];
   onClose: () => void;
   onSave?: (event: CreateEventInput, priority: TaskPriority) => Promise<void> | void;
   onUpdate?: (
@@ -86,6 +88,7 @@ export default function EventModal2({
   mode,
   initialDate,
   eventPriorities,
+  existingEvents = [],
   onClose,
   onSave,
   onUpdate,
@@ -109,6 +112,15 @@ export default function EventModal2({
   }, [event?.status]);
 
   const currentPriority = event ? eventPriorities[event.id] ?? "medium" : "medium";
+  const timeConflicts = useMemo(
+    () =>
+      findTimeConflicts(existingEvents, {
+        date: formData.date,
+        time: formData.time,
+        excludeEventId: event?.id,
+      }),
+    [existingEvents, formData.date, formData.time, event?.id],
+  );
 
   useEffect(() => {
     if (mode === "add") {
@@ -321,6 +333,22 @@ export default function EventModal2({
           placeholder="Короткое описание"
         />
       </label>
+
+      {timeConflicts.length > 0 && (
+        <div className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] text-[#d9ddff]">
+          <p className="font-medium">Конфликт времени: {timeConflicts.length}</p>
+          <p className="mt-1 text-[11px]">
+            Найдены события на эту же дату и время. Сохранение всё равно доступно.
+          </p>
+          <ul className="mt-2 space-y-0.5 text-[11px]">
+            {timeConflicts.slice(0, 3).map((conflict) => (
+              <li key={conflict.id} className="truncate text-[var(--cal2-text-primary)]">
+                {conflict.time ?? "--:--"} · {conflict.title}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {submitError && (
         <div className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] text-[#d9ddff]">
