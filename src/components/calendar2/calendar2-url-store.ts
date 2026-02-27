@@ -8,6 +8,8 @@ import {
 } from "./calendar2-url-state";
 
 const CALENDAR2_URL_STORE_EVENT = "calendar2:url-store-change";
+let cachedSnapshotSearch = "";
+let cachedSnapshot: Calendar2UrlState | null = null;
 
 export type Calendar2UrlHistoryMode = "replace" | "push";
 export type Calendar2UrlStateUpdater = (prev: Calendar2UrlState) => Calendar2UrlState;
@@ -110,7 +112,18 @@ export function buildCalendar2UrlChange(input: {
 }
 
 function getCalendar2UrlSnapshot(): Calendar2UrlState {
-  return readCalendar2UrlStateFromWindow();
+  if (typeof window === "undefined") {
+    return getCalendar2UrlServerSnapshot();
+  }
+
+  const search = window.location.search;
+  if (cachedSnapshot && cachedSnapshotSearch === search) {
+    return cachedSnapshot;
+  }
+
+  cachedSnapshotSearch = search;
+  cachedSnapshot = readCalendar2UrlStateFromSearch(search, getFallbackDateKey());
+  return cachedSnapshot;
 }
 
 function getCalendar2UrlServerSnapshot(): Calendar2UrlState {
