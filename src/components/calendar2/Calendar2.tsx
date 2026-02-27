@@ -456,6 +456,7 @@ export default function Calendar2() {
           event={selectedEvent}
           mode="view"
           eventPriorities={resolvedPriorities}
+          existingEvents={events}
           onClose={() => setSelectedEventId(null)}
           onDelete={handleDeleteEvent}
           onToggleStatus={handleToggleStatus}
@@ -470,6 +471,7 @@ export default function Calendar2() {
           mode="add"
           initialDate={addModalDate}
           eventPriorities={resolvedPriorities}
+          existingEvents={events}
           onClose={() => setShowAddModal(false)}
           onSave={handleSaveEvent}
         />
