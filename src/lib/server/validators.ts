@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import {
   ApiErrorResponse,
   CreateEventInput,
+  EventRecurrence,
+  RecurrenceFrequency,
+  RecurrenceScope,
   EventStatus,
   EventType,
   LoginInput,
@@ -67,6 +70,41 @@ function readEventStatus(value: unknown): EventStatus {
   throw new HttpError(400, "status must be either 'pending' or 'done'");
 }
 
+function readRecurrenceFrequency(value: unknown): RecurrenceFrequency {
+  if (value === "daily" || value === "weekly" || value === "monthly") {
+    return value;
+  }
+  throw new HttpError(400, "recurrence.frequency must be one of 'daily', 'weekly', 'monthly'");
+}
+
+function readRecurrenceScope(value: unknown): RecurrenceScope {
+  if (value === "this" || value === "all" || value === "this_and_following") {
+    return value;
+  }
+  throw new HttpError(400, "recurrenceScope must be one of 'this', 'all', 'this_and_following'");
+}
+
+function readPositiveInteger(
+  value: unknown,
+  fieldName: string,
+  options: { min?: number; max?: number; required?: boolean } = {},
+): number | undefined {
+  const { min = 1, max = Number.MAX_SAFE_INTEGER, required = false } = options;
+  if (value === undefined || value === null || value === "") {
+    if (required) {
+      throw new HttpError(400, `${fieldName} is required`);
+    }
+    return undefined;
+  }
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    throw new HttpError(400, `${fieldName} must be an integer`);
+  }
+  if (value < min || value > max) {
+    throw new HttpError(400, `${fieldName} must be between ${min} and ${max}`);
+  }
+  return value;
+}
+
 function readDate(value: unknown): string {
   const date = readString(value, "date");
   if (!ISO_DATE_REGEX.test(date)) {
@@ -87,6 +125,51 @@ function readTime(value: unknown): string | undefined {
     throw new HttpError(400, "time must use HH:MM format");
   }
   return normalized;
+}
+
+function readOptionalDate(value: unknown, fieldName: string): string | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${fieldName} must be a string`);
+  }
+  const normalized = value.trim();
+  if (!ISO_DATE_REGEX.test(normalized)) {
+    throw new HttpError(400, `${fieldName} must use YYYY-MM-DD format`);
+  }
+  return normalized;
+}
+
+function readRecurrence(value: unknown): EventRecurrence | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new HttpError(400, "recurrence must be an object");
+  }
+
+  const frequency = readRecurrenceFrequency(value.frequency);
+  const interval = readPositiveInteger(value.interval, "recurrence.interval", {
+    min: 1,
+    max: 30,
+  }) ?? 1;
+  const count = readPositiveInteger(value.count, "recurrence.count", {
+    min: 1,
+    max: 400,
+  });
+  const until = readOptionalDate(value.until, "recurrence.until");
+
+  if (!count && !until) {
+    throw new HttpError(400, "recurrence must include either count or until");
+  }
+
+  return {
+    frequency,
+    interval,
+    count,
+    until,
+  };
 }
 
 function parseContentLength(value: string | null): number | null {
@@ -184,6 +267,11 @@ export function validateCreateEventInput(body: unknown): CreateEventInput {
   const date = readDate(body.date);
   const time = readTime(body.time);
   const status = body.status === undefined ? "pending" : readEventStatus(body.status);
+  const recurrence = readRecurrence(body.recurrence);
+
+  if (recurrence?.until && recurrence.until < date) {
+    throw new HttpError(400, "recurrence.until must be on or after date");
+  }
 
   return {
     title,
@@ -192,6 +280,7 @@ export function validateCreateEventInput(body: unknown): CreateEventInput {
     date,
     time,
     status,
+    recurrence,
   };
 }
 
@@ -223,8 +312,12 @@ export function validateUpdateEventInput(body: unknown): Omit<UpdateEventInput, 
   if (body.status !== undefined) {
     payload.status = readEventStatus(body.status);
   }
+  if (body.recurrenceScope !== undefined) {
+    payload.recurrenceScope = readRecurrenceScope(body.recurrenceScope);
+  }
 
-  if (Object.keys(payload).length === 0) {
+  const hasMutableFields = Object.keys(payload).some((key) => key !== "recurrenceScope");
+  if (!hasMutableFields) {
     throw new HttpError(400, "At least one field must be provided for update");
   }
 

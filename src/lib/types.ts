@@ -1,5 +1,14 @@
 export type EventType = "event" | "task";
 export type EventStatus = "pending" | "done";
+export type RecurrenceFrequency = "daily" | "weekly" | "monthly";
+export type RecurrenceScope = "this" | "all" | "this_and_following";
+
+export interface EventRecurrence {
+  frequency: RecurrenceFrequency;
+  interval: number;
+  count?: number;
+  until?: string; // ISO date string YYYY-MM-DD
+}
 
 export interface CalendarEvent {
   id: string;
@@ -9,6 +18,9 @@ export interface CalendarEvent {
   time?: string; // HH:MM
   type: EventType;
   status?: EventStatus;
+  recurrenceSeriesId?: string;
+  recurrenceException?: boolean;
+  recurrence?: EventRecurrence;
 }
 
 export interface PersistedEvent extends CalendarEvent {
@@ -35,6 +47,7 @@ export interface CreateEventInput {
   time?: string;
   description: string;
   status?: EventStatus;
+  recurrence?: EventRecurrence;
 }
 
 export interface UpdateEventInput {
@@ -45,6 +58,7 @@ export interface UpdateEventInput {
   time?: string;
   description?: string;
   status?: EventStatus;
+  recurrenceScope?: RecurrenceScope;
 }
 
 export interface EventListFilters {

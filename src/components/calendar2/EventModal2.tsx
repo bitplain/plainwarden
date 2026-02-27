@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import type {
   CalendarEvent,
   CreateEventInput,
+  EventRecurrence,
   EventStatus,
   EventType,
+  RecurrenceScope,
 } from "@/lib/types";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 import { findTimeConflicts } from "./conflict-utils";
@@ -22,9 +24,14 @@ interface EventModal2Props {
     eventId: string,
     event: CreateEventInput,
     priority: TaskPriority,
+    scope: RecurrenceScope,
   ) => Promise<void> | void;
-  onDelete?: (eventId: string) => Promise<void> | void;
-  onToggleStatus?: (eventId: string, status: EventStatus) => Promise<void> | void;
+  onDelete?: (eventId: string, scope: RecurrenceScope) => Promise<void> | void;
+  onToggleStatus?: (
+    eventId: string,
+    status: EventStatus,
+    scope: RecurrenceScope,
+  ) => Promise<void> | void;
   onPriorityChange?: (eventId: string, priority: TaskPriority) => void;
 }
 
@@ -35,11 +42,16 @@ interface EventFormData {
   time: string;
   description: string;
   priority: TaskPriority;
+  recurrenceFrequency: "none" | EventRecurrence["frequency"];
+  recurrenceInterval: string;
+  recurrenceCount: string;
+  recurrenceUntil: string;
 }
 
 interface EventFormErrors {
   title?: string;
   date?: string;
+  recurrence?: string;
 }
 
 function getTodayString(): string {
@@ -58,10 +70,15 @@ function createEmptyForm(initialDate?: string): EventFormData {
     time: "",
     description: "",
     priority: "medium",
+    recurrenceFrequency: "none",
+    recurrenceInterval: "1",
+    recurrenceCount: "",
+    recurrenceUntil: "",
   };
 }
 
 function buildFormFromEvent(event: CalendarEvent, priority: TaskPriority): EventFormData {
+  const recurrence = event.recurrence;
   return {
     title: event.title,
     type: event.type,
@@ -69,10 +86,33 @@ function buildFormFromEvent(event: CalendarEvent, priority: TaskPriority): Event
     time: event.time ?? "",
     description: event.description,
     priority,
+    recurrenceFrequency: recurrence?.frequency ?? "none",
+    recurrenceInterval: recurrence ? String(recurrence.interval) : "1",
+    recurrenceCount: recurrence?.count ? String(recurrence.count) : "",
+    recurrenceUntil: recurrence?.until ?? "",
   };
 }
 
-function formToPayload(formData: EventFormData): CreateEventInput {
+function buildRecurrenceFromForm(formData: EventFormData): EventRecurrence | undefined {
+  if (formData.recurrenceFrequency === "none") {
+    return undefined;
+  }
+
+  const intervalRaw = Number(formData.recurrenceInterval || "1");
+  const interval = Number.isInteger(intervalRaw) && intervalRaw > 0 ? intervalRaw : 1;
+  const countRaw = formData.recurrenceCount ? Number(formData.recurrenceCount) : undefined;
+  const count = countRaw && Number.isInteger(countRaw) && countRaw > 0 ? countRaw : undefined;
+  const until = formData.recurrenceUntil || undefined;
+
+  return {
+    frequency: formData.recurrenceFrequency,
+    interval,
+    count,
+    until,
+  };
+}
+
+function formToPayload(formData: EventFormData, includeRecurrence: boolean): CreateEventInput {
   return {
     title: formData.title.trim(),
     type: formData.type,
@@ -80,6 +120,7 @@ function formToPayload(formData: EventFormData): CreateEventInput {
     time: formData.time || undefined,
     description: formData.description.trim(),
     status: "pending",
+    recurrence: includeRecurrence ? buildRecurrenceFromForm(formData) : undefined,
   };
 }
 
@@ -103,6 +144,7 @@ export default function EventModal2({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [applyScope, setApplyScope] = useState<RecurrenceScope>("this");
 
   const nextStatus = useMemo(() => {
     if (!event?.status) {
@@ -112,6 +154,7 @@ export default function EventModal2({
   }, [event?.status]);
 
   const currentPriority = event ? eventPriorities[event.id] ?? "medium" : "medium";
+  const hasRecurringSeries = Boolean(event?.recurrenceSeriesId);
   const timeConflicts = useMemo(
     () =>
       findTimeConflicts(existingEvents, {
@@ -126,6 +169,7 @@ export default function EventModal2({
     if (mode === "add") {
       setFormData(createEmptyForm(initialDate));
       setIsEditMode(false);
+      setApplyScope("this");
       setErrors({});
       setSubmitError(null);
       return;
@@ -134,6 +178,7 @@ export default function EventModal2({
     if (mode === "view" && event) {
       setFormData(buildFormFromEvent(event, currentPriority));
       setIsEditMode(false);
+      setApplyScope("this");
       setErrors({});
       setSubmitError(null);
     }
@@ -152,6 +197,14 @@ export default function EventModal2({
       nextErrors.date = "Укажите дату";
     }
 
+    if (mode === "add" && formData.recurrenceFrequency !== "none") {
+      if (!formData.recurrenceCount && !formData.recurrenceUntil) {
+        nextErrors.recurrence = "Укажите число повторений или дату окончания";
+      } else if (formData.recurrenceUntil && formData.recurrenceUntil < formData.date) {
+        nextErrors.recurrence = "Дата окончания должна быть не раньше даты события";
+      }
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -160,6 +213,14 @@ export default function EventModal2({
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field as keyof EventFormErrors]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+    if (
+      field === "recurrenceFrequency" ||
+      field === "recurrenceInterval" ||
+      field === "recurrenceCount" ||
+      field === "recurrenceUntil"
+    ) {
+      setErrors((prev) => ({ ...prev, recurrence: undefined }));
     }
   };
 
@@ -173,7 +234,7 @@ export default function EventModal2({
 
     setIsSubmitting(true);
     try {
-      await onSave(formToPayload(formData), formData.priority);
+      await onSave(formToPayload(formData, true), formData.priority);
       onClose();
     } catch (error) {
       setSubmitError(
@@ -194,7 +255,7 @@ export default function EventModal2({
 
     setIsSubmitting(true);
     try {
-      await onUpdate(event.id, formToPayload(formData), formData.priority);
+      await onUpdate(event.id, formToPayload(formData, false), formData.priority, applyScope);
       setIsEditMode(false);
     } catch (error) {
       setSubmitError(
@@ -214,7 +275,7 @@ export default function EventModal2({
     setIsDeleting(true);
 
     try {
-      await onDelete(event.id);
+      await onDelete(event.id, applyScope);
       onClose();
     } catch (error) {
       setSubmitError(
@@ -234,7 +295,7 @@ export default function EventModal2({
     setIsTogglingStatus(true);
 
     try {
-      await onToggleStatus(event.id, nextStatus);
+      await onToggleStatus(event.id, nextStatus, applyScope);
     } catch (error) {
       setSubmitError(
         error instanceof Error ? error.message : "Не удалось обновить",
@@ -243,6 +304,34 @@ export default function EventModal2({
       setIsTogglingStatus(false);
     }
   };
+
+  const renderScopeSelector = () => (
+    <div className="mb-4 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
+      <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+        Применить к
+      </p>
+      <div className="mt-2 inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
+        {([
+          { id: "this", label: "Только это" },
+          { id: "all", label: "Вся серия" },
+          { id: "this_and_following", label: "Это и следующие" },
+        ] as const).map((scope) => (
+          <button
+            key={scope.id}
+            type="button"
+            onClick={() => setApplyScope(scope.id)}
+            className={`rounded-[4px] px-2 py-1 text-[11px] font-medium transition-colors ${
+              applyScope === scope.id
+                ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
+            }`}
+          >
+            {scope.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 
   const renderForm = (submitLabel: string, onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>, onCancel: () => void) => (
     <form className="space-y-3" onSubmit={(formEvent) => { void onSubmit(formEvent); }}>
@@ -322,6 +411,79 @@ export default function EventModal2({
         </label>
       </div>
 
+      {mode === "add" && (
+        <div className="grid gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5">
+              <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                Повтор
+              </span>
+              <select
+                value={formData.recurrenceFrequency}
+                onChange={(e) => handleChange("recurrenceFrequency", e.target.value)}
+                className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+              >
+                <option value="none">Не повторять</option>
+                <option value="daily">Каждый день</option>
+                <option value="weekly">Каждую неделю</option>
+                <option value="monthly">Каждый месяц</option>
+              </select>
+            </label>
+
+            {formData.recurrenceFrequency !== "none" && (
+              <label className="grid gap-1.5">
+                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  Интервал
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={30}
+                  value={formData.recurrenceInterval}
+                  onChange={(e) => handleChange("recurrenceInterval", e.target.value)}
+                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                />
+              </label>
+            )}
+          </div>
+
+          {formData.recurrenceFrequency !== "none" && (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="grid gap-1.5">
+                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  Число повторов
+                </span>
+                <input
+                  type="number"
+                  min={1}
+                  max={400}
+                  value={formData.recurrenceCount}
+                  onChange={(e) => handleChange("recurrenceCount", e.target.value)}
+                  placeholder="например, 12"
+                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                />
+              </label>
+
+              <label className="grid gap-1.5">
+                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  До даты
+                </span>
+                <input
+                  type="date"
+                  value={formData.recurrenceUntil}
+                  onChange={(e) => handleChange("recurrenceUntil", e.target.value)}
+                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                />
+              </label>
+            </div>
+          )}
+        </div>
+      )}
+
+      {errors.recurrence && (
+        <span className="text-[11px] text-[#d9ddff]">{errors.recurrence}</span>
+      )}
+
       <label className="grid gap-1.5">
         <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
           Описание
@@ -388,6 +550,7 @@ export default function EventModal2({
           isEditMode ? (
             <>
               <h2 className="mb-4 text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Редактировать событие</h2>
+              {hasRecurringSeries && renderScopeSelector()}
               {renderForm("Сохранить", handleUpdateSubmit, () => {
                 setIsEditMode(false);
                 setFormData(buildFormFromEvent(event, currentPriority));
@@ -464,6 +627,8 @@ export default function EventModal2({
                   {submitError}
                 </div>
               )}
+
+              {hasRecurringSeries && <div className="mt-4">{renderScopeSelector()}</div>}
 
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <button

@@ -2,6 +2,7 @@ import {
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
+  RecurrenceScope,
   LoginInput,
   RegisterInput,
   UpdateEventInput,
@@ -73,8 +74,9 @@ class ApiClient {
     });
   }
 
-  async deleteEvent(id: string): Promise<void> {
-    await this.request<{ success: boolean }>(`/events/${id}`, {
+  async deleteEvent(id: string, options: { recurrenceScope?: RecurrenceScope } = {}): Promise<void> {
+    const query = options.recurrenceScope ? `?scope=${options.recurrenceScope}` : "";
+    await this.request<{ success: boolean }>(`/events/${id}${query}`, {
       method: "DELETE",
     });
   }
