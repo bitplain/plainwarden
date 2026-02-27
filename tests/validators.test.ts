@@ -32,7 +32,7 @@ describe("validateLoginInput", () => {
 });
 
 describe("validateRegisterInput", () => {
-  const valid = { name: "Alice", email: "alice@example.com", password: "password1" };
+  const valid = { name: "Alice", email: "alice@example.com", password: "password12345" };
 
   it("accepts valid registration input", () => {
     const result = validateRegisterInput(valid);
@@ -40,8 +40,17 @@ describe("validateRegisterInput", () => {
     expect(result.email).toBe("alice@example.com");
   });
 
-  it("rejects password shorter than 8 characters", () => {
+  it("rejects password shorter than 12 characters", () => {
     expect(() => validateRegisterInput({ ...valid, password: "short" })).toThrow();
+  });
+
+  it("rejects password of exactly 11 characters", () => {
+    expect(() => validateRegisterInput({ ...valid, password: "a".repeat(11) })).toThrow();
+  });
+
+  it("accepts password of exactly 12 characters", () => {
+    const result = validateRegisterInput({ ...valid, password: "a".repeat(12) });
+    expect(result.password).toBe("a".repeat(12));
   });
 
   it("rejects name longer than 100 characters", () => {

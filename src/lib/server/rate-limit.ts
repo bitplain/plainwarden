@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 interface RateLimitOptions {
   maxRequests: number;
@@ -93,4 +93,25 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
     remaining: Math.max(options.maxRequests - existingBucket.count, 0),
     retryAfterSeconds: Math.max(1, Math.ceil((existingBucket.resetAt - now) / 1000)),
   };
+}
+
+/**
+ * Checks the rate limit for a request and returns a 429 response if exceeded,
+ * or null if the request is allowed to proceed.
+ */
+export function getRateLimitResponse(
+  request: NextRequest,
+  keyPrefix: string,
+  options: RateLimitOptions,
+): NextResponse | null {
+  const result = checkRateLimit(`${keyPrefix}:${getClientAddress(request)}`, options);
+  if (!result.allowed) {
+    const response = NextResponse.json(
+      { message: "Too many requests. Try again later." },
+      { status: 429 },
+    );
+    response.headers.set("Retry-After", String(result.retryAfterSeconds));
+    return response;
+  }
+  return null;
 }

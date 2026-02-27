@@ -7,6 +7,12 @@ import {
   readJsonBody,
   validateUpdateEventInput,
 } from "@/lib/server/validators";
+import { getRateLimitResponse } from "@/lib/server/rate-limit";
+
+const MUTATE_EVENT_RATE_LIMIT = {
+  maxRequests: 60,
+  windowMs: 60 * 1000,
+};
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -20,6 +26,9 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
     if (!user) {
       throw new HttpError(401, "Unauthorized");
     }
+
+    const rateLimitResponse = getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await context.params;
     if (!id) {
@@ -57,6 +66,9 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     if (!user) {
       throw new HttpError(401, "Unauthorized");
     }
+
+    const rateLimitResponse = getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await context.params;
     if (!id) {
