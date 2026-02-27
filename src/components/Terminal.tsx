@@ -20,21 +20,31 @@ import {
 import Calendar from "@/components/Calendar";
 
 const LiveClock = memo(function LiveClock() {
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState<Date | null>(null);
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  return (
-    <span className="terminal-idle-clock">
-      {new Intl.DateTimeFormat("ru-RU", {
+  const formatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("ru-RU", {
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",
         hour12: false,
-      }).format(now)}
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    const init = window.setTimeout(() => setNow(new Date()), 0);
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => {
+      window.clearTimeout(init);
+      window.clearInterval(timer);
+    };
+  }, []);
+
+  return (
+    <span className="terminal-idle-clock" suppressHydrationWarning>
+      {now ? formatter.format(now) : "--:--:--"}
     </span>
   );
 });
