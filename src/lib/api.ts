@@ -2,11 +2,12 @@ import {
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
-  EventListFilters,
   LoginInput,
   RegisterInput,
   UpdateEventInput,
 } from "@/lib/types";
+import { buildEventListQueryString } from "@/lib/event-filter-query";
+import type { EventListFilters } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -52,15 +53,7 @@ class ApiClient {
   }
 
   async getEvents(filters: EventListFilters = {}): Promise<CalendarEvent[]> {
-    const searchParams = new URLSearchParams();
-
-    if (filters.q) searchParams.set("q", filters.q);
-    if (filters.type) searchParams.set("type", filters.type);
-    if (filters.status) searchParams.set("status", filters.status);
-    if (filters.dateFrom) searchParams.set("dateFrom", filters.dateFrom);
-    if (filters.dateTo) searchParams.set("dateTo", filters.dateTo);
-
-    const query = searchParams.toString();
+    const query = buildEventListQueryString(filters);
     const endpoint = query ? `/events?${query}` : "/events";
     return this.request<CalendarEvent[]>(endpoint);
   }
