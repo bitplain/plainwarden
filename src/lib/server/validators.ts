@@ -138,8 +138,8 @@ export function validateLoginInput(body: unknown): LoginInput {
     throw new HttpError(400, "Invalid payload");
   }
 
-  const email = readString(body.email, "email").toLowerCase();
-  const password = readString(body.password, "password");
+  const email = readString(body.email, "email", { maxLength: 255 }).toLowerCase();
+  const password = readString(body.password, "password", { maxLength: 1024 });
 
   if (!EMAIL_REGEX.test(email)) {
     throw new HttpError(400, "email must be valid");
@@ -154,8 +154,8 @@ export function validateRegisterInput(body: unknown): RegisterInput {
   }
 
   const name = readString(body.name, "name", { maxLength: 100 });
-  const email = readString(body.email, "email").toLowerCase();
-  const password = readString(body.password, "password");
+  const email = readString(body.email, "email", { maxLength: 255 }).toLowerCase();
+  const password = readString(body.password, "password", { maxLength: 1024 });
 
   if (!EMAIL_REGEX.test(email)) {
     throw new HttpError(400, "email must be valid");
