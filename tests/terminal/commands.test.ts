@@ -137,6 +137,26 @@ describe("terminal slash commands", () => {
     expect(result.action).toBe("open_notes");
   });
 
+  it("navigates to kanban from /kanban command", () => {
+    const result = executeSlashCommand("/kanban", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/kanban");
+  });
+
+  it("navigates to kanban from russian alias", () => {
+    const result = executeSlashCommand("канбан", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/kanban");
+  });
+
   it("opens inline settings from /settings command", () => {
     const result = executeSlashCommand("/settings", {
       isAuthenticated: true,

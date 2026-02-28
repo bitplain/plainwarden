@@ -32,6 +32,7 @@ const AUTH_COMMANDS: SlashCommand[] = [
     aliases: ["calendar2"],
   },
   { trigger: "/home", description: "Open home dashboard", aliases: ["home", "главная"] },
+  { trigger: "/kanban", description: "Open Kanban boards", aliases: ["kanban", "канбан"] },
   { trigger: "/notes", description: "Open notes", aliases: ["notes", "заметки"] },
   { trigger: "/settings", description: "Open settings", aliases: ["settings"] },
   { trigger: "/help", description: "Show command help", aliases: ["help"] },
@@ -176,6 +177,14 @@ export function executeSlashCommand(
     return {
       output: ["Opening notes..."],
       action: "open_notes",
+    };
+  }
+
+  if (matchedCommand.trigger === "/kanban") {
+    return {
+      output: ["Opening kanban..."],
+      action: "navigate",
+      navigateTo: "/kanban",
     };
   }
 

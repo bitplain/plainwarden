@@ -10,6 +10,7 @@ export const terminalModule: NetdenModule = {
     "/calendar",
     "/calendar2",
     "/home",
+    "/kanban",
     "/notes",
     "/settings",
     "/help",
