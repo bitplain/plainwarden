@@ -28,6 +28,12 @@ enum AgentReminderChannel {
   push
 }
 
+enum LlmProviderStatus {
+  unknown
+  valid
+  invalid
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -43,6 +49,7 @@ model User {
   kanbanWorklogs KanbanWorklog[]
   pushSubscriptions PushSubscription[]
   agentReminders AgentReminder[]
+  llmConfig      UserLlmConfig?
 }
 
 model Event {
@@ -321,4 +328,20 @@ model AgentReminder {
   @@index([userId, readAt, createdAt])
   @@index([userId, pushedAt, createdAt])
   @@index([userId, sourceType, sourceId])
+}
+
+model UserLlmConfig {
+  id              String            @id @default(uuid())
+  userId          String            @unique
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String            @default("openrouter")
+  encryptedApiKey String?
+  apiKeyMask      String?
+  model           String            @default("openai/gpt-4o-mini")
+  status          LlmProviderStatus @default(unknown)
+  lastValidatedAt DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([userId, provider])
 }

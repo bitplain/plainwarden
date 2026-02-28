@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 import { AgentCore } from "@/agent/AgentCore";
 import { createSSEStream, sseHeaders, streamTextChunks } from "@/agent/streaming";
 import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getOpenRouterRuntimeConfig } from "@/lib/server/openrouter-settings";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { toSerializedError } from "@/utils/errorHandler";
 import { logger } from "@/utils/logger";
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
     const input = parseAgentTurnInput(body);
 
     const timezone = request.headers.get("x-netden-timezone")?.trim() || "UTC";
+    const llm = await getOpenRouterRuntimeConfig(user.id);
 
     const core = new AgentCore({
       user: {
@@ -29,6 +31,10 @@ export async function POST(request: NextRequest) {
         timezone,
         nowIso: new Date().toISOString(),
         workspaceId: "default",
+      },
+      llm: {
+        openrouterApiKey: llm.apiKey,
+        openrouterModel: llm.model,
       },
     });
 

@@ -37,6 +37,21 @@ interface GitHubBillingResponse {
   };
 }
 
+interface OpenRouterModelOption {
+  id: string;
+  label: string;
+}
+
+type OpenRouterStatus = "unknown" | "valid" | "invalid";
+
+interface OpenRouterConfigView {
+  hasKey: boolean;
+  keyMask: string | null;
+  status: OpenRouterStatus;
+  model: string;
+  lastValidatedAt: string | null;
+}
+
 function clampScale(value: number): number {
   if (!Number.isFinite(value)) return DEFAULT_SCALE;
   return Math.min(MAX, Math.max(MIN, value));
@@ -110,12 +125,64 @@ export default function SettingsPage() {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem(GITHUB_LAST_SYNC_KEY) ?? "";
   });
+  const [openRouterKey, setOpenRouterKey] = useState("");
+  const [openRouterConfig, setOpenRouterConfig] = useState<OpenRouterConfigView>({
+    hasKey: false,
+    keyMask: null,
+    status: "unknown",
+    model: "openai/gpt-4o-mini",
+    lastValidatedAt: null,
+  });
+  const [openRouterModels, setOpenRouterModels] = useState<OpenRouterModelOption[]>([]);
+  const [openRouterBusy, setOpenRouterBusy] = useState(false);
+  const [openRouterError, setOpenRouterError] = useState<string | null>(null);
+  const [openRouterNotice, setOpenRouterNotice] = useState<string | null>(null);
 
   const hasToken = token.trim().length > 0;
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     setIsEmbedded(params.get("embedded") === "1");
+  }, []);
+
+  useEffect(() => {
+    const loadOpenRouterSettings = async () => {
+      setOpenRouterBusy(true);
+      setOpenRouterError(null);
+      setOpenRouterNotice(null);
+      try {
+        const response = await fetch("/api/agent/openrouter", {
+          method: "GET",
+          headers: {
+            "content-type": "application/json",
+          },
+        });
+
+        const payload = (await response.json().catch(() => null)) as
+          | {
+              ok?: boolean;
+              message?: string;
+              config?: OpenRouterConfigView;
+              models?: OpenRouterModelOption[];
+            }
+          | null;
+
+        if (!response.ok || !payload?.ok || !payload.config) {
+          const message = payload?.message || `OpenRouter settings error (${response.status})`;
+          throw new Error(message);
+        }
+
+        setOpenRouterConfig(payload.config);
+        setOpenRouterModels(Array.isArray(payload.models) ? payload.models : []);
+      } catch (loadError) {
+        const message = loadError instanceof Error ? loadError.message : "Не удалось загрузить OpenRouter настройки";
+        setOpenRouterError(message);
+      } finally {
+        setOpenRouterBusy(false);
+      }
+    };
+
+    void loadOpenRouterSettings();
   }, []);
 
   const saveScale = (nextScale: number) => {
@@ -244,6 +311,192 @@ export default function SettingsPage() {
     [billing],
   );
 
+  const openRouterStatusLabel = useMemo(() => {
+    if (openRouterConfig.status === "valid") {
+      return "Ключ валидный";
+    }
+    if (openRouterConfig.status === "invalid") {
+      return "Ключ невалидный";
+    }
+    return "Ключ не проверен";
+  }, [openRouterConfig.status]);
+
+  const openRouterLampClass = useMemo(() => {
+    if (openRouterConfig.status === "valid") {
+      return "agent-status-lamp agent-status-lamp-valid";
+    }
+    if (openRouterConfig.status === "invalid") {
+      return "agent-status-lamp agent-status-lamp-invalid";
+    }
+    return "agent-status-lamp";
+  }, [openRouterConfig.status]);
+
+  const saveOpenRouterKey = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (openRouterBusy) return;
+
+    const normalized = openRouterKey.trim();
+    if (!normalized) {
+      setOpenRouterError("Введите OpenRouter API key.");
+      return;
+    }
+
+    setOpenRouterBusy(true);
+    setOpenRouterError(null);
+    setOpenRouterNotice(null);
+
+    try {
+      const response = await fetch("/api/agent/openrouter", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "save_key",
+          apiKey: normalized,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean;
+            message?: string;
+            config?: OpenRouterConfigView;
+            models?: OpenRouterModelOption[];
+            validation?: { valid?: boolean };
+          }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.config) {
+        const message = payload?.message || `OpenRouter save error (${response.status})`;
+        throw new Error(message);
+      }
+
+      setOpenRouterConfig(payload.config);
+      setOpenRouterModels(Array.isArray(payload.models) ? payload.models : []);
+      setOpenRouterKey("");
+      setOpenRouterNotice(
+        payload.validation?.valid
+          ? "Ключ сохранён и успешно проверен."
+          : "Ключ сохранён, но проверка не пройдена.",
+      );
+    } catch (saveError) {
+      const message = saveError instanceof Error ? saveError.message : "Не удалось сохранить ключ";
+      setOpenRouterError(message);
+    } finally {
+      setOpenRouterBusy(false);
+    }
+  };
+
+  const clearOpenRouterKey = async () => {
+    if (openRouterBusy) return;
+
+    setOpenRouterBusy(true);
+    setOpenRouterError(null);
+    setOpenRouterNotice(null);
+    try {
+      const response = await fetch("/api/agent/openrouter", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "clear_key",
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; config?: OpenRouterConfigView }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.config) {
+        const message = payload?.message || `OpenRouter clear error (${response.status})`;
+        throw new Error(message);
+      }
+
+      setOpenRouterConfig(payload.config);
+      setOpenRouterModels([]);
+      setOpenRouterNotice("Ключ удалён.");
+    } catch (clearError) {
+      const message = clearError instanceof Error ? clearError.message : "Не удалось удалить ключ";
+      setOpenRouterError(message);
+    } finally {
+      setOpenRouterBusy(false);
+    }
+  };
+
+  const refreshOpenRouterModels = async () => {
+    if (openRouterBusy) return;
+    setOpenRouterBusy(true);
+    setOpenRouterError(null);
+    setOpenRouterNotice(null);
+
+    try {
+      const response = await fetch("/api/agent/openrouter", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "refresh_models",
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; models?: OpenRouterModelOption[] }
+        | null;
+
+      if (!response.ok || !payload?.ok) {
+        const message = payload?.message || `OpenRouter models error (${response.status})`;
+        throw new Error(message);
+      }
+
+      setOpenRouterModels(Array.isArray(payload.models) ? payload.models : []);
+      setOpenRouterNotice("Список моделей обновлён.");
+    } catch (refreshError) {
+      const message = refreshError instanceof Error ? refreshError.message : "Не удалось обновить модели";
+      setOpenRouterError(message);
+    } finally {
+      setOpenRouterBusy(false);
+    }
+  };
+
+  const updateOpenRouterModel = async (nextModel: string) => {
+    if (openRouterBusy) return;
+    setOpenRouterBusy(true);
+    setOpenRouterError(null);
+    setOpenRouterNotice(null);
+    try {
+      const response = await fetch("/api/agent/openrouter", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "set_model",
+          model: nextModel,
+        }),
+      });
+
+      const payload = (await response.json().catch(() => null)) as
+        | { ok?: boolean; message?: string; config?: OpenRouterConfigView }
+        | null;
+
+      if (!response.ok || !payload?.ok || !payload.config) {
+        const message = payload?.message || `OpenRouter model error (${response.status})`;
+        throw new Error(message);
+      }
+
+      setOpenRouterConfig(payload.config);
+      setOpenRouterNotice(`Модель сохранена: ${payload.config.model}`);
+    } catch (modelError) {
+      const message = modelError instanceof Error ? modelError.message : "Не удалось сохранить модель";
+      setOpenRouterError(message);
+    } finally {
+      setOpenRouterBusy(false);
+    }
+  };
+
   return (
     <div className={`home-page-shell ${isEmbedded ? "home-page-shell-embedded" : ""}`}>
       <div className={`home-page-grid ${isEmbedded ? "home-page-grid-embedded" : ""}`}>
@@ -257,7 +510,7 @@ export default function SettingsPage() {
             <div>
               <p className="home-kicker">NetDen</p>
               <h1 className="home-title">Настройки</h1>
-              <p className="home-subtitle">CLI масштаб/толщина, GitHub Billing и управление HTTPS сертификатом.</p>
+              <p className="home-subtitle">CLI, GitHub Billing, OpenRouter AI и управление HTTPS сертификатом.</p>
             </div>
           </div>
           {!isEmbedded ? (
@@ -413,6 +666,82 @@ export default function SettingsPage() {
             PAT в localStorage: {hasToken ? "сохранён" : "не сохранён"}.
             {lastSync ? ` Последняя синхронизация: ${lastSync}.` : ""}
           </p>
+        </section>
+
+        <section className="home-card">
+          <h2 className="home-card-title">OpenRouter для AI-агента</h2>
+          <form className="settings-grid" onSubmit={saveOpenRouterKey}>
+            <label className="settings-field">
+              <span>OpenRouter API key</span>
+              <input
+                className="notes-input"
+                type="password"
+                value={openRouterKey}
+                onChange={(event) => setOpenRouterKey(event.target.value)}
+                placeholder="sk-or-***"
+                autoComplete="off"
+              />
+            </label>
+
+            <div className="settings-inline">
+              <button type="submit" className="notes-submit" disabled={openRouterBusy}>
+                {openRouterBusy ? "Проверка..." : "Сохранить и проверить ключ"}
+              </button>
+
+              <button
+                type="button"
+                className="notes-submit settings-reset"
+                onClick={clearOpenRouterKey}
+                disabled={openRouterBusy || !openRouterConfig.hasKey}
+              >
+                Удалить ключ
+              </button>
+            </div>
+          </form>
+
+          <div className="home-inline-card" style={{ marginTop: 12 }}>
+            <p className="home-inline-title">Статус ключа</p>
+            <p className="home-inline-body">
+              <span className={openRouterLampClass} aria-hidden /> {openRouterStatusLabel}
+            </p>
+            <p className="home-inline-meta">
+              {openRouterConfig.keyMask ? `Подключён: ${openRouterConfig.keyMask}` : "Ключ не подключён"}
+            </p>
+          </div>
+
+          <div className="settings-grid" style={{ marginTop: 12 }}>
+            <label className="settings-field">
+              <span>Модель по умолчанию</span>
+              <select
+                className="notes-input"
+                value={openRouterConfig.model}
+                onChange={(event) => void updateOpenRouterModel(event.target.value)}
+                disabled={openRouterBusy || openRouterModels.length === 0}
+              >
+                <option value={openRouterConfig.model}>{openRouterConfig.model}</option>
+                {openRouterModels
+                  .filter((item) => item.id !== openRouterConfig.model)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <button
+              type="button"
+              className="notes-submit"
+              onClick={refreshOpenRouterModels}
+              disabled={openRouterBusy || !openRouterConfig.hasKey}
+            >
+              Обновить список моделей
+            </button>
+          </div>
+
+          {openRouterError ? <p className="notes-error">{openRouterError}</p> : null}
+          {openRouterNotice ? <p className="home-muted">{openRouterNotice}</p> : null}
+          <p className="home-muted">Ключ хранится на сервере в зашифрованном виде и не пишется в `.env`.</p>
         </section>
 
         <TlsAcmeSettings />

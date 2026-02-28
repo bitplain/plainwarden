@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AgentCore } from "@/agent/AgentCore";
 import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getOpenRouterRuntimeConfig } from "@/lib/server/openrouter-settings";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { parseAgentTurnInput } from "@/utils/validators";
 
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest) {
 
     const body = await readJsonBody(request, { maxSizeKB: 128 });
     const input = parseAgentTurnInput(body);
+    const llm = await getOpenRouterRuntimeConfig(user.id);
 
     const core = new AgentCore({
       user: {
@@ -24,6 +26,10 @@ export async function POST(request: NextRequest) {
         timezone: request.headers.get("x-netden-timezone")?.trim() || "UTC",
         nowIso: new Date().toISOString(),
         workspaceId: "default",
+      },
+      llm: {
+        openrouterApiKey: llm.apiKey,
+        openrouterModel: llm.model,
       },
     });
 
