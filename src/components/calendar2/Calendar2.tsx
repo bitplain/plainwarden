@@ -19,7 +19,7 @@ import {
   shiftAnchorDate,
   sortEventsByDateTime,
   toDateKey,
-} from "@/components/calendar/date-utils";
+} from "@/components/calendar2/date-utils";
 import type { SidebarCategory, TaskPriority } from "./calendar2-types";
 import {
   buildCalendar2EventFilters,

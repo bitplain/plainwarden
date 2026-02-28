@@ -72,51 +72,34 @@ describe("terminal slash commands", () => {
     expect(result.action).toBe("undock");
   });
 
-  it("opens inline calendar from /calendar", () => {
+  it("navigates to calendar from /calendar", () => {
     const result = executeSlashCommand("/calendar", {
       isAuthenticated: true,
       isSetupRequired: false,
     });
 
-    expect(result.action).toBe("open_calendar");
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/calendar");
   });
 
-  it("opens inline calendar from calendar alias", () => {
+  it("navigates to calendar from calendar alias", () => {
     const result = executeSlashCommand("calendar", {
       isAuthenticated: true,
       isSetupRequired: false,
     });
 
-    expect(result.action).toBe("open_calendar");
+    expect(result.action).toBe("navigate");
+    expect(result.navigateTo).toBe("/calendar");
   });
 
-  it("opens inline calendar from russian alias", () => {
+  it("navigates to calendar from russian alias", () => {
     const result = executeSlashCommand("календарь", {
       isAuthenticated: true,
       isSetupRequired: false,
     });
 
-    expect(result.action).toBe("open_calendar");
-  });
-
-  it("navigates to calendar2 from /calendar2", () => {
-    const result = executeSlashCommand("/calendar2", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
     expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/calendar2");
-  });
-
-  it("navigates to calendar2 from calendar2 alias", () => {
-    const result = executeSlashCommand("calendar2", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
-    expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/calendar2");
+    expect(result.navigateTo).toBe("/calendar");
   });
 
   it("opens inline home from /home command", () => {
