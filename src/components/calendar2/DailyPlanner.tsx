@@ -4,7 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
-import { toDateKey } from "@/components/calendar/date-utils";
+import { toDateKey } from "@/components/calendar2/date-utils";
 import type { TimeBlock } from "./calendar2-types";
 
 interface DailyPlannerProps {

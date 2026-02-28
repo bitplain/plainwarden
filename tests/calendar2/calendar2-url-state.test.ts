@@ -54,6 +54,19 @@ describe("parseCalendar2UrlState", () => {
       date: "2026-03-11",
     });
   });
+
+  it("normalizes inverted date range", () => {
+    const state = parseCalendar2UrlState(
+      new URLSearchParams({
+        dateFrom: "2026-03-31",
+        dateTo: "2026-03-01",
+      }),
+      "2026-03-11",
+    );
+
+    expect(state.dateFrom).toBe("2026-03-01");
+    expect(state.dateTo).toBe("2026-03-31");
+  });
 });
 
 describe("buildCalendar2UrlQuery", () => {
@@ -105,5 +118,24 @@ describe("buildCalendar2UrlQuery", () => {
     expect(params.get("dateFrom")).toBeNull();
     expect(params.get("dateTo")).toBeNull();
     expect(params.get("date")).toBeNull();
+  });
+
+  it("normalizes inverted date range in query output", () => {
+    const query = buildCalendar2UrlQuery({
+      currentSearchParams: new URLSearchParams(),
+      state: {
+        q: "",
+        tab: "calendar",
+        view: "month",
+        category: "all",
+        dateFrom: "2026-04-10",
+        dateTo: "2026-04-01",
+        date: "2026-04-11",
+      },
+    });
+
+    const params = new URLSearchParams(query);
+    expect(params.get("dateFrom")).toBe("2026-04-01");
+    expect(params.get("dateTo")).toBe("2026-04-10");
   });
 });

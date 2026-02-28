@@ -7,7 +7,7 @@ import {
   DAY_VIEW_END_HOUR,
   DAY_VIEW_START_HOUR,
   getDaySlots,
-} from "@/components/calendar/date-utils";
+} from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
 interface Calendar2DayViewProps {

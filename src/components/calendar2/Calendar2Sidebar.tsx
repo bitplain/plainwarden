@@ -6,7 +6,7 @@ import type { CalendarEvent } from "@/lib/types";
 import {
   getMonthGridDates,
   toDateKey,
-} from "@/components/calendar/date-utils";
+} from "@/components/calendar2/date-utils";
 import type { SidebarCategory, Note, Calendar2Tab } from "./calendar2-types";
 
 interface Calendar2SidebarProps {

@@ -316,7 +316,7 @@ export default function KanbanPage() {
               <Link href="/home" className="home-link">
                 Главная
               </Link>
-              <Link href="/calendar2" className="home-link">
+              <Link href="/calendar" className="home-link">
                 Календарь
               </Link>
               <Link href="/notes" className="home-link">

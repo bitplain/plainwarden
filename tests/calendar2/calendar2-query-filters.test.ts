@@ -49,4 +49,18 @@ describe("buildCalendar2EventFilters", () => {
 
     expect(buildCalendar2EventFilters(input)).toEqual({});
   });
+
+  it("normalizes inverted date ranges", () => {
+    const input: CaseInput = {
+      q: "",
+      category: "all",
+      dateFrom: "2026-03-31",
+      dateTo: "2026-03-01",
+    };
+
+    expect(buildCalendar2EventFilters(input)).toEqual({
+      dateFrom: "2026-03-01",
+      dateTo: "2026-03-31",
+    });
+  });
 });
