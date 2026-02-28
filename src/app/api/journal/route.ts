@@ -8,6 +8,10 @@ import type { JournalListFilters } from "@/lib/server/journal-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { getRateLimitResponse } from "@/lib/server/rate-limit";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function sanitizeStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value
@@ -63,6 +67,10 @@ export async function POST(request: NextRequest) {
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await readJsonBody(request);
+    if (!isRecord(body)) {
+      throw new HttpError(400, "Invalid payload");
+    }
+
     const title = typeof body.title === "string" ? body.title.trim() : "";
     const date = typeof body.date === "string" ? body.date.trim() : "";
 
