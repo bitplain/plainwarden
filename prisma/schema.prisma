@@ -25,6 +25,7 @@ model User {
   createdAt    DateTime @default(now())
   events       Event[]
   eventSeries  EventSeries[]
+  notes        Note[]
 }
 
 model Event {
@@ -75,4 +76,57 @@ model IntegrationConfig {
   value     Json
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title      String
+  body       String    @default("")
+  parentId   String?
+  parent     Note?     @relation("NoteHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children   Note[]    @relation("NoteHierarchy")
+  tags       String[]  @default([])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  versions   NoteVersion[]
+  outLinks   NoteLink[]     @relation("NoteLinkSource")
+  inLinks    NoteLink[]     @relation("NoteLinkTarget")
+  eventLinks NoteEventLink[]
+
+  @@index([userId])
+  @@index([userId, parentId])
+}
+
+model NoteVersion {
+  id        String   @id @default(uuid())
+  noteId    String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([noteId])
+}
+
+model NoteLink {
+  id       String @id @default(uuid())
+  sourceId String
+  source   Note   @relation("NoteLinkSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   Note   @relation("NoteLinkTarget", fields: [targetId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, targetId])
+  @@index([targetId])
+}
+
+model NoteEventLink {
+  id      String @id @default(uuid())
+  noteId  String
+  note    Note   @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  eventId String
+
+  @@unique([noteId, eventId])
+  @@index([noteId])
 }

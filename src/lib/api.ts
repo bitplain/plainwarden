@@ -2,10 +2,15 @@ import {
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
+  CreateNoteInput,
   RecurrenceScope,
   LoginInput,
+  Note,
+  NoteListFilters,
+  NoteVersion,
   RegisterInput,
   UpdateEventInput,
+  UpdateNoteInput,
 } from "@/lib/types";
 import { buildEventListQueryString } from "@/lib/event-filter-query";
 import type { EventListFilters } from "@/lib/types";
@@ -105,6 +110,52 @@ class ApiClient {
     return this.request<AuthResponse>("/auth/me", {
       method: "GET",
     });
+  }
+
+  async getNotes(filters: NoteListFilters = {}): Promise<Note[]> {
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.tag) params.set("tag", filters.tag);
+    if (filters.parentId !== undefined) params.set("parentId", filters.parentId);
+    const qs = params.toString();
+    return this.request<Note[]>(qs ? `/notes?${qs}` : "/notes");
+  }
+
+  async getNote(id: string): Promise<Note> {
+    return this.request<Note>(`/notes/${id}`);
+  }
+
+  async createNote(input: CreateNoteInput): Promise<Note> {
+    return this.request<Note>("/notes", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateNote(id: string, input: UpdateNoteInput): Promise<Note> {
+    return this.request<Note>(`/notes/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteNote(id: string): Promise<void> {
+    await this.request<void>(`/notes/${id}`, { method: "DELETE" });
+  }
+
+  async getNoteHistory(id: string): Promise<NoteVersion[]> {
+    return this.request<NoteVersion[]>(`/notes/${id}/history`);
+  }
+
+  async restoreNoteVersion(noteId: string, versionId: string): Promise<Note> {
+    return this.request<Note>(`/notes/${noteId}/restore`, {
+      method: "POST",
+      body: JSON.stringify({ versionId }),
+    });
+  }
+
+  getNoteExportUrl(id: string): string {
+    return `${this.baseUrl}/notes/${id}/export`;
   }
 }
 

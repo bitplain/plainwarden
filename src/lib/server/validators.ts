@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   ApiErrorResponse,
   CreateEventInput,
+  CreateNoteInput,
   EventRecurrence,
   RecurrenceFrequency,
   RecurrenceScope,
@@ -10,6 +11,7 @@ import {
   LoginInput,
   RegisterInput,
   UpdateEventInput,
+  UpdateNoteInput,
 } from "@/lib/types";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -347,6 +349,105 @@ export function validateUpdateEventInput(body: unknown): Omit<UpdateEventInput, 
     (key) => key !== "recurrenceScope" && key !== "revision",
   );
   if (!hasMutableFields) {
+    throw new HttpError(400, "At least one field must be provided for update");
+  }
+
+  return payload;
+}
+
+export function validateCreateNoteInput(body: unknown): CreateNoteInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const title = readString(body.title, "title", { maxLength: 200 });
+
+  const body_ = body.body === undefined
+    ? ""
+    : readString(body.body, "body", { required: false, maxLength: 100000 });
+
+  let parentId: string | undefined;
+  if (body.parentId !== undefined && body.parentId !== null) {
+    parentId = readString(body.parentId, "parentId");
+  }
+
+  let tags: string[] = [];
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags)) {
+      throw new HttpError(400, "tags must be an array");
+    }
+    tags = body.tags.map((t, i) => {
+      if (typeof t !== "string") throw new HttpError(400, `tags[${i}] must be a string`);
+      const trimmed = t.trim();
+      if (!trimmed) throw new HttpError(400, `tags[${i}] must not be empty`);
+      if (trimmed.length > 50) throw new HttpError(400, `tags[${i}] must be at most 50 characters`);
+      return trimmed;
+    });
+    if (tags.length > 20) {
+      throw new HttpError(400, "tags must contain at most 20 items");
+    }
+  }
+
+  let eventLinks: string[] = [];
+  if (body.eventLinks !== undefined) {
+    if (!Array.isArray(body.eventLinks)) {
+      throw new HttpError(400, "eventLinks must be an array");
+    }
+    eventLinks = body.eventLinks.map((e, i) => {
+      if (typeof e !== "string") throw new HttpError(400, `eventLinks[${i}] must be a string`);
+      return e.trim();
+    });
+  }
+
+  return { title, body: body_, parentId, tags, eventLinks };
+}
+
+export function validateUpdateNoteInput(body: unknown): UpdateNoteInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const payload: UpdateNoteInput = {};
+
+  if (body.title !== undefined) {
+    payload.title = readString(body.title, "title", { maxLength: 200 });
+  }
+  if (body.body !== undefined) {
+    payload.body = readString(body.body, "body", { required: false, maxLength: 100000 });
+  }
+  if ("parentId" in body) {
+    if (body.parentId === null) {
+      payload.parentId = null;
+    } else if (body.parentId !== undefined) {
+      payload.parentId = readString(body.parentId, "parentId");
+    }
+  }
+  if (body.tags !== undefined) {
+    if (!Array.isArray(body.tags)) {
+      throw new HttpError(400, "tags must be an array");
+    }
+    payload.tags = body.tags.map((t, i) => {
+      if (typeof t !== "string") throw new HttpError(400, `tags[${i}] must be a string`);
+      const trimmed = t.trim();
+      if (!trimmed) throw new HttpError(400, `tags[${i}] must not be empty`);
+      if (trimmed.length > 50) throw new HttpError(400, `tags[${i}] must be at most 50 characters`);
+      return trimmed;
+    });
+    if (payload.tags.length > 20) {
+      throw new HttpError(400, "tags must contain at most 20 items");
+    }
+  }
+  if (body.eventLinks !== undefined) {
+    if (!Array.isArray(body.eventLinks)) {
+      throw new HttpError(400, "eventLinks must be an array");
+    }
+    payload.eventLinks = body.eventLinks.map((e, i) => {
+      if (typeof e !== "string") throw new HttpError(400, `eventLinks[${i}] must be a string`);
+      return e.trim();
+    });
+  }
+
+  if (Object.keys(payload).length === 0) {
     throw new HttpError(400, "At least one field must be provided for update");
   }
 
