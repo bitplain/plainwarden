@@ -18,14 +18,18 @@ enum EventStatus {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  name         String
-  passwordHash String
-  createdAt    DateTime @default(now())
-  events       Event[]
-  eventSeries  EventSeries[]
-  notes        Note[]
+  id             String          @id @default(uuid())
+  email          String          @unique
+  name           String
+  passwordHash   String
+  createdAt      DateTime        @default(now())
+  events         Event[]
+  eventSeries    EventSeries[]
+  notes          Note[]
+  kanbanBoards   KanbanBoard[]
+  kanbanCards    KanbanCard[]
+  kanbanComments KanbanComment[]
+  kanbanWorklogs KanbanWorklog[]
 }
 
 model Event {
@@ -129,4 +133,134 @@ model NoteEventLink {
 
   @@unique([noteId, eventId])
   @@index([noteId])
+}
+
+model KanbanBoard {
+  id        String         @id @default(uuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  columns   KanbanColumn[]
+  cards     KanbanCard[]
+
+  @@index([userId])
+}
+
+model KanbanColumn {
+  id        String       @id @default(uuid())
+  boardId   String
+  board     KanbanBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  title     String
+  position  Int
+  wipLimit  Int?
+  isDone    Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  cards     KanbanCard[]
+
+  @@index([boardId])
+}
+
+model KanbanCard {
+  id           String               @id @default(uuid())
+  boardId      String
+  board        KanbanBoard          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnId     String
+  column       KanbanColumn         @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String               @default("")
+  position     Int
+  dueDate      String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  checklists   KanbanChecklist[]
+  comments     KanbanComment[]
+  worklogs     KanbanWorklog[]
+  dependencies KanbanDependency[]   @relation("KanbanCardDeps")
+  dependents   KanbanDependency[]   @relation("KanbanCardBlocks")
+  eventLinks   KanbanCardEventLink[]
+
+  @@index([boardId])
+  @@index([columnId])
+  @@index([userId])
+}
+
+model KanbanChecklist {
+  id        String                @id @default(uuid())
+  cardId    String
+  card      KanbanCard            @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  title     String
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  items     KanbanChecklistItem[]
+
+  @@index([cardId])
+}
+
+model KanbanChecklistItem {
+  id          String          @id @default(uuid())
+  checklistId String
+  checklist   KanbanChecklist @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+  text        String
+  completed   Boolean         @default(false)
+  position    Int
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([checklistId])
+}
+
+model KanbanComment {
+  id        String     @id @default(uuid())
+  cardId    String
+  card      KanbanCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([cardId])
+  @@index([userId])
+}
+
+model KanbanWorklog {
+  id              String     @id @default(uuid())
+  cardId          String
+  card            KanbanCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationSeconds Int?
+  note            String     @default("")
+  createdAt       DateTime   @default(now())
+
+  @@index([cardId])
+  @@index([userId])
+}
+
+model KanbanDependency {
+  id          String     @id @default(uuid())
+  cardId      String
+  card        KanbanCard @relation("KanbanCardDeps", fields: [cardId], references: [id], onDelete: Cascade)
+  dependsOnId String
+  dependsOn   KanbanCard @relation("KanbanCardBlocks", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, dependsOnId])
+  @@index([dependsOnId])
+}
+
+model KanbanCardEventLink {
+  id      String     @id @default(uuid())
+  cardId  String
+  card    KanbanCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  eventId String
+
+  @@unique([cardId, eventId])
+  @@index([cardId])
 }

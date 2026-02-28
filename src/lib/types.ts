@@ -143,6 +143,179 @@ export interface NoteListFilters {
   parentId?: string;
 }
 
+// ─── Kanban ───────────────────────────────────────────────────────────────────
+
+export interface KanbanBoard {
+  id: string;
+  userId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  columns?: KanbanColumn[];
+}
+
+export interface KanbanColumn {
+  id: string;
+  boardId: string;
+  title: string;
+  position: number;
+  wipLimit?: number;
+  isDone: boolean;
+  createdAt: string;
+  updatedAt: string;
+  cards?: KanbanCardRef[];
+}
+
+export interface KanbanCardRef {
+  id: string;
+  title: string;
+  position: number;
+}
+
+export interface KanbanCard {
+  id: string;
+  boardId: string;
+  columnId: string;
+  userId: string;
+  title: string;
+  description: string;
+  position: number;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  checklists?: KanbanChecklist[];
+  totalTimeSeconds?: number;
+  activeWorklogId?: string;
+  dependencyIds?: string[];
+  eventLinks?: string[];
+}
+
+export interface KanbanChecklist {
+  id: string;
+  cardId: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+  items?: KanbanChecklistItem[];
+}
+
+export interface KanbanChecklistItem {
+  id: string;
+  checklistId: string;
+  text: string;
+  completed: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KanbanComment {
+  id: string;
+  cardId: string;
+  userId: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KanbanWorklog {
+  id: string;
+  cardId: string;
+  userId: string;
+  startedAt: string;
+  endedAt?: string;
+  durationSeconds?: number;
+  note: string;
+  createdAt: string;
+}
+
+export interface KanbanDependency {
+  id: string;
+  cardId: string;
+  dependsOnId: string;
+}
+
+export interface CreateKanbanBoardInput {
+  title: string;
+}
+
+export interface UpdateKanbanBoardInput {
+  title?: string;
+}
+
+export interface CreateKanbanColumnInput {
+  title: string;
+  position: number;
+  wipLimit?: number;
+  isDone?: boolean;
+}
+
+export interface UpdateKanbanColumnInput {
+  title?: string;
+  position?: number;
+  wipLimit?: number | null;
+  isDone?: boolean;
+}
+
+export interface CreateKanbanCardInput {
+  title: string;
+  description?: string;
+  position: number;
+  dueDate?: string;
+  eventLinks?: string[];
+}
+
+export interface UpdateKanbanCardInput {
+  title?: string;
+  description?: string;
+  dueDate?: string | null;
+  eventLinks?: string[];
+}
+
+export interface MoveKanbanCardInput {
+  columnId: string;
+  position: number;
+}
+
+export interface CreateKanbanChecklistInput {
+  title: string;
+}
+
+export interface UpdateKanbanChecklistInput {
+  title?: string;
+}
+
+export interface CreateKanbanChecklistItemInput {
+  text: string;
+  position: number;
+}
+
+export interface UpdateKanbanChecklistItemInput {
+  text?: string;
+  completed?: boolean;
+  position?: number;
+}
+
+export interface CreateKanbanCommentInput {
+  body: string;
+}
+
+export interface UpdateKanbanCommentInput {
+  body: string;
+}
+
+export interface CreateKanbanWorklogInput {
+  startedAt: string;
+  endedAt: string;
+  note?: string;
+}
+
+export interface AddKanbanDependencyInput {
+  dependsOnId: string;
+}
+
+// ─── Setup ────────────────────────────────────────────────────────────────────
+
 export type SslMode = "disable" | "require";
 
 export interface SetupPgAdminInput {
