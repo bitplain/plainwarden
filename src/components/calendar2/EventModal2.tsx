@@ -759,9 +759,6 @@ export default function EventModal2({
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-[12px] text-[var(--cal2-text-secondary)]">
-                    {event.description || "Описание не добавлено"}
-                  </p>
                 </div>
                 <span
                   className={`shrink-0 rounded-[6px] border px-2.5 py-1 text-[11px] font-semibold ${
@@ -816,6 +813,13 @@ export default function EventModal2({
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
+                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Описание</p>
+                <p className="mt-1 whitespace-pre-wrap text-[12px] text-[var(--cal2-text-primary)]">
+                  {event.description.trim() || "Описание не добавлено"}
+                </p>
               </div>
 
               {submitError && (
