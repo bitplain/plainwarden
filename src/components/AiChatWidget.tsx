@@ -124,6 +124,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
     await sendMessage(text, memoryItems as AgentMemoryItem[]);
   }, [inputValue, isStreaming, memoryItems, sendMessage]);
 
+  /* ── Resolve pending action ── */
   const handleResolveAction = useCallback(
     async (approved: boolean) => {
       await resolveAction(approved, memoryItems as AgentMemoryItem[]);
