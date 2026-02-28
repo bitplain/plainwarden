@@ -229,4 +229,38 @@ describe("validateUpdateEventInput", () => {
       }),
     ).toThrow();
   });
+
+  it("accepts revision field", () => {
+    const result = validateUpdateEventInput({ title: "Test", revision: 3 });
+    expect(result.revision).toBe(3);
+  });
+
+  it("accepts revision=0", () => {
+    const result = validateUpdateEventInput({ title: "Test", revision: 0 });
+    expect(result.revision).toBe(0);
+  });
+
+  it("rejects non-integer revision", () => {
+    expect(() => validateUpdateEventInput({ title: "Test", revision: 1.5 })).toThrow();
+  });
+
+  it("rejects revision-only payload (no mutable fields besides revision)", () => {
+    expect(() => validateUpdateEventInput({ revision: 2 })).toThrow();
+  });
+
+  it("accepts categoryId field in create", () => {
+    const result = validateCreateEventInput({
+      title: "Cat event",
+      description: "",
+      type: "event",
+      date: "2026-03-01",
+      categoryId: "work",
+    });
+    expect(result.categoryId).toBe("work");
+  });
+
+  it("accepts categoryId field in update", () => {
+    const result = validateUpdateEventInput({ title: "Test", categoryId: "personal" });
+    expect(result.categoryId).toBe("personal");
+  });
 });

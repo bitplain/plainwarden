@@ -264,6 +264,7 @@ export default function Calendar2() {
     // Store priority keyed by title::date as a secondary lookup
     // until we can associate it with the server-assigned event ID
     handlePriorityChange(`${input.title}::${input.date}`, priority);
+    localStore.addAuditEntry({ action: "create", eventId: "", eventTitle: input.title });
     await fetchEvents(calendarQueryFilters);
   };
 
@@ -271,7 +272,11 @@ export default function Calendar2() {
     eventId: string,
     scope: RecurrenceScope = "this",
   ) => {
+    const event = events.find((e) => e.id === eventId);
     await deleteEvent(eventId, { recurrenceScope: scope });
+    if (event) {
+      localStore.addAuditEntry({ action: "delete", eventId, eventTitle: event.title });
+    }
     await fetchEvents(calendarQueryFilters);
     setSelectedEventId(null);
   };
@@ -303,6 +308,49 @@ export default function Calendar2() {
     });
     handlePriorityChange(eventId, priority);
     await fetchEvents(calendarQueryFilters);
+  };
+
+  const handleConvertToTask = async (eventId: string) => {
+    const event = events.find((e) => e.id === eventId);
+    if (!event) return;
+    await updateEvent({ id: eventId, type: "task" });
+    localStore.addAuditEntry({
+      action: "convert",
+      eventId,
+      eventTitle: event.title,
+      detail: "event → task",
+    });
+    await fetchEvents(calendarQueryFilters);
+  };
+
+  const handleConvertToEvent = async (eventId: string) => {
+    const event = events.find((e) => e.id === eventId);
+    if (!event) return;
+    await updateEvent({ id: eventId, type: "event" });
+    localStore.addAuditEntry({
+      action: "convert",
+      eventId,
+      eventTitle: event.title,
+      detail: "task → event",
+    });
+    await fetchEvents(calendarQueryFilters);
+  };
+
+  const handleConvertToNote = async (eventId: string) => {
+    const event = events.find((e) => e.id === eventId);
+    if (!event) return;
+    localStore.addNote({
+      title: event.title,
+      content: event.description || "",
+      linkedDate: event.date,
+      linkedEventId: event.id,
+    });
+    localStore.addAuditEntry({
+      action: "convert",
+      eventId,
+      eventTitle: event.title,
+      detail: "event → note",
+    });
   };
 
   const handleMoveEvent = async (eventId: string, payload: EventMovePayload) => {
@@ -615,11 +663,17 @@ export default function Calendar2() {
           mode="view"
           eventPriorities={resolvedPriorities}
           existingEvents={events}
+          categories={localStore.categories}
+          linkedNotes={localStore.notes.filter((n) => n.linkedEventId === selectedEvent.id)}
+          linkedKanbanCards={localStore.kanbanCards.filter((c) => c.linkedEventId === selectedEvent.id)}
           onClose={() => setSelectedEventId(null)}
           onDelete={handleDeleteEvent}
           onToggleStatus={handleToggleStatus}
           onPriorityChange={handlePriorityChange}
           onUpdate={handleUpdateEvent}
+          onConvertToTask={handleConvertToTask}
+          onConvertToEvent={handleConvertToEvent}
+          onConvertToNote={handleConvertToNote}
         />
       )}
 
@@ -630,6 +684,7 @@ export default function Calendar2() {
           initialDate={addModalDate}
           eventPriorities={resolvedPriorities}
           existingEvents={events}
+          categories={localStore.categories}
           onClose={() => setShowAddModal(false)}
           onSave={handleSaveEvent}
         />

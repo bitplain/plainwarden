@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Event" ADD COLUMN "revision" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Event" ADD COLUMN "categoryId" TEXT;

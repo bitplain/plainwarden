@@ -2,12 +2,24 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 import type { CalendarEvent } from "@/lib/types";
-import type { KanbanCard, KanbanColumn, Note, TaskPriority, TimeBlock } from "./calendar2-types";
+import type {
+  AuditEntry,
+  AppNotification,
+  CalendarCategory,
+  KanbanCard,
+  KanbanColumn,
+  Note,
+  TaskPriority,
+  TimeBlock,
+} from "./calendar2-types";
 
 interface Calendar2LocalState {
   kanbanCards: KanbanCard[];
   notes: Note[];
   timeBlocks: TimeBlock[];
+  categories: CalendarCategory[];
+  notifications: AppNotification[];
+  auditLog: AuditEntry[];
 }
 
 const STORAGE_KEY = "calendar2-local-state";
@@ -136,9 +148,18 @@ function isValidState(data: unknown): data is Calendar2LocalState {
   );
 }
 
+const EMPTY_STATE: Calendar2LocalState = {
+  kanbanCards: [],
+  notes: [],
+  timeBlocks: [],
+  categories: [],
+  notifications: [],
+  auditLog: [],
+};
+
 function loadState(): Calendar2LocalState {
   if (typeof window === "undefined") {
-    return { kanbanCards: [], notes: [], timeBlocks: [] };
+    return { ...EMPTY_STATE };
   }
 
   try {
@@ -146,14 +167,18 @@ function loadState(): Calendar2LocalState {
     if (raw) {
       const parsed: unknown = JSON.parse(raw);
       if (isValidState(parsed)) {
-        return parsed;
+        // Migrate: add new fields if missing
+        return {
+          ...EMPTY_STATE,
+          ...(parsed as Calendar2LocalState),
+        };
       }
     }
   } catch {
     // Ignore parse errors
   }
 
-  return { kanbanCards: [], notes: [], timeBlocks: [] };
+  return { ...EMPTY_STATE };
 }
 
 function saveState(state: Calendar2LocalState): void {
@@ -199,7 +224,7 @@ function getSnapshot(): Calendar2LocalState {
 }
 
 function getServerSnapshot(): Calendar2LocalState {
-  return { kanbanCards: [], notes: [], timeBlocks: [] };
+  return { ...EMPTY_STATE };
 }
 
 export function useCalendar2Store() {
@@ -315,10 +340,103 @@ export function useCalendar2Store() {
     }));
   }, []);
 
+  // ── Categories ──────────────────────────────────────────────────────────────
+
+  const addCategory = useCallback(
+    (input: { label: string; color: string }) => {
+      const category: CalendarCategory = {
+        id: generateId(),
+        label: input.label,
+        color: input.color,
+        createdAt: nowISO(),
+      };
+      setState((prev) => ({ ...prev, categories: [...prev.categories, category] }));
+      return category;
+    },
+    [],
+  );
+
+  const updateCategory = useCallback(
+    (id: string, updates: Partial<Omit<CalendarCategory, "id" | "createdAt">>) => {
+      setState((prev) => ({
+        ...prev,
+        categories: prev.categories.map((c) => (c.id === id ? { ...c, ...updates } : c)),
+      }));
+    },
+    [],
+  );
+
+  const deleteCategory = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((c) => c.id !== id),
+    }));
+  }, []);
+
+  // ── Notifications ────────────────────────────────────────────────────────────
+
+  const addNotification = useCallback(
+    (input: Omit<AppNotification, "id" | "read" | "createdAt">) => {
+      const notification: AppNotification = {
+        id: generateId(),
+        ...input,
+        read: false,
+        createdAt: nowISO(),
+      };
+      setState((prev) => ({
+        ...prev,
+        notifications: [notification, ...prev.notifications].slice(0, 100),
+      }));
+      return notification;
+    },
+    [],
+  );
+
+  const markNotificationRead = useCallback((id: string) => {
+    setState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) =>
+        n.id === id ? { ...n, read: true } : n,
+      ),
+    }));
+  }, []);
+
+  const markAllNotificationsRead = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      notifications: prev.notifications.map((n) => ({ ...n, read: true })),
+    }));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setState((prev) => ({ ...prev, notifications: [] }));
+  }, []);
+
+  // ── Audit log ────────────────────────────────────────────────────────────────
+
+  const addAuditEntry = useCallback(
+    (input: Omit<AuditEntry, "id" | "timestamp">) => {
+      const entry: AuditEntry = {
+        id: generateId(),
+        ...input,
+        timestamp: nowISO(),
+      };
+      setState((prev) => ({
+        ...prev,
+        auditLog: [entry, ...prev.auditLog].slice(0, 200),
+      }));
+      return entry;
+    },
+    [],
+  );
+
   return {
     kanbanCards: state.kanbanCards,
     notes: state.notes,
     timeBlocks: state.timeBlocks,
+    categories: state.categories,
+    notifications: state.notifications,
+    auditLog: state.auditLog,
     addKanbanCard,
     updateKanbanCard,
     deleteKanbanCard,
@@ -330,5 +448,13 @@ export function useCalendar2Store() {
     addTimeBlock,
     updateTimeBlock,
     deleteTimeBlock,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    addNotification,
+    markNotificationRead,
+    markAllNotificationsRead,
+    clearNotifications,
+    addAuditEntry,
   };
 }

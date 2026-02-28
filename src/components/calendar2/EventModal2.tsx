@@ -9,7 +9,13 @@ import type {
   EventType,
   RecurrenceScope,
 } from "@/lib/types";
-import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
+import {
+  PRIORITY_CONFIG,
+  type CalendarCategory,
+  type KanbanCard,
+  type Note,
+  type TaskPriority,
+} from "./calendar2-types";
 import { findTimeConflicts } from "./conflict-utils";
 
 interface EventModal2Props {
@@ -18,6 +24,9 @@ interface EventModal2Props {
   initialDate?: string;
   eventPriorities: Record<string, TaskPriority>;
   existingEvents?: CalendarEvent[];
+  categories?: CalendarCategory[];
+  linkedNotes?: Note[];
+  linkedKanbanCards?: KanbanCard[];
   onClose: () => void;
   onSave?: (event: CreateEventInput, priority: TaskPriority) => Promise<void> | void;
   onUpdate?: (
@@ -33,6 +42,9 @@ interface EventModal2Props {
     scope: RecurrenceScope,
   ) => Promise<void> | void;
   onPriorityChange?: (eventId: string, priority: TaskPriority) => void;
+  onConvertToTask?: (eventId: string) => Promise<void> | void;
+  onConvertToEvent?: (eventId: string) => Promise<void> | void;
+  onConvertToNote?: (eventId: string) => Promise<void> | void;
 }
 
 interface EventFormData {
@@ -42,6 +54,7 @@ interface EventFormData {
   time: string;
   description: string;
   priority: TaskPriority;
+  categoryId: string;
   recurrenceFrequency: "none" | EventRecurrence["frequency"];
   recurrenceInterval: string;
   recurrenceCount: string;
@@ -70,6 +83,7 @@ function createEmptyForm(initialDate?: string): EventFormData {
     time: "",
     description: "",
     priority: "medium",
+    categoryId: "",
     recurrenceFrequency: "none",
     recurrenceInterval: "1",
     recurrenceCount: "",
@@ -86,6 +100,7 @@ function buildFormFromEvent(event: CalendarEvent, priority: TaskPriority): Event
     time: event.time ?? "",
     description: event.description,
     priority,
+    categoryId: event.categoryId ?? "",
     recurrenceFrequency: recurrence?.frequency ?? "none",
     recurrenceInterval: recurrence ? String(recurrence.interval) : "1",
     recurrenceCount: recurrence?.count ? String(recurrence.count) : "",
@@ -138,6 +153,7 @@ function formToPayload(formData: EventFormData, includeRecurrence: boolean): Cre
     time: formData.time || undefined,
     description: formData.description.trim(),
     status: "pending",
+    categoryId: formData.categoryId || undefined,
     recurrence: includeRecurrence ? buildRecurrenceFromForm(formData) : undefined,
   };
 }
@@ -148,12 +164,18 @@ export default function EventModal2({
   initialDate,
   eventPriorities,
   existingEvents = [],
+  categories = [],
+  linkedNotes = [],
+  linkedKanbanCards = [],
   onClose,
   onSave,
   onUpdate,
   onDelete,
   onToggleStatus,
   onPriorityChange,
+  onConvertToTask,
+  onConvertToEvent,
+  onConvertToNote,
 }: EventModal2Props) {
   const [formData, setFormData] = useState<EventFormData>(() => createEmptyForm(initialDate));
   const [errors, setErrors] = useState<EventFormErrors>({});
@@ -161,8 +183,10 @@ export default function EventModal2({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [applyScope, setApplyScope] = useState<RecurrenceScope>("this");
+  const [showLinked, setShowLinked] = useState(false);
 
   const nextStatus = useMemo(() => {
     if (!event?.status) {
@@ -332,6 +356,100 @@ export default function EventModal2({
     }
   };
 
+  const handleConvertToTask = async () => {
+    if (!event || !onConvertToTask) return;
+    setSubmitError(null);
+    setIsConverting(true);
+    try {
+      await onConvertToTask(event.id);
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Не удалось конвертировать");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const handleConvertToEvent = async () => {
+    if (!event || !onConvertToEvent) return;
+    setSubmitError(null);
+    setIsConverting(true);
+    try {
+      await onConvertToEvent(event.id);
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Не удалось конвертировать");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const handleConvertToNote = async () => {
+    if (!event || !onConvertToNote) return;
+    setSubmitError(null);
+    setIsConverting(true);
+    try {
+      await onConvertToNote(event.id);
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Не удалось конвертировать");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  const renderLinkedEntities = () => {
+    const hasLinked = linkedNotes.length > 0 || linkedKanbanCards.length > 0;
+    if (!hasLinked) return null;
+
+    return (
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => setShowLinked((v) => !v)}
+          className="flex w-full items-center justify-between rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+        >
+          <span>Связанные ({linkedNotes.length + linkedKanbanCards.length})</span>
+          <span>{showLinked ? "▲" : "▼"}</span>
+        </button>
+        {showLinked && (
+          <div className="mt-2 space-y-2">
+            {linkedKanbanCards.map((card) => (
+              <div
+                key={card.id}
+                className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2"
+              >
+                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  Kanban
+                </p>
+                <p className="mt-1 text-[12px] font-medium text-[var(--cal2-text-primary)]">
+                  {card.title}
+                </p>
+                <p className="text-[11px] text-[var(--cal2-text-secondary)]">{card.column}</p>
+              </div>
+            ))}
+            {linkedNotes.map((note) => (
+              <div
+                key={note.id}
+                className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2"
+              >
+                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                  Заметка
+                </p>
+                <p className="mt-1 text-[12px] font-medium text-[var(--cal2-text-primary)]">
+                  {note.title}
+                </p>
+                <p className="line-clamp-2 text-[11px] text-[var(--cal2-text-secondary)]">
+                  {note.content}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderScopeSelector = () => (
     <div className="mb-4 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
       <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
@@ -408,6 +526,26 @@ export default function EventModal2({
           </select>
         </label>
       </div>
+
+      {categories.length > 0 && (
+        <label className="grid gap-1.5">
+          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+            Категория
+          </span>
+          <select
+            value={formData.categoryId}
+            onChange={(e) => handleChange("categoryId", e.target.value)}
+            className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+          >
+            <option value="">— Без категории</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="grid gap-1.5">
@@ -595,13 +733,20 @@ export default function EventModal2({
             <>
               <div className="mb-4 flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">{event.title}</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">{event.title}</h2>
+                    {event.recurrenceException && (
+                      <span className="rounded-[4px] border border-[rgba(255,200,100,0.4)] bg-[rgba(255,200,100,0.12)] px-1.5 py-0.5 text-[10px] font-medium text-[#ffd080]">
+                        Исключение
+                      </span>
+                    )}
+                  </div>
                   <p className="mt-1 text-[12px] text-[var(--cal2-text-secondary)]">
                     {event.description || "Описание не добавлено"}
                   </p>
                 </div>
                 <span
-                  className={`rounded-[6px] border px-2.5 py-1 text-[11px] font-semibold ${
+                  className={`shrink-0 rounded-[6px] border px-2.5 py-1 text-[11px] font-semibold ${
                     event.type === "event"
                       ? "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
                       : "border-[var(--cal2-border)] bg-[rgba(255,255,255,0.05)] text-[var(--cal2-text-primary)]"
@@ -662,6 +807,44 @@ export default function EventModal2({
               )}
 
               {hasRecurringSeries && <div className="mt-4">{renderScopeSelector()}</div>}
+
+              {renderLinkedEntities()}
+
+              {/* Convert actions */}
+              {(onConvertToTask ?? onConvertToEvent ?? onConvertToNote) && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {event.type === "event" && onConvertToTask && (
+                    <button
+                      type="button"
+                      onClick={() => { void handleConvertToTask(); }}
+                      disabled={isConverting}
+                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                    >
+                      {isConverting ? "..." : "→ Задача"}
+                    </button>
+                  )}
+                  {event.type === "task" && onConvertToEvent && (
+                    <button
+                      type="button"
+                      onClick={() => { void handleConvertToEvent(); }}
+                      disabled={isConverting}
+                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                    >
+                      {isConverting ? "..." : "→ Событие"}
+                    </button>
+                  )}
+                  {onConvertToNote && (
+                    <button
+                      type="button"
+                      onClick={() => { void handleConvertToNote(); }}
+                      disabled={isConverting}
+                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                    >
+                      {isConverting ? "..." : "→ Заметка"}
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 <button

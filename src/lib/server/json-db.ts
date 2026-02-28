@@ -88,9 +88,11 @@ function toPublicEvent(event: PrismaEvent | EventWithSeries): CalendarEvent {
     time: event.time ?? undefined,
     type: event.type,
     status: event.status,
+    categoryId: event.categoryId ?? undefined,
     recurrenceSeriesId: event.recurrenceSeriesId ?? undefined,
     recurrenceException: event.recurrenceException,
     recurrence: recurrenceFromSeries(series),
+    revision: event.revision,
   };
 }
 
@@ -128,6 +130,9 @@ function buildEventUpdateData(input: Partial<CreateEventInput>): Prisma.EventUpd
   if (input.status !== undefined) {
     updateData.status = input.status;
   }
+  if (input.categoryId !== undefined) {
+    updateData.categoryId = input.categoryId || null;
+  }
 
   return updateData;
 }
@@ -149,6 +154,9 @@ function buildEventUpdateManyData(input: Partial<CreateEventInput>): Prisma.Even
   }
   if (input.status !== undefined) {
     updateData.status = input.status;
+  }
+  if (input.categoryId !== undefined) {
+    updateData.categoryId = input.categoryId || null;
   }
 
   return updateData;
@@ -385,6 +393,7 @@ export async function createEventForUser(
       time: input.time,
       type: input.type,
       status: input.status ?? "pending",
+      categoryId: input.categoryId ?? null,
     },
   });
 
@@ -395,7 +404,7 @@ export async function updateEventForUser(
   userId: string,
   eventId: string,
   input: Partial<CreateEventInput>,
-  options: { scope?: RecurrenceScope } = {},
+  options: { scope?: RecurrenceScope; revision?: number } = {},
 ): Promise<CalendarEvent | null> {
   const sourceEvent = await prisma.event.findFirst({
     where: {
@@ -409,6 +418,12 @@ export async function updateEventForUser(
 
   if (!sourceEvent) {
     return null;
+  }
+
+  if (options.revision !== undefined && sourceEvent.revision !== options.revision) {
+    throw new DbConflictError(
+      `Edit conflict: event was modified by another session (expected revision ${options.revision}, got ${sourceEvent.revision})`,
+    );
   }
 
   const scope = options.scope ?? "this";
@@ -648,6 +663,7 @@ export async function updateEventForUser(
   if (hasSeries && scope === "this") {
     updateData.recurrenceException = true;
   }
+  updateData.revision = { increment: 1 };
 
   try {
     const event = await prisma.event.update({
