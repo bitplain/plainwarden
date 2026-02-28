@@ -94,7 +94,7 @@ async function fetchJson<T>(url: string, init?: RequestInit & { timeoutMs?: numb
   }
 }
 
-export default function TlsAcmeSettings() {
+export default function SettingsTlsTab() {
   const [status, setStatus] = useState<AcmeStatusPayload | null>(null);
   const [domain, setDomain] = useState("");
   const [email, setEmail] = useState("");
@@ -200,13 +200,13 @@ export default function TlsAcmeSettings() {
   }
 
   return (
-    <section className="home-card">
-      <div className="home-card-head">
-        <h2 className="home-card-title">HTTPS / ACME (Let&apos;s Encrypt)</h2>
+    <div className="settings-tab-content">
+      <div className="settings-tab-row">
+        <span className="settings-tab-label">Статус</span>
         <span className={badge.cls}>{badge.label}</span>
       </div>
 
-      <p className="home-muted">
+      <p className="settings-tab-muted">
         Один раз выпускает сертификат для домена и дальше автоматически продлевается Caddy.
       </p>
 
@@ -221,7 +221,7 @@ export default function TlsAcmeSettings() {
             }}
             placeholder="site.example.com"
             disabled={busy || loading}
-            className="notes-input"
+            className="settings-tab-input"
           />
         </label>
 
@@ -235,7 +235,7 @@ export default function TlsAcmeSettings() {
             }}
             placeholder="admin@example.com"
             disabled={busy || loading}
-            className="notes-input"
+            className="settings-tab-input"
           />
         </label>
 
@@ -244,7 +244,7 @@ export default function TlsAcmeSettings() {
             type="button"
             onClick={() => void saveConfig()}
             disabled={busy || loading || !domain.trim() || !email.trim()}
-            className="notes-submit"
+            className="settings-tab-btn"
           >
             Сохранить
           </button>
@@ -252,7 +252,7 @@ export default function TlsAcmeSettings() {
             type="button"
             onClick={() => void issueCertificate()}
             disabled={busy || loading || !domain.trim() || !email.trim()}
-            className="notes-submit"
+            className="settings-tab-btn"
           >
             {busy ? "Выпуск…" : "Выпустить / обновить сертификат"}
           </button>
@@ -266,7 +266,7 @@ export default function TlsAcmeSettings() {
               );
             }}
             disabled={busy || loading}
-            className="notes-submit"
+            className="settings-tab-btn-secondary"
           >
             {loading ? "Обновление…" : "Обновить статус"}
           </button>
@@ -279,7 +279,7 @@ export default function TlsAcmeSettings() {
           <span>Монитор renew:</span>
           <span className={renewalBadge.cls}>{renewalBadge.label}</span>
         </div>
-        <div>До окончания сертификата: {status?.daysUntilExpiry == null ? "—" : `${status.daysUntilExpiry} дн.`}</div>
+        <div>До окончания сертификата: {status?.daysUntilExpiry === null || status?.daysUntilExpiry === undefined ? "—" : `${status.daysUntilExpiry} дн.`}</div>
         <div>Окно продления: {status ? `${status.renewBeforeDays} дн.` : "—"}</div>
         <div>Срок действия сертификата до: {status ? formatDate(status.expiresAt) : "—"}</div>
         <div>Последняя проверка сертификата: {status ? formatDate(status.lastProbeAt) : "—"}</div>
@@ -311,6 +311,6 @@ export default function TlsAcmeSettings() {
       {msg ? <div className="acme-message">{msg}</div> : null}
       {status?.lastError ? <div className="acme-error">{status.lastError}</div> : null}
       {err ? <div className="acme-error">{err}</div> : null}
-    </section>
+    </div>
   );
 }
