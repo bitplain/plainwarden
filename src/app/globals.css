@@ -2187,6 +2187,55 @@ body {
    AI Panel — Floating slide-up panel (bottom-right)
    ═══════════════════════════════════════════════════════ */
 
+/* ── Theme CSS Variables ── */
+[data-aip-theme] {
+  --aip-a: 56 189 248;
+  --aip-a2: 139 92 246;
+  --aip-ok: 16 185 129;
+  --aip-t-primary: #e0e5f7;
+  --aip-t-secondary: #b0b8d4;
+  --aip-t-muted: #8190b5;
+  --aip-t-dim: #6b7394;
+  --aip-t-faint: #3e4560;
+  --aip-bg1: rgba(10, 12, 20, 0.97);
+  --aip-bg2: rgba(6, 8, 14, 0.98);
+  --aip-tint: rgba(20, 28, 48, 0.5);
+  --aip-trigger-bg1: rgba(14, 18, 30, 0.96);
+  --aip-trigger-bg2: rgba(8, 10, 18, 0.98);
+}
+
+[data-aip-theme="ambient"] {
+  --aip-a: 245 158 11;
+  --aip-a2: 244 114 182;
+  --aip-ok: 16 185 129;
+  --aip-t-primary: #f5ede0;
+  --aip-t-secondary: #c9b99a;
+  --aip-t-muted: #a08e6f;
+  --aip-t-dim: #7a6b50;
+  --aip-t-faint: #4a3f2e;
+  --aip-bg1: rgba(16, 12, 6, 0.97);
+  --aip-bg2: rgba(10, 8, 4, 0.98);
+  --aip-tint: rgba(48, 36, 16, 0.5);
+  --aip-trigger-bg1: rgba(24, 18, 8, 0.96);
+  --aip-trigger-bg2: rgba(14, 10, 4, 0.98);
+}
+
+[data-aip-theme="terminal"] {
+  --aip-a: 34 197 94;
+  --aip-a2: 34 197 94;
+  --aip-ok: 245 158 11;
+  --aip-t-primary: #c8f7c5;
+  --aip-t-secondary: #88d685;
+  --aip-t-muted: #5aad57;
+  --aip-t-dim: #3d7a3b;
+  --aip-t-faint: #2a5428;
+  --aip-bg1: rgba(2, 8, 2, 0.97);
+  --aip-bg2: rgba(0, 4, 0, 0.98);
+  --aip-tint: rgba(10, 30, 10, 0.5);
+  --aip-trigger-bg1: rgba(4, 12, 4, 0.96);
+  --aip-trigger-bg2: rgba(2, 6, 2, 0.98);
+}
+
 /* ── Trigger button ── */
 .aip-trigger {
   position: fixed;
@@ -2198,8 +2247,8 @@ body {
   border-radius: 13px;
   border: 0.5px solid rgba(255, 255, 255, 0.14);
   background:
-    linear-gradient(135deg, rgba(14, 18, 30, 0.96) 0%, rgba(8, 10, 18, 0.98) 100%);
-  color: #6b7394;
+    linear-gradient(135deg, var(--aip-trigger-bg1) 0%, var(--aip-trigger-bg2) 100%);
+  color: var(--aip-t-dim);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -2215,18 +2264,18 @@ body {
 }
 
 .aip-trigger:hover {
-  border-color: rgba(56, 189, 248, 0.35);
-  color: rgb(56, 189, 248);
+  border-color: rgb(var(--aip-a) / 0.35);
+  color: rgb(var(--aip-a));
   transform: translateY(-1px);
   box-shadow:
     0 12px 28px -8px rgba(0, 0, 0, 0.7),
-    0 0 18px -6px rgba(56, 189, 248, 0.12),
+    0 0 18px -6px rgb(var(--aip-a) / 0.12),
     0 0 0 0.5px rgba(255, 255, 255, 0.08) inset;
 }
 
 .aip-trigger-open {
-  border-color: rgba(56, 189, 248, 0.25);
-  color: rgb(56, 189, 248);
+  border-color: rgb(var(--aip-a) / 0.25);
+  color: rgb(var(--aip-a));
 }
 
 .aip-trigger-icon {
@@ -2271,7 +2320,7 @@ body {
       135deg,
       rgba(255, 255, 255, 0.13) 0%,
       rgba(255, 255, 255, 0.06) 40%,
-      rgba(56, 189, 248, 0.10) 70%,
+      rgb(var(--aip-a) / 0.10) 70%,
       rgba(255, 255, 255, 0.07) 100%
     );
 }
@@ -2283,13 +2332,13 @@ body {
   border-radius: 17px;
   background: conic-gradient(
     from 180deg at 50% 50%,
-    rgba(56, 189, 248, 0) 0deg,
-    rgba(56, 189, 248, 0.12) 60deg,
-    rgba(139, 92, 246, 0.08) 120deg,
-    rgba(56, 189, 248, 0) 180deg,
-    rgba(16, 185, 129, 0.08) 240deg,
-    rgba(56, 189, 248, 0.06) 300deg,
-    rgba(56, 189, 248, 0) 360deg
+    rgb(var(--aip-a) / 0) 0deg,
+    rgb(var(--aip-a) / 0.12) 60deg,
+    rgb(var(--aip-a2) / 0.08) 120deg,
+    rgb(var(--aip-a) / 0) 180deg,
+    rgb(var(--aip-ok) / 0.08) 240deg,
+    rgb(var(--aip-a) / 0.06) 300deg,
+    rgb(var(--aip-a) / 0) 360deg
   );
   z-index: -1;
   filter: blur(8px);
@@ -2305,13 +2354,14 @@ body {
 .aip-inner {
   border-radius: 15px;
   background:
-    radial-gradient(120% 100% at 20% 0%, rgba(20, 28, 48, 0.5) 0%, transparent 50%),
-    linear-gradient(180deg, rgba(10, 12, 20, 0.97) 0%, rgba(6, 8, 14, 0.98) 100%);
+    radial-gradient(120% 100% at 20% 0%, var(--aip-tint) 0%, transparent 50%),
+    linear-gradient(180deg, var(--aip-bg1) 0%, var(--aip-bg2) 100%);
   backdrop-filter: blur(24px) saturate(140%);
   display: flex;
   flex-direction: column;
   max-height: 65vh;
   overflow: hidden;
+  position: relative;
   box-shadow:
     0 24px 48px -12px rgba(0, 0, 0, 0.65),
     0 0 0 0.5px rgba(255, 255, 255, 0.05) inset,
@@ -2332,21 +2382,21 @@ body {
 
 .aip-header-icon {
   font-size: 1rem;
-  color: rgb(56, 189, 248);
+  color: rgb(var(--aip-a));
   line-height: 1;
 }
 
 .aip-header-title {
   font-size: 0.84rem;
   font-weight: 600;
-  color: #e0e5f7;
+  color: var(--aip-t-primary);
   letter-spacing: 0.01em;
 }
 
 .aip-header-shortcut {
   margin-left: auto;
   font-size: 0.68rem;
-  color: #3e4560;
+  color: var(--aip-t-faint);
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
   padding: 2px 6px;
@@ -2382,7 +2432,7 @@ body {
   border-radius: 7px;
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
-  color: #8190b5;
+  color: var(--aip-t-muted);
   font-size: 0.72rem;
   font-family: var(--font-geist-mono);
   cursor: pointer;
@@ -2410,9 +2460,9 @@ body {
 }
 
 .aip-chip-active {
-  border-color: rgba(56, 189, 248, 0.35);
-  background: rgba(56, 189, 248, 0.1);
-  color: rgb(56, 189, 248);
+  border-color: rgb(var(--aip-a) / 0.35);
+  background: rgb(var(--aip-a) / 0.1);
+  color: rgb(var(--aip-a));
 }
 
 .aip-chip-icon {
@@ -2457,16 +2507,17 @@ body {
   padding: 4px 0;
   font-size: 0.82rem;
   line-height: 1.55;
-  color: #b0b8d4;
+  color: var(--aip-t-secondary);
+  animation: aip-message-in 240ms ease-out;
 }
 
 .aip-message-user {
-  color: #e0e5f7;
+  color: var(--aip-t-primary);
 }
 
 .aip-message-user::before {
   content: "› ";
-  color: rgb(56, 189, 248);
+  color: rgb(var(--aip-a));
   font-weight: 700;
 }
 
@@ -2476,18 +2527,23 @@ body {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: rgba(56, 189, 248, 0.45);
+  background: rgb(var(--aip-a) / 0.45);
   margin-right: 7px;
   vertical-align: middle;
   position: relative;
   top: -1px;
 }
 
+@keyframes aip-message-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .aip-cursor {
   display: inline-block;
   width: 6px;
   height: 1em;
-  background: rgb(56, 189, 248);
+  background: rgb(var(--aip-a));
   margin-left: 2px;
   vertical-align: text-bottom;
   border-radius: 1px;
@@ -2504,15 +2560,15 @@ body {
   margin: 6px 16px 10px;
   padding: 10px 12px;
   border-radius: 9px;
-  border: 0.5px solid rgba(56, 189, 248, 0.2);
+  border: 0.5px solid rgb(var(--aip-a) / 0.2);
   background:
-    radial-gradient(120% 100% at 10% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+    radial-gradient(120% 100% at 10% 0%, rgb(var(--aip-a) / 0.05) 0%, transparent 50%),
     rgba(12, 14, 24, 0.9);
 }
 
 .aip-action-summary {
   font-size: 0.8rem;
-  color: #c5cce5;
+  color: var(--aip-t-primary);
   margin-bottom: 8px;
   line-height: 1.5;
 }
@@ -2536,20 +2592,20 @@ body {
 }
 
 .aip-action-btn-confirm {
-  border: 0.5px solid rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.1);
-  color: rgb(16, 185, 129);
+  border: 0.5px solid rgb(var(--aip-ok) / 0.35);
+  background: rgb(var(--aip-ok) / 0.1);
+  color: rgb(var(--aip-ok));
 }
 
 .aip-action-btn-confirm:hover {
-  background: rgba(16, 185, 129, 0.18);
-  border-color: rgba(16, 185, 129, 0.5);
+  background: rgb(var(--aip-ok) / 0.18);
+  border-color: rgb(var(--aip-ok) / 0.5);
 }
 
 .aip-action-btn-decline {
   border: 0.5px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
-  color: #8190b5;
+  color: var(--aip-t-muted);
 }
 
 .aip-action-btn-decline:hover {
@@ -2588,7 +2644,7 @@ body {
   border-radius: 7px;
   border: 0.5px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
-  color: #6b7394;
+  color: var(--aip-t-dim);
   font-size: 0.72rem;
   font-family: var(--font-geist-mono);
   cursor: pointer;
@@ -2599,9 +2655,9 @@ body {
 }
 
 .aip-suggestion:hover {
-  border-color: rgba(56, 189, 248, 0.25);
-  background: rgba(56, 189, 248, 0.06);
-  color: #a0aad0;
+  border-color: rgb(var(--aip-a) / 0.25);
+  background: rgb(var(--aip-a) / 0.06);
+  color: var(--aip-t-secondary);
 }
 
 /* ── Input row ── */
@@ -2618,15 +2674,15 @@ body {
   background: transparent;
   border: none;
   outline: none;
-  color: #e0e5f7;
+  color: var(--aip-t-primary);
   font-size: 0.86rem;
   font-family: var(--font-geist-mono);
   line-height: 1.4;
-  caret-color: rgb(56, 189, 248);
+  caret-color: rgb(var(--aip-a));
 }
 
 .aip-input::placeholder {
-  color: #3e4560;
+  color: var(--aip-t-faint);
 }
 
 .aip-send {
@@ -2638,8 +2694,8 @@ body {
   justify-content: center;
   border: none;
   border-radius: 7px;
-  background: rgba(56, 189, 248, 0.12);
-  color: rgb(56, 189, 248);
+  background: rgb(var(--aip-a) / 0.12);
+  color: rgb(var(--aip-a));
   cursor: pointer;
   opacity: 0;
   transform: scale(0.85);
@@ -2655,12 +2711,474 @@ body {
 }
 
 .aip-send:hover {
-  background: rgba(56, 189, 248, 0.22);
+  background: rgb(var(--aip-a) / 0.22);
 }
 
 .aip-send:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+/* ── Thinking dots ── */
+.aip-thinking {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.aip-thinking-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgb(var(--aip-a) / 0.6);
+  animation: aip-thinking-bounce 1.4s ease-in-out infinite;
+}
+
+.aip-thinking-dot:nth-child(2) { animation-delay: 0.16s; }
+.aip-thinking-dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes aip-thinking-bounce {
+  0%, 80%, 100% { opacity: 0.3; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-4px); }
+}
+
+.aip-message-thinking::before {
+  display: none;
+}
+
+/* ── Status bar ── */
+.aip-status-bar {
+  height: 2px;
+  margin: 0 16px;
+  border-radius: 1px;
+  background: rgb(var(--aip-a) / 0.08);
+  overflow: hidden;
+  transition: background 300ms ease;
+}
+
+.aip-status-bar-active {
+  position: relative;
+  background: rgb(var(--aip-a) / 0.15);
+}
+
+.aip-status-bar-active::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgb(var(--aip-a));
+  animation: aip-status-slide 1.5s ease-in-out infinite;
+  border-radius: 1px;
+}
+
+@keyframes aip-status-slide {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0); }
+  100% { transform: translateX(100%); }
+}
+
+/* ── Styled scrollbar ── */
+.aip-response-visible::-webkit-scrollbar {
+  width: 4px;
+}
+
+.aip-response-visible::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.aip-response-visible::-webkit-scrollbar-thumb {
+  background: rgb(var(--aip-a) / 0.2);
+  border-radius: 2px;
+}
+
+.aip-response-visible::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--aip-a) / 0.4);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Theme: Cyber Pulse — unique effects
+   ═══════════════════════════════════════════════════════ */
+
+@property --aip-cyber-angle {
+  syntax: '<angle>';
+  initial-value: 180deg;
+  inherits: false;
+}
+
+[data-aip-theme="cyber"] .aip-streaming .aip-shell::before {
+  background: conic-gradient(
+    from var(--aip-cyber-angle) at 50% 50%,
+    rgb(var(--aip-a) / 0) 0deg,
+    rgb(var(--aip-a) / 0.25) 60deg,
+    rgb(var(--aip-a2) / 0.15) 120deg,
+    rgb(var(--aip-a) / 0) 180deg,
+    rgb(var(--aip-ok) / 0.15) 240deg,
+    rgb(var(--aip-a) / 0.12) 300deg,
+    rgb(var(--aip-a) / 0) 360deg
+  );
+  animation: aip-cyber-spin 2.5s linear infinite;
+  opacity: 1;
+  filter: blur(10px);
+}
+
+@keyframes aip-cyber-spin {
+  from { --aip-cyber-angle: 0deg; }
+  to { --aip-cyber-angle: 360deg; }
+}
+
+/* Neon pulse on trigger button */
+[data-aip-theme="cyber"] .aip-trigger::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 16px;
+  background: rgb(var(--aip-a) / 0.08);
+  z-index: -1;
+  animation: aip-cyber-pulse 3s ease-in-out infinite;
+}
+
+@keyframes aip-cyber-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(1.08); }
+}
+
+/* ═══════════════════════════════════════════════════════
+   Theme: Ambient Flow — unique effects
+   ═══════════════════════════════════════════════════════ */
+
+/* Mesh gradient overlay */
+[data-aip-theme="ambient"] .aip-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  background:
+    radial-gradient(circle at 25% 25%, rgb(var(--aip-a) / 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgb(var(--aip-a2) / 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgb(var(--aip-ok) / 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  animation: aip-ambient-breathe 5s ease-in-out infinite;
+  z-index: 0;
+}
+
+@keyframes aip-ambient-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* All children above the overlay */
+[data-aip-theme="ambient"] .aip-header,
+[data-aip-theme="ambient"] .aip-chips,
+[data-aip-theme="ambient"] .aip-separator,
+[data-aip-theme="ambient"] .aip-status-bar,
+[data-aip-theme="ambient"] .aip-response,
+[data-aip-theme="ambient"] .aip-suggestions,
+[data-aip-theme="ambient"] .aip-input-row {
+  position: relative;
+  z-index: 1;
+}
+
+/* Warm frosted glass */
+[data-aip-theme="ambient"] .aip-inner {
+  backdrop-filter: blur(32px) saturate(160%);
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 0 0 0.5px rgb(var(--aip-a) / 0.08) inset,
+    0 1px 0 rgb(var(--aip-a) / 0.1) inset;
+}
+
+/* Breathing trigger */
+[data-aip-theme="ambient"] .aip-trigger {
+  animation: aip-ambient-trigger-breathe 4s ease-in-out infinite;
+}
+
+@keyframes aip-ambient-trigger-breathe {
+  0%, 100% { box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.6), 0 0 0 0.5px rgba(255, 255, 255, 0.06) inset; }
+  50% { box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.6), 0 0 14px -4px rgb(var(--aip-a) / 0.15), 0 0 0 0.5px rgba(255, 255, 255, 0.06) inset; }
+}
+
+/* Soft glow on shell border */
+[data-aip-theme="ambient"] .aip-shell {
+  background:
+    linear-gradient(
+      135deg,
+      rgb(var(--aip-a) / 0.12) 0%,
+      rgba(255, 255, 255, 0.06) 40%,
+      rgb(var(--aip-a2) / 0.08) 70%,
+      rgba(255, 255, 255, 0.05) 100%
+    );
+}
+
+/* ═══════════════════════════════════════════════════════
+   Theme: Terminal AI — unique effects
+   ═══════════════════════════════════════════════════════ */
+
+/* Scanlines overlay */
+[data-aip-theme="terminal"] .aip-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 15px;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Children above scanlines */
+[data-aip-theme="terminal"] .aip-header,
+[data-aip-theme="terminal"] .aip-chips,
+[data-aip-theme="terminal"] .aip-separator,
+[data-aip-theme="terminal"] .aip-status-bar,
+[data-aip-theme="terminal"] .aip-response,
+[data-aip-theme="terminal"] .aip-suggestions,
+[data-aip-theme="terminal"] .aip-input-row {
+  position: relative;
+  z-index: 3;
+}
+
+/* Green phosphor glow */
+[data-aip-theme="terminal"] .aip-inner {
+  box-shadow:
+    0 24px 48px -12px rgba(0, 0, 0, 0.65),
+    0 0 0 0.5px rgb(var(--aip-a) / 0.1) inset,
+    0 0 30px -10px rgb(var(--aip-a) / 0.12) inset;
+}
+
+/* Block cursor */
+[data-aip-theme="terminal"] .aip-cursor {
+  width: 8px;
+  height: 1.1em;
+  border-radius: 0;
+  animation: aip-terminal-blink 1s steps(2) infinite;
+}
+
+@keyframes aip-terminal-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+/* Amber separator / status */
+[data-aip-theme="terminal"] .aip-separator {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(var(--aip-a) / 0.12) 20%,
+    rgb(var(--aip-a) / 0.12) 80%,
+    transparent 100%
+  );
+}
+
+/* Trigger green glow */
+[data-aip-theme="terminal"] .aip-trigger {
+  border-color: rgb(var(--aip-a) / 0.2);
+}
+
+[data-aip-theme="terminal"] .aip-trigger::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 15px;
+  background: rgb(var(--aip-a) / 0.06);
+  z-index: -1;
+  animation: aip-terminal-glow 2s ease-in-out infinite;
+}
+
+@keyframes aip-terminal-glow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Streaming: intensify scanlines */
+[data-aip-theme="terminal"] .aip-streaming::after {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.18) 2px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+}
+
+/* ═══════════════════════════════════════════════════════
+   AI Theme Switcher — settings card styles
+   ═══════════════════════════════════════════════════════ */
+.aip-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.aip-theme-card {
+  position: relative;
+  border: 1px solid var(--cal2-border, rgba(255, 255, 255, 0.1));
+  border-radius: 12px;
+  background: var(--cal2-surface-2, #101524);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+  text-align: left;
+  color: inherit;
+  font-family: var(--font-geist-mono);
+}
+
+.aip-theme-card:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+}
+
+.aip-theme-card-active {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 8px 24px -8px rgba(0, 0, 0, 0.4);
+}
+
+.aip-theme-preview {
+  padding: 14px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+
+.aip-theme-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.aip-theme-preview-dot-sm {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.aip-theme-preview-title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.aip-theme-preview-chips {
+  display: flex;
+  gap: 4px;
+}
+
+.aip-theme-preview-chip {
+  font-size: 0.58rem;
+  padding: 1px 5px;
+  border: 0.5px solid;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.aip-theme-preview-line {
+  height: 3px;
+  border-radius: 2px;
+  width: 70%;
+  opacity: 0.7;
+}
+
+.aip-theme-preview-line-short {
+  width: 45%;
+}
+
+.aip-theme-preview-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+  padding: 3px 6px;
+  border-top: 0.5px solid rgba(255, 255, 255, 0.06);
+}
+
+.aip-theme-preview-placeholder {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.aip-theme-preview-send {
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 700;
+}
+
+/* Preview background per theme */
+[data-aip-theme-preview="cyber"] .aip-theme-preview {
+  background:
+    linear-gradient(135deg, rgba(56, 189, 248, 0.06) 0%, rgba(139, 92, 246, 0.03) 100%),
+    rgba(0, 0, 0, 0.35);
+}
+
+[data-aip-theme-preview="ambient"] .aip-theme-preview {
+  background:
+    linear-gradient(135deg, rgba(245, 158, 11, 0.06) 0%, rgba(244, 114, 182, 0.03) 100%),
+    rgba(0, 0, 0, 0.35);
+}
+
+[data-aip-theme-preview="terminal"] .aip-theme-preview {
+  background:
+    linear-gradient(135deg, rgba(34, 197, 94, 0.08) 0%, rgba(0, 0, 0, 0.5) 100%),
+    rgba(0, 0, 0, 0.35);
+}
+
+[data-aip-theme-preview="terminal"] .aip-theme-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, 0.1) 2px,
+    rgba(0, 0, 0, 0.1) 4px
+  );
+  pointer-events: none;
+}
+
+.aip-theme-card-body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.aip-theme-card-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cal2-text-primary, #e0e5f7);
+}
+
+.aip-theme-card-desc {
+  font-size: 0.7rem;
+  color: var(--cal2-text-secondary, #8b91ab);
+  line-height: 1.45;
+}
+
+.aip-theme-card-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 700;
 }
 
 /* ── AI panel responsive ── */
@@ -2696,8 +3214,12 @@ body {
   .aip-chip,
   .aip-response,
   .aip-send,
-  .aip-suggestions {
+  .aip-suggestions,
+  .aip-message,
+  .aip-status-bar-active::after,
+  .aip-thinking-dot {
     transition: none;
+    animation: none;
   }
 
   .login-card::before {
@@ -2707,5 +3229,12 @@ body {
   .aip-cursor {
     animation: none;
     opacity: 1;
+  }
+
+  [data-aip-theme="cyber"] .aip-trigger::after,
+  [data-aip-theme="ambient"] .aip-trigger,
+  [data-aip-theme="ambient"] .aip-inner::after,
+  [data-aip-theme="terminal"] .aip-trigger::after {
+    animation: none;
   }
 }

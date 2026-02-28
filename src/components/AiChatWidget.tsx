@@ -5,6 +5,17 @@ import type { AgentMemoryItem } from "@/agent/types";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
 
+/* ── Theme support ── */
+const AI_THEME_KEY = "netden:ai-theme";
+type AiTheme = "cyber" | "ambient" | "terminal";
+
+function readAiTheme(): AiTheme {
+  if (typeof window === "undefined") return "cyber";
+  const stored = window.localStorage.getItem(AI_THEME_KEY);
+  if (stored === "cyber" || stored === "ambient" || stored === "terminal") return stored;
+  return "cyber";
+}
+
 /* ── Context chip definitions ── */
 const CONTEXT_CHIPS = [
   { id: "calendar", icon: "◈", label: "Календарь", prompt: "Расскажи о моих ближайших событиях" },
@@ -56,6 +67,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
   const [isFocused, setIsFocused] = useState(false);
   const [chipsReady, setChipsReady] = useState(false);
   const [activeChip, setActiveChip] = useState<string | null>(null);
+  const [theme, setTheme] = useState<AiTheme>(readAiTheme);
   const inputRef = useRef<HTMLInputElement>(null);
   const responseRef = useRef<HTMLDivElement>(null);
   const { items: memoryItems } = useAgentMemory();
@@ -101,6 +113,18 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [handleToggle, isOpen]);
+
+  /* ── Listen for theme changes from settings ── */
+  useEffect(() => {
+    const onThemeChange = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (detail === "cyber" || detail === "ambient" || detail === "terminal") {
+        setTheme(detail);
+      }
+    };
+    window.addEventListener("netden:ai-theme-changed", onThemeChange);
+    return () => window.removeEventListener("netden:ai-theme-changed", onThemeChange);
+  }, []);
 
   /* ── Staggered chips ── */
   useEffect(() => {
@@ -157,7 +181,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
   );
 
   return (
-    <>
+    <div data-aip-theme={theme}>
       {/* Trigger button */}
       <button
         type="button"
@@ -175,7 +199,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
       {/* Slide-up panel */}
       <div className={`aip-panel ${isOpen ? "aip-panel-open" : ""}`}>
         <div className="aip-shell">
-          <div className={`aip-inner ${isFocused ? "aip-inner-focused" : ""}`}>
+          <div className={`aip-inner ${isFocused ? "aip-inner-focused" : ""} ${isStreaming ? "aip-streaming" : ""}`}>
 
             {/* Header */}
             <div className="aip-header">
@@ -202,6 +226,9 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
 
             <div className="aip-separator" />
 
+            {/* Streaming status bar */}
+            <div className={`aip-status-bar ${isStreaming ? "aip-status-bar-active" : ""}`} />
+
             {/* Response area */}
             <div
               ref={responseRef}
@@ -219,8 +246,12 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                 ))}
 
                 {isStreaming && messages.length === 0 && (
-                  <div className="aip-message aip-message-assistant">
-                    <span className="aip-cursor" />
+                  <div className="aip-message aip-message-assistant aip-message-thinking">
+                    <span className="aip-thinking">
+                      <span className="aip-thinking-dot" />
+                      <span className="aip-thinking-dot" />
+                      <span className="aip-thinking-dot" />
+                    </span>
                   </div>
                 )}
               </div>
@@ -303,6 +334,6 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
