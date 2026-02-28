@@ -17,7 +17,6 @@ import {
   getSlashCommands,
   type SlashCommandContext,
 } from "@/modules/terminal/commands";
-import Calendar from "@/components/Calendar";
 
 const LiveClock = memo(function LiveClock() {
   const [now, setNow] = useState<Date | null>(null);
@@ -70,9 +69,9 @@ const CLI_STROKE_MAX = 2;
 const CLI_STROKE_DEFAULT = 1;
 const PROMPT_PLACEHOLDER = "Ask anything";
 const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
-type TerminalPanel = "none" | "calendar" | "home" | "notes" | "settings";
+type TerminalPanel = "none" | "home" | "notes" | "settings";
 
-const PANEL_ROUTE_MAP: Record<Exclude<TerminalPanel, "none" | "calendar">, string> = {
+const PANEL_ROUTE_MAP: Record<Exclude<TerminalPanel, "none">, string> = {
   home: "/home?embedded=1",
   notes: "/notes?embedded=1",
   settings: "/settings?embedded=1",
@@ -539,11 +538,6 @@ export default function Terminal() {
       return;
     }
 
-    if (result.action === "open_calendar") {
-      openPanel("calendar");
-      return;
-    }
-
     if (result.action === "open_home") {
       openPanel("home");
       return;
@@ -681,9 +675,7 @@ export default function Terminal() {
   const windowTitle =
     currentTerminalWindow === "login"
       ? "Вход"
-      : currentTerminalWindow === "calendar"
-        ? "Календарь"
-        : currentTerminalWindow === "home"
+      : currentTerminalWindow === "home"
           ? "Главная"
           : currentTerminalWindow === "notes"
             ? "Заметки"
@@ -747,9 +739,7 @@ export default function Terminal() {
 
       <div className={`terminal-calendar-shell ${panelVisible ? "terminal-calendar-shell-visible" : ""}`}>
         <div className="terminal-calendar-inner nd-panel-enter" key={activePanel}>
-          {activePanel === "calendar" ? (
-            <Calendar variant="embedded" onBackToConsole={closePanelToConsole} />
-          ) : activePanel === "home" || activePanel === "notes" || activePanel === "settings" ? (
+          {activePanel === "home" || activePanel === "notes" || activePanel === "settings" ? (
             <div className="terminal-inline-page-shell">
               <button
                 type="button"

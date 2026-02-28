@@ -43,7 +43,7 @@ describe("readCalendar2UrlStateFromSearch", () => {
 describe("buildCalendar2UrlChange", () => {
   it("builds next URL and keeps unrelated params", () => {
     const result = buildCalendar2UrlChange({
-      pathname: "/calendar2",
+      pathname: "/calendar",
       search: "?embedded=1",
       hash: "#panel",
       state: {
@@ -58,7 +58,7 @@ describe("buildCalendar2UrlChange", () => {
     });
 
     expect(result.changed).toBe(true);
-    expect(result.nextUrl).toContain("/calendar2?");
+    expect(result.nextUrl).toContain("/calendar?");
     expect(result.nextUrl).toContain("#panel");
 
     const query = result.nextUrl.split("?")[1].split("#")[0];
@@ -75,7 +75,7 @@ describe("buildCalendar2UrlChange", () => {
 
   it("detects unchanged query", () => {
     const result = buildCalendar2UrlChange({
-      pathname: "/calendar2",
+      pathname: "/calendar",
       search: "?tab=notes&view=week&category=done&q=review&date=2026-03-12",
       state: {
         tab: "notes",

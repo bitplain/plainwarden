@@ -2,7 +2,7 @@
 
 import { format, isSameDay, isSameMonth } from "date-fns";
 import type { CalendarEvent } from "@/lib/types";
-import { toDateKey } from "@/components/calendar/date-utils";
+import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
 interface Calendar2MonthViewProps {

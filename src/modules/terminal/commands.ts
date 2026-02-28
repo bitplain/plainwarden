@@ -23,13 +23,8 @@ const GUEST_COMMANDS: SlashCommand[] = [
 const AUTH_COMMANDS: SlashCommand[] = [
   {
     trigger: "/calendar",
-    description: "Open calendar panel",
+    description: "Open calendar page",
     aliases: ["calendar", "календарь"],
-  },
-  {
-    trigger: "/calendar2",
-    description: "Open Calendar 2.0 page",
-    aliases: ["calendar2"],
   },
   { trigger: "/home", description: "Open home dashboard", aliases: ["home", "главная"] },
   { trigger: "/kanban", description: "Open Kanban boards", aliases: ["kanban", "канбан"] },
@@ -147,15 +142,8 @@ export function executeSlashCommand(
   if (matchedCommand.trigger === "/calendar") {
     return {
       output: ["Opening calendar..."],
-      action: "open_calendar",
-    };
-  }
-
-  if (matchedCommand.trigger === "/calendar2") {
-    return {
-      output: ["Opening calendar2..."],
       action: "navigate",
-      navigateTo: "/calendar2",
+      navigateTo: "/calendar",
     };
   }
 

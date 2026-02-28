@@ -18,7 +18,7 @@ import {
 } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
-import type { CalendarView } from "@/components/calendar/calendar-types";
+import type { Calendar2View } from "./calendar2-types";
 
 export const WEEK_STARTS_ON = 1 as const;
 export const DAY_VIEW_START_HOUR = 8;
@@ -111,7 +111,11 @@ export function getDaySlots(anchorDate: Date): Date[] {
   return slots;
 }
 
-export function shiftAnchorDate(anchorDate: Date, view: CalendarView, direction: "prev" | "next"): Date {
+export function shiftAnchorDate(
+  anchorDate: Date,
+  view: Calendar2View,
+  direction: "prev" | "next",
+): Date {
   if (view === "month") {
     return direction === "prev" ? subMonths(anchorDate, 1) : addMonths(anchorDate, 1);
   }
@@ -123,7 +127,7 @@ export function shiftAnchorDate(anchorDate: Date, view: CalendarView, direction:
   return direction === "prev" ? subDays(anchorDate, 1) : addDays(anchorDate, 1);
 }
 
-export function formatPeriodLabel(anchorDate: Date, view: CalendarView): string {
+export function formatPeriodLabel(anchorDate: Date, view: Calendar2View): string {
   if (view === "month") {
     return uppercaseFirst(format(anchorDate, "LLLL yyyy", { locale: ru }));
   }

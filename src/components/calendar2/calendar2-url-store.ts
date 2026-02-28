@@ -1,6 +1,6 @@
 import { startOfDay } from "date-fns";
 import { useCallback, useSyncExternalStore } from "react";
-import { toDateKey } from "@/components/calendar/date-utils";
+import { toDateKey } from "@/components/calendar2/date-utils";
 import {
   buildCalendar2UrlQuery,
   parseCalendar2UrlState,
