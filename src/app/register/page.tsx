@@ -25,7 +25,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace("/");
+      router.replace("/calendar");
     }
   }, [isAuthenticated, router]);
 
@@ -35,7 +35,7 @@ export default function RegisterPage() {
 
     try {
       await register({ name, email, password });
-      router.replace("/");
+      router.replace("/calendar");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ошибка регистрации";
       setFormError(message);
