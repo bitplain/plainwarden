@@ -1,4 +1,9 @@
 import { addDays, format } from "date-fns";
+import {
+  extractMeetingAvailabilityQuery,
+  extractMeetingDraftFromConversation,
+  findMeetingConflict,
+} from "@/agent/calendarDeterministic";
 import { classifyUserIntent, selectRelevantModules } from "@/agent/intent";
 import { buildSystemPrompt } from "@/agent/systemPrompt";
 import { createPendingAction, getPendingAction, removePendingAction } from "@/agent/pendingActions";
@@ -46,6 +51,10 @@ interface OpenRouterResponse {
   choices?: Array<{
     message?: OpenRouterChatMessage;
   }>;
+}
+
+function buildMeetingTimeLabel(time: string): string {
+  return time;
 }
 
 function normalizeChatHistory(history: AgentMessage[]): OpenRouterChatMessage[] {
@@ -284,6 +293,201 @@ export class AgentCore {
     };
   }
 
+  private async tryHandleDeterministicCalendar(
+    message: string,
+    history: AgentMessage[],
+    language: AgentLanguage,
+  ): Promise<AgentTurnResult | null> {
+    const draft = extractMeetingDraftFromConversation({
+      message,
+      history,
+      nowIso: this.user.nowIso,
+      timezone: this.user.timezone,
+    });
+
+    if (draft) {
+      const dayEventsResult = await executeTool(
+        "calendar_list_events",
+        { dateFrom: draft.date, dateTo: draft.date, type: "event", limit: 100 },
+        { userId: this.user.userId, nowIso: this.user.nowIso },
+      );
+
+      if (!dayEventsResult.ok) {
+        return {
+          text:
+            language === "ru"
+              ? "Не удалось проверить календарь перед созданием встречи. Попробуйте ещё раз."
+              : "Could not check the calendar before creating the meeting. Please try again.",
+          language,
+          intent: {
+            type: "action",
+            actionKind: "create",
+            confidence: 0.85,
+            requiresConfirmation: false,
+          },
+          usedModules: ["calendar"],
+        };
+      }
+
+      const dayEvents = Array.isArray(dayEventsResult.data) ? (dayEventsResult.data as CalendarEvent[]) : [];
+      const conflict = findMeetingConflict(dayEvents, draft.date, draft.time);
+      if (conflict) {
+        const title = conflict.title.trim() || (language === "ru" ? "Без названия" : "Untitled");
+        const conflictTime = conflict.time ?? draft.time;
+        return {
+          text:
+            language === "ru"
+              ? `На ${draft.date} в ${buildMeetingTimeLabel(conflictTime)} уже есть встреча «${title}». Выберите другое время.`
+              : `There is already a meeting at ${buildMeetingTimeLabel(conflictTime)} on ${draft.date}: "${title}". Please choose another time.`,
+          language,
+          intent: {
+            type: "action",
+            actionKind: "create",
+            confidence: 0.95,
+            requiresConfirmation: false,
+          },
+          usedModules: ["calendar"],
+        };
+      }
+
+      const actionArguments: Record<string, unknown> = {
+        title: draft.title,
+        description: draft.description,
+        date: draft.date,
+        time: draft.time,
+        type: "event",
+        status: "pending",
+      };
+
+      const proposal = createPendingAction({
+        userId: this.user.userId,
+        toolName: "calendar_create_event",
+        arguments: actionArguments,
+        summary: buildProposalSummary("calendar_create_event", actionArguments, language),
+      });
+
+      return {
+        text:
+          language === "ru"
+            ? `Предлагаю создать встречу на ${draft.date} в ${buildMeetingTimeLabel(draft.time)}. Подтвердите действие.`
+            : `I suggest creating a meeting on ${draft.date} at ${buildMeetingTimeLabel(draft.time)}. Please confirm.`,
+        language,
+        intent: {
+          type: "action",
+          actionKind: "create",
+          confidence: 0.95,
+          requiresConfirmation: true,
+        },
+        pendingAction: proposal,
+        usedModules: ["calendar"],
+      };
+    }
+
+    const availabilityQuery = extractMeetingAvailabilityQuery({
+      message,
+      nowIso: this.user.nowIso,
+      timezone: this.user.timezone,
+    });
+
+    if (!availabilityQuery) {
+      return null;
+    }
+
+    const dayEventsResult = await executeTool(
+      "calendar_list_events",
+      { dateFrom: availabilityQuery.date, dateTo: availabilityQuery.date, type: "event", limit: 100 },
+      { userId: this.user.userId, nowIso: this.user.nowIso },
+    );
+
+    if (!dayEventsResult.ok) {
+      return {
+        text:
+          language === "ru"
+            ? "Не удалось прочитать календарь. Попробуйте ещё раз."
+            : "Could not read the calendar. Please try again.",
+        language,
+        intent: {
+          type: "query",
+          confidence: 0.85,
+          requiresConfirmation: false,
+        },
+        usedModules: ["calendar"],
+      };
+    }
+
+    const dayEvents = Array.isArray(dayEventsResult.data) ? (dayEventsResult.data as CalendarEvent[]) : [];
+    const meetings = dayEvents.filter((event) => event.type === "event");
+
+    if (availabilityQuery.time) {
+      const matches = meetings.filter((event) => event.time === availabilityQuery.time);
+      if (matches.length === 0) {
+        return {
+          text:
+            language === "ru"
+              ? `На ${availabilityQuery.date} в ${buildMeetingTimeLabel(availabilityQuery.time)} встреч нет.`
+              : `There are no meetings on ${availabilityQuery.date} at ${buildMeetingTimeLabel(availabilityQuery.time)}.`,
+          language,
+          intent: {
+            type: "query",
+            confidence: 0.95,
+            requiresConfirmation: false,
+          },
+          usedModules: ["calendar"],
+        };
+      }
+
+      const titles = matches.map((event) => `«${event.title.trim() || "Без названия"}»`).join(", ");
+      return {
+        text:
+          language === "ru"
+            ? `На ${availabilityQuery.date} в ${buildMeetingTimeLabel(availabilityQuery.time)} уже есть: ${titles}.`
+            : `Meetings already scheduled on ${availabilityQuery.date} at ${buildMeetingTimeLabel(availabilityQuery.time)}: ${titles}.`,
+        language,
+        intent: {
+          type: "query",
+          confidence: 0.95,
+          requiresConfirmation: false,
+        },
+        usedModules: ["calendar"],
+      };
+    }
+
+    if (meetings.length === 0) {
+      return {
+        text:
+          language === "ru"
+            ? `На ${availabilityQuery.date} встреч не запланировано.`
+            : `No meetings are scheduled on ${availabilityQuery.date}.`,
+        language,
+        intent: {
+          type: "query",
+          confidence: 0.95,
+          requiresConfirmation: false,
+        },
+        usedModules: ["calendar"],
+      };
+    }
+
+    const compactList = meetings
+      .slice(0, 5)
+      .map((event) => `- ${event.time ?? (language === "ru" ? "без времени" : "no time")}: ${event.title}`)
+      .join("\n");
+
+    return {
+      text:
+        language === "ru"
+          ? `На ${availabilityQuery.date} запланированы встречи:\n${compactList}`
+          : `Meetings on ${availabilityQuery.date}:\n${compactList}`,
+      language,
+      intent: {
+        type: "query",
+        confidence: 0.95,
+        requiresConfirmation: false,
+      },
+      usedModules: ["calendar"],
+    };
+  }
+
   async runTurn(input: AgentTurnInput): Promise<AgentTurnResult> {
     const language = detectLanguageCode(input.message ?? input.history.at(-1)?.content ?? "");
 
@@ -352,6 +556,11 @@ export class AgentCore {
         navigateTo: intent.navigateTo,
         usedModules: [],
       };
+    }
+
+    const deterministicCalendar = await this.tryHandleDeterministicCalendar(message, input.history, language);
+    if (deterministicCalendar) {
+      return deterministicCalendar;
     }
 
     const modules = selectRelevantModules(message);

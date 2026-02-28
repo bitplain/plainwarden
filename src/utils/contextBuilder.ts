@@ -132,8 +132,9 @@ export function buildUnifiedContext(
   const snippetLines = entities.map((entity) => {
     const sources = entity.sources.join(",");
     const date = entity.date ? ` date=${entity.date}` : "";
+    const time = entity.event?.time ? ` time=${entity.event.time}` : "";
     const status = entity.status ? ` status=${entity.status}` : "";
-    return `- [${entity.globalEntityId}] ${entity.title} (${sources})${date}${status}`;
+    return `- [${entity.globalEntityId}] ${entity.title} (${sources})${date}${time}${status}`;
   });
 
   const promptFragment = truncate(snippetLines.join("\n"), maxChars);
