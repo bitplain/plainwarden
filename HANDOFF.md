@@ -62,3 +62,39 @@
    - доставку браузерного push,
    - отметку read после показа reminder.
 5. Проверить, что повторный запуск cron не дублирует одинаковые reminders (dedupe).
+
+---
+
+## Дополнение 2026-02-28 (fix `/push test` Internal Server Error)
+
+### Что сделано
+- Добавлена централизованная валидация конфигурации push:
+  - `src/lib/server/push-config.ts`
+  - проверяются `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`
+  - для некорректной/неполной конфигурации выбрасывается `PushConfigurationError`
+- `push-delivery` переведён на новую проверку, чтобы не падать неявным `Error`.
+- `handleRouteError` теперь маппит `PushConfigurationError` в `503` с диагностическим сообщением (вместо generic `500`).
+- `/api/health` расширен проверкой push-конфига:
+  - `checks.push.configured`
+  - `checks.push.missing`
+  - `checks.push.invalid`
+- В Docker env добавлен проброс VAPID переменных в `app`-контейнер.
+- Обновлены `.env.example` и `README.md` (добавлены VAPID-переменные и генерация ключей).
+- Добавлены тесты:
+  - `tests/push-config.test.ts`
+  - доп. кейс в `tests/validators.test.ts` на `503` для push-конфигурации.
+
+### Что не сделано
+- Не добавлялась отдельная UI-диагностика в терминале для статуса push-конфига (кроме улучшенного API-ответа и health).
+
+### Что требует внимания
+- Без заполненных VAPID env `/api/push/test` теперь вернёт явный `503` и перечень missing/invalid полей.
+- `NEXT_PUBLIC_VAPID_PUBLIC_KEY` должен быть доступен на этапе `build` (для клиентского subscribe), поэтому значение нужно передавать в окружение сборки.
+
+### Что проверить вручную
+1. С пустыми VAPID переменными:
+   - `/api/health` показывает `checks.push.configured=false`
+   - `/api/push/test` для авторизованного пользователя возвращает `503` с диагностикой.
+2. С заполненными корректными VAPID переменными:
+   - `/push enable` успешно подписывает браузер
+   - `/push test` отправляет тестовый push без `500`.

@@ -36,6 +36,9 @@ services:
       - DATABASE_URL=${DATABASE_URL:-postgresql://netden:netdenpass@postgres:5432/netden?schema=public}
       - NETDEN_SESSION_SECRET=${NETDEN_SESSION_SECRET:-local-session-secret-change-me-32chars}
       - NEXT_PUBLIC_BUILD_SHA=${NEXT_PUBLIC_BUILD_SHA:-dev}
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-}
+      - NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY:-}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:-}
       - CADDY_ADMIN_URL=${CADDY_ADMIN_URL:-http://proxy:2019}
 
   proxy:

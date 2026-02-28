@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  handleRouteError,
   validateLoginInput,
   validateRegisterInput,
   validateCreateEventInput,
   validateUpdateEventInput,
 } from "@/lib/server/validators";
+import { PushConfigurationError } from "@/lib/server/push-config";
 
 describe("validateLoginInput", () => {
   it("accepts valid credentials", () => {
@@ -262,5 +264,21 @@ describe("validateUpdateEventInput", () => {
   it("accepts categoryId field in update", () => {
     const result = validateUpdateEventInput({ title: "Test", categoryId: "personal" });
     expect(result.categoryId).toBe("personal");
+  });
+});
+
+describe("handleRouteError", () => {
+  it("maps PushConfigurationError to 503", async () => {
+    const response = handleRouteError(
+      new PushConfigurationError({
+        missing: ["VAPID_SUBJECT"],
+        invalid: [],
+      }),
+    );
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({
+      message: "Push is not configured; missing: VAPID_SUBJECT",
+    });
   });
 });

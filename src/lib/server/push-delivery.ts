@@ -4,6 +4,7 @@ import {
   markPushSubscriptionFailure,
   markPushSubscriptionSuccess,
 } from "@/lib/server/push-subscriptions-db";
+import { assertPushConfiguration } from "@/lib/server/push-config";
 
 export interface PushMessagePayload {
   title: string;
@@ -23,13 +24,7 @@ let isConfigured = false;
 function ensureWebPushConfigured() {
   if (isConfigured) return;
 
-  const subject = process.env.VAPID_SUBJECT?.trim();
-  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
-  const privateKey = process.env.VAPID_PRIVATE_KEY?.trim();
-
-  if (!subject || !publicKey || !privateKey) {
-    throw new Error("Missing VAPID settings");
-  }
+  const { subject, publicKey, privateKey } = assertPushConfiguration();
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
   isConfigured = true;
