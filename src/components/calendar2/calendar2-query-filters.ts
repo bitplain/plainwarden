@@ -12,6 +12,23 @@ function normalizeDate(value?: string): string | undefined {
   return ISO_DATE_REGEX.test(normalized) ? normalized : undefined;
 }
 
+function normalizeDateRange(input: {
+  dateFrom?: string;
+  dateTo?: string;
+}): { dateFrom?: string; dateTo?: string } {
+  const dateFrom = normalizeDate(input.dateFrom);
+  const dateTo = normalizeDate(input.dateTo);
+
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    return {
+      dateFrom: dateTo,
+      dateTo: dateFrom,
+    };
+  }
+
+  return { dateFrom, dateTo };
+}
+
 export function buildCalendar2EventFilters(input: {
   q: string;
   category: Calendar2CategoryFilter;
@@ -24,8 +41,10 @@ export function buildCalendar2EventFilters(input: {
     filters.q = query;
   }
 
-  const dateFrom = normalizeDate(input.dateFrom);
-  const dateTo = normalizeDate(input.dateTo);
+  const { dateFrom, dateTo } = normalizeDateRange({
+    dateFrom: input.dateFrom,
+    dateTo: input.dateTo,
+  });
   if (dateFrom) {
     filters.dateFrom = dateFrom;
   }

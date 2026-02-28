@@ -196,6 +196,24 @@ export default function EventModal2({
   }, [event?.status]);
 
   const currentPriority = event ? eventPriorities[event.id] ?? "medium" : "medium";
+  const categoriesForSelect = useMemo(() => {
+    if (!event?.categoryId) {
+      return categories;
+    }
+    if (categories.some((category) => category.id === event.categoryId)) {
+      return categories;
+    }
+
+    return [
+      {
+        id: event.categoryId,
+        label: `Категория #${event.categoryId.slice(0, 8)}`,
+        color: "#64748b",
+        createdAt: new Date(0).toISOString(),
+      },
+      ...categories,
+    ];
+  }, [categories, event?.categoryId]);
   const hasRecurringSeries = Boolean(event?.recurrenceSeriesId);
   const isSeriesWideEdit =
     mode === "view" && isEditMode && hasRecurringSeries && applyScope !== "this";
@@ -527,7 +545,7 @@ export default function EventModal2({
         </label>
       </div>
 
-      {categories.length > 0 && (
+      {categoriesForSelect.length > 0 && (
         <label className="grid gap-1.5">
           <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
             Категория
@@ -538,7 +556,7 @@ export default function EventModal2({
             className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
           >
             <option value="">— Без категории</option>
-            {categories.map((cat) => (
+            {categoriesForSelect.map((cat) => (
               <option key={cat.id} value={cat.id}>
                 {cat.label}
               </option>

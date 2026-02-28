@@ -96,7 +96,25 @@ function savePriorities(priorities: Record<string, TaskPriority>): void {
 }
 
 function toDayStart(dateKey: string): Date {
-  return startOfDay(new Date(`${dateKey}T00:00:00`));
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey);
+  if (!match) {
+    return startOfDay(new Date());
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return startOfDay(new Date());
+  }
+
+  return startOfDay(date);
 }
 
 export default function Calendar2() {
@@ -156,6 +174,16 @@ export default function Calendar2() {
       }),
     [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
   );
+  const liveCalendarQueryFilters = useMemo(
+    () =>
+      buildCalendar2EventFilters({
+        q: searchQuery.trim(),
+        category: categoryFilter,
+        dateFrom,
+        dateTo,
+      }),
+    [searchQuery, categoryFilter, dateFrom, dateTo],
+  );
   const hasActiveCalendarFilters = useMemo(
     () =>
       Boolean(
@@ -172,13 +200,8 @@ export default function Calendar2() {
       return;
     }
 
-    if (activeTab !== "calendar") {
-      void fetchEvents();
-      return;
-    }
-
     void fetchEvents(calendarQueryFilters);
-  }, [user, fetchEvents, activeTab, calendarQueryFilters]);
+  }, [user, fetchEvents, calendarQueryFilters]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -239,6 +262,26 @@ export default function Calendar2() {
     }
     return resolved;
   }, [events, eventPriorities]);
+  const eventRevisionById = useMemo(() => {
+    const byId: Record<string, number> = {};
+    for (const event of events) {
+      if (typeof event.revision === "number") {
+        byId[event.id] = event.revision;
+      }
+    }
+    return byId;
+  }, [events]);
+
+  const withEventRevision = useCallback(
+    (eventId: string): { revision?: number } => {
+      const revision = eventRevisionById[eventId];
+      if (revision === undefined) {
+        return {};
+      }
+      return { revision };
+    },
+    [eventRevisionById],
+  );
 
   useEffect(() => {
     if (!user || isAuthLoading || isEventsLoading) {
@@ -265,7 +308,7 @@ export default function Calendar2() {
     // until we can associate it with the server-assigned event ID
     handlePriorityChange(`${input.title}::${input.date}`, priority);
     localStore.addAuditEntry({ action: "create", eventId: "", eventTitle: input.title });
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleDeleteEvent = async (
@@ -277,7 +320,7 @@ export default function Calendar2() {
     if (event) {
       localStore.addAuditEntry({ action: "delete", eventId, eventTitle: event.title });
     }
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
     setSelectedEventId(null);
   };
 
@@ -286,8 +329,13 @@ export default function Calendar2() {
     nextStatus: EventStatus,
     scope: RecurrenceScope = "this",
   ) => {
-    await updateEvent({ id: eventId, status: nextStatus, recurrenceScope: scope });
-    await fetchEvents(calendarQueryFilters);
+    await updateEvent({
+      id: eventId,
+      status: nextStatus,
+      recurrenceScope: scope,
+      ...withEventRevision(eventId),
+    });
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleUpdateEvent = async (
@@ -305,35 +353,36 @@ export default function Calendar2() {
       description: input.description,
       recurrence: input.recurrence,
       recurrenceScope: scope,
+      ...withEventRevision(eventId),
     });
     handlePriorityChange(eventId, priority);
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleConvertToTask = async (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (!event) return;
-    await updateEvent({ id: eventId, type: "task" });
+    await updateEvent({ id: eventId, type: "task", ...withEventRevision(eventId) });
     localStore.addAuditEntry({
       action: "convert",
       eventId,
       eventTitle: event.title,
       detail: "event → task",
     });
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleConvertToEvent = async (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (!event) return;
-    await updateEvent({ id: eventId, type: "event" });
+    await updateEvent({ id: eventId, type: "event", ...withEventRevision(eventId) });
     localStore.addAuditEntry({
       action: "convert",
       eventId,
       eventTitle: event.title,
       detail: "task → event",
     });
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleConvertToNote = async (eventId: string) => {
@@ -374,8 +423,9 @@ export default function Calendar2() {
       date: nextDate,
       time: nextTime,
       recurrenceScope: "this",
+      ...withEventRevision(eventId),
     });
-    await fetchEvents(calendarQueryFilters);
+    await fetchEvents(liveCalendarQueryFilters);
   };
 
   const handleLogout = async () => {
@@ -456,7 +506,7 @@ export default function Calendar2() {
   };
 
   const handleExportIcs = () => {
-    const query = buildEventListQueryString(calendarQueryFilters);
+    const query = buildEventListQueryString(liveCalendarQueryFilters);
     const endpoint = query ? `/api/events/export.ics?${query}` : "/api/events/export.ics";
     window.open(endpoint, "_blank", "noopener,noreferrer");
   };
