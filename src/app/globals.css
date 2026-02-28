@@ -1200,6 +1200,26 @@ body {
   font-weight: 400;
 }
 
+.agent-status-lamp {
+  display: inline-block;
+  width: 0.52rem;
+  height: 0.52rem;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: #8a95b5;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.agent-status-lamp-valid {
+  background: #2fd06a;
+  box-shadow: 0 0 0 1px rgba(47, 208, 106, 0.45), 0 0 10px rgba(47, 208, 106, 0.45);
+}
+
+.agent-status-lamp-invalid {
+  background: #f25656;
+  box-shadow: 0 0 0 1px rgba(242, 86, 86, 0.4), 0 0 10px rgba(242, 86, 86, 0.3);
+}
+
 .setup-list {
   margin: 0.4rem 0 0;
   padding-left: 1.2rem;

@@ -21,6 +21,10 @@ import { logger } from "@/utils/logger";
 
 interface AgentCoreConfig {
   user: AgentUserContext;
+  llm?: {
+    openrouterApiKey?: string | null;
+    openrouterModel?: string | null;
+  };
 }
 
 interface OpenRouterChatMessage {
@@ -132,14 +136,19 @@ async function syncEntitiesAfterCalendarChange(eventId: string) {
 export class AgentCore {
   private readonly user: AgentUserContext;
   private readonly model: string;
+  private readonly apiKey: string | null;
 
   constructor(config: AgentCoreConfig) {
     this.user = config.user;
-    this.model = process.env.OPENROUTER_MODEL?.trim() || "openai/gpt-4o-mini";
+    this.model =
+      config.llm?.openrouterModel?.trim() ||
+      process.env.OPENROUTER_MODEL?.trim() ||
+      "openai/gpt-4o-mini";
+    this.apiKey = config.llm?.openrouterApiKey?.trim() || process.env.OPENROUTER_API_KEY?.trim() || null;
   }
 
   private async callOpenRouter(payload: Record<string, unknown>): Promise<OpenRouterResponse | null> {
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    const apiKey = this.apiKey;
     if (!apiKey) {
       return null;
     }
