@@ -50,6 +50,9 @@ DATABASE_URL=postgresql://netden:netdenpass@postgres:5432/netden?schema=public
 NETDEN_SESSION_SECRET=local-session-secret-change-me
 NEXT_PUBLIC_BUILD_SHA=dev
 PROXY_PORT=8080
+VAPID_SUBJECT=mailto:admin@example.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
 ```
 
 ## Локальный запуск

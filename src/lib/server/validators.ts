@@ -460,6 +460,11 @@ export function handleRouteError(error: unknown) {
     return NextResponse.json(body, { status: error.status });
   }
 
+  if (error instanceof Error && error.name === "PushConfigurationError") {
+    const body: ApiErrorResponse = { message: error.message };
+    return NextResponse.json(body, { status: 503 });
+  }
+
   if (error instanceof Error && error.name === "DbConflictError") {
     const body: ApiErrorResponse = { message: error.message };
     return NextResponse.json(body, { status: 409 });
