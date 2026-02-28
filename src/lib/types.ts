@@ -89,6 +89,55 @@ export interface ApiErrorResponse {
   message: string;
 }
 
+export interface NoteRef {
+  id: string;
+  title: string;
+}
+
+export interface Note {
+  id: string;
+  userId: string;
+  title: string;
+  body: string;
+  parentId?: string;
+  tags: string[];
+  createdAt: string;
+  updatedAt: string;
+  children?: NoteRef[];
+  backlinks?: NoteRef[];
+  eventLinks?: string[];
+}
+
+export interface NoteVersion {
+  id: string;
+  noteId: string;
+  title: string;
+  body: string;
+  createdAt: string;
+}
+
+export interface CreateNoteInput {
+  title: string;
+  body?: string;
+  parentId?: string;
+  tags?: string[];
+  eventLinks?: string[];
+}
+
+export interface UpdateNoteInput {
+  title?: string;
+  body?: string;
+  parentId?: string | null;
+  tags?: string[];
+  eventLinks?: string[];
+}
+
+export interface NoteListFilters {
+  q?: string;
+  tag?: string;
+  parentId?: string;
+}
+
 export type SslMode = "disable" | "require";
 
 export interface SetupPgAdminInput {
