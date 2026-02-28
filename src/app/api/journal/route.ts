@@ -8,6 +8,14 @@ import type { JournalListFilters } from "@/lib/server/journal-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { getRateLimitResponse } from "@/lib/server/rate-limit";
 
+function sanitizeStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((item: unknown): item is string => typeof item === "string")
+    .map((item: string) => item.trim())
+    .filter(Boolean);
+}
+
 const CREATE_JOURNAL_RATE_LIMIT = {
   maxRequests: 120,
   windowMs: 60 * 1000,
@@ -70,9 +78,7 @@ export async function POST(request: NextRequest) {
       body: typeof body.body === "string" ? body.body : "",
       date,
       mood: typeof body.mood === "string" ? body.mood.trim() || undefined : undefined,
-      tags: Array.isArray(body.tags)
-        ? body.tags.filter((t: unknown): t is string => typeof t === "string").map((t: string) => t.trim()).filter(Boolean)
-        : [],
+      tags: sanitizeStringArray(body.tags),
     });
 
     return NextResponse.json(entry, { status: 201 });

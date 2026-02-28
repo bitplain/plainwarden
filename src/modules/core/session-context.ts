@@ -56,5 +56,5 @@ export function clearSession(sessionId: string): void {
 
 export function clearAllSessions(): void {
   sessions.clear();
-  actionLogs.length = 0;
+  actionLogs.splice(0);
 }
