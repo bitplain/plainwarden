@@ -2,6 +2,7 @@ import type { NetdenModule } from "@/modules/core/types";
 import { authModule } from "@/modules/auth";
 import { calendarModule } from "@/modules/calendar";
 import { homeModule } from "@/modules/home";
+import { kanbanModule } from "@/modules/kanban";
 import { notesModule } from "@/modules/notes";
 import { settingsModule } from "@/modules/settings";
 import { setupModule } from "@/modules/setup";
@@ -13,6 +14,7 @@ const modules: NetdenModule[] = [
   authModule,
   calendarModule,
   homeModule,
+  kanbanModule,
   notesModule,
   settingsModule,
 ];

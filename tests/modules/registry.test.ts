@@ -4,7 +4,7 @@ import { getModule, listModules } from "@/modules/core/registry";
 describe("module registry", () => {
   it("contains required modules", () => {
     const ids = listModules().map((module) => module.id);
-    expect(ids).toEqual(["terminal", "setup", "auth", "calendar", "home", "notes", "settings"]);
+    expect(ids).toEqual(["terminal", "setup", "auth", "calendar", "home", "kanban", "notes", "settings"]);
   });
 
   it("contains terminal command declarations", () => {
