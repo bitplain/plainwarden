@@ -11,6 +11,28 @@ import {
   RegisterInput,
   UpdateEventInput,
   UpdateNoteInput,
+  KanbanBoard,
+  KanbanColumn,
+  KanbanCard,
+  KanbanChecklist,
+  KanbanChecklistItem,
+  KanbanComment,
+  KanbanWorklog,
+  KanbanDependency,
+  CreateKanbanBoardInput,
+  UpdateKanbanBoardInput,
+  CreateKanbanColumnInput,
+  UpdateKanbanColumnInput,
+  CreateKanbanCardInput,
+  UpdateKanbanCardInput,
+  MoveKanbanCardInput,
+  CreateKanbanChecklistInput,
+  CreateKanbanChecklistItemInput,
+  UpdateKanbanChecklistItemInput,
+  CreateKanbanCommentInput,
+  UpdateKanbanCommentInput,
+  CreateKanbanWorklogInput,
+  AddKanbanDependencyInput,
 } from "@/lib/types";
 import { buildEventListQueryString } from "@/lib/event-filter-query";
 import type { EventListFilters } from "@/lib/types";
@@ -156,6 +178,173 @@ class ApiClient {
 
   getNoteExportUrl(id: string): string {
     return `${this.baseUrl}/notes/${id}/export`;
+  }
+
+  // ── Kanban ──────────────────────────────────────────────────────────────────
+
+  async listBoards(): Promise<KanbanBoard[]> {
+    return this.request<KanbanBoard[]>("/kanban/boards");
+  }
+
+  async getBoard(boardId: string): Promise<KanbanBoard> {
+    return this.request<KanbanBoard>(`/kanban/boards/${boardId}`);
+  }
+
+  async createBoard(input: CreateKanbanBoardInput): Promise<KanbanBoard> {
+    return this.request<KanbanBoard>("/kanban/boards", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateBoard(boardId: string, input: UpdateKanbanBoardInput): Promise<KanbanBoard> {
+    return this.request<KanbanBoard>(`/kanban/boards/${boardId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteBoard(boardId: string): Promise<void> {
+    await this.request<void>(`/kanban/boards/${boardId}`, { method: "DELETE" });
+  }
+
+  async createColumn(boardId: string, input: CreateKanbanColumnInput): Promise<KanbanColumn> {
+    return this.request<KanbanColumn>(`/kanban/boards/${boardId}/columns`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateColumn(columnId: string, input: UpdateKanbanColumnInput): Promise<KanbanColumn> {
+    return this.request<KanbanColumn>(`/kanban/columns/${columnId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteColumn(columnId: string): Promise<void> {
+    await this.request<void>(`/kanban/columns/${columnId}`, { method: "DELETE" });
+  }
+
+  async listCardsInColumn(columnId: string): Promise<KanbanCard[]> {
+    return this.request<KanbanCard[]>(`/kanban/columns/${columnId}/cards`);
+  }
+
+  async createCard(columnId: string, input: CreateKanbanCardInput): Promise<KanbanCard> {
+    return this.request<KanbanCard>(`/kanban/columns/${columnId}/cards`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getCard(cardId: string): Promise<KanbanCard> {
+    return this.request<KanbanCard>(`/kanban/cards/${cardId}`);
+  }
+
+  async updateCard(cardId: string, input: UpdateKanbanCardInput): Promise<KanbanCard> {
+    return this.request<KanbanCard>(`/kanban/cards/${cardId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteCard(cardId: string): Promise<void> {
+    await this.request<void>(`/kanban/cards/${cardId}`, { method: "DELETE" });
+  }
+
+  async moveCard(cardId: string, input: MoveKanbanCardInput): Promise<KanbanCard> {
+    return this.request<KanbanCard>(`/kanban/cards/${cardId}/move`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async listChecklists(cardId: string): Promise<KanbanChecklist[]> {
+    return this.request<KanbanChecklist[]>(`/kanban/cards/${cardId}/checklists`);
+  }
+
+  async createChecklist(cardId: string, input: CreateKanbanChecklistInput): Promise<KanbanChecklist> {
+    return this.request<KanbanChecklist>(`/kanban/cards/${cardId}/checklists`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async createChecklistItem(checklistId: string, input: CreateKanbanChecklistItemInput): Promise<KanbanChecklistItem> {
+    return this.request<KanbanChecklistItem>(`/kanban/checklists/${checklistId}/items`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateChecklistItem(itemId: string, input: UpdateKanbanChecklistItemInput): Promise<KanbanChecklistItem> {
+    return this.request<KanbanChecklistItem>(`/kanban/checklist-items/${itemId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async listComments(cardId: string): Promise<KanbanComment[]> {
+    return this.request<KanbanComment[]>(`/kanban/cards/${cardId}/comments`);
+  }
+
+  async createComment(cardId: string, input: CreateKanbanCommentInput): Promise<KanbanComment> {
+    return this.request<KanbanComment>(`/kanban/cards/${cardId}/comments`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateComment(commentId: string, input: UpdateKanbanCommentInput): Promise<KanbanComment> {
+    return this.request<KanbanComment>(`/kanban/comments/${commentId}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    await this.request<void>(`/kanban/comments/${commentId}`, { method: "DELETE" });
+  }
+
+  async listWorklogs(cardId: string): Promise<KanbanWorklog[]> {
+    return this.request<KanbanWorklog[]>(`/kanban/cards/${cardId}/worklog`);
+  }
+
+  async addWorklog(cardId: string, input: CreateKanbanWorklogInput): Promise<KanbanWorklog> {
+    return this.request<KanbanWorklog>(`/kanban/cards/${cardId}/worklog`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async startTimer(cardId: string): Promise<KanbanWorklog> {
+    return this.request<KanbanWorklog>(`/kanban/cards/${cardId}/worklog/start`, {
+      method: "POST",
+    });
+  }
+
+  async stopTimer(cardId: string, note?: string): Promise<KanbanWorklog> {
+    return this.request<KanbanWorklog>(`/kanban/cards/${cardId}/worklog/stop`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    });
+  }
+
+  async listDependencies(cardId: string): Promise<KanbanDependency[]> {
+    return this.request<KanbanDependency[]>(`/kanban/cards/${cardId}/dependencies`);
+  }
+
+  async addDependency(cardId: string, input: AddKanbanDependencyInput): Promise<KanbanDependency> {
+    return this.request<KanbanDependency>(`/kanban/cards/${cardId}/dependencies`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async removeDependency(cardId: string, depId: string): Promise<void> {
+    await this.request<void>(`/kanban/cards/${cardId}/dependencies/${depId}`, {
+      method: "DELETE",
+    });
   }
 }
 
