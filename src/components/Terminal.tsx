@@ -17,6 +17,10 @@ import {
   getSlashCommands,
   type SlashCommandContext,
 } from "@/modules/terminal/commands";
+import AgentConsole from "@/components/AgentConsole";
+import AgentSettings from "@/components/AgentSettings";
+import { useAgent } from "@/hooks/useAgent";
+import { useAgentMemory } from "@/hooks/useAgentMemory";
 
 const LiveClock = memo(function LiveClock() {
   const [now, setNow] = useState<Date | null>(null);
@@ -57,6 +61,12 @@ interface HistoryEntry {
 
 interface SetupStateResponse {
   setupRequired?: boolean;
+}
+
+interface MeResponse {
+  user?: {
+    name?: string;
+  };
 }
 
 const CLI_SCALE_KEY = "netden:cli-scale";
@@ -158,11 +168,19 @@ export default function Terminal() {
   const [loginPassword, setLoginPassword] = useState("");
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginBusy, setLoginBusy] = useState(false);
+  const [showAgentSettings, setShowAgentSettings] = useState(false);
+  const [runtimeUserName, setRuntimeUserName] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const loginEmailRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const agentMemory = useAgentMemory();
+  const agent = useAgent({
+    onNavigate: (path) => {
+      router.push(path);
+    },
+  });
 
   const commandContext = useMemo<SlashCommandContext>(
     () => ({
@@ -192,7 +210,7 @@ export default function Terminal() {
   useEffect(() => {
     if (!hasStarted || showLoginForm) return;
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [history, hasStarted, showLoginForm]);
+  }, [history, hasStarted, showLoginForm, agent.messages, agent.pendingAction]);
 
   useEffect(() => {
     if (showLoginForm) {
@@ -291,6 +309,9 @@ export default function Terminal() {
         const setupData: SetupStateResponse | null = await setupResponse
           .json()
           .catch(() => null);
+        const meData: MeResponse | null = await meResponse
+          .json()
+          .catch(() => null);
 
         if (!active) {
           return;
@@ -303,9 +324,11 @@ export default function Terminal() {
 
         if (meResponse.ok) {
           setIsAuthenticated(true);
+          setRuntimeUserName(meData?.user?.name ?? "");
           setShowLoginForm(false);
         } else {
           setIsAuthenticated(false);
+          setRuntimeUserName("");
           setActivePanel("none");
           if (setupRequired) {
             setShowLoginForm(false);
@@ -491,6 +514,48 @@ export default function Terminal() {
 
     if (mode === "shell") {
       await runShell(trimmed);
+      return;
+    }
+
+    if (trimmed === "/agent settings" || trimmed === "/agent-settings") {
+      const nextVisible = !showAgentSettings;
+      setShowAgentSettings(nextVisible);
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: trimmed,
+          output: [
+            nextVisible
+              ? "Agent settings opened. You can change name, tone, and role."
+              : "Agent settings hidden.",
+          ],
+          mode: "slash",
+        },
+      ]);
+      setInput("");
+      setHistoryIndex(-1);
+      return;
+    }
+
+    if (!trimmed.startsWith("/")) {
+      if (!isAuthenticated) {
+        setHistory((prev) => [
+          ...prev,
+          {
+            command: trimmed,
+            output: ["Unauthorized. Login first with /login."],
+            mode: "slash",
+            failed: true,
+          },
+        ]);
+        setInput("");
+        setHistoryIndex(-1);
+        return;
+      }
+
+      setInput("");
+      setHistoryIndex(-1);
+      await agent.sendMessage(trimmed, agentMemory.items);
       return;
     }
 
@@ -733,6 +798,20 @@ export default function Terminal() {
               </div>
             </div>
           )}
+
+          {showAgentSettings ? (
+            <AgentSettings value={agent.settings} onChange={agent.setSettings} />
+          ) : null}
+
+          <AgentConsole
+            messages={agent.messages}
+            pendingAction={agent.pendingAction}
+            isStreaming={agent.isStreaming}
+            onResolveAction={(approved) => {
+              void agent.resolveAction(approved, agentMemory.items);
+            }}
+          />
+
           <div ref={bottomRef} />
         </div>
       </div>
@@ -894,7 +973,9 @@ export default function Terminal() {
                     {isRuntimeLoading
                       ? "Checking session..."
                       : isAuthenticated
-                        ? "Session active."
+                        ? runtimeUserName
+                          ? `Session active: ${runtimeUserName}.`
+                          : "Session active."
                         : "Guest console mode. Only /login is available."}
                   </span>
                 </div>
