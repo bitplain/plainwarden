@@ -27,7 +27,7 @@ describe("agent intent classification", () => {
   it("classifies navigation request", () => {
     const intent = classifyUserIntent("Open kanban board");
     expect(intent.type).toBe("navigate");
-    expect(intent.navigateTo).toBe("/kanban");
+    expect(intent.navigateTo).toBe("/calendar?tab=kanban");
   });
 
   it("maps query to multiple modules", () => {

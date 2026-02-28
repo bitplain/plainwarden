@@ -29,6 +29,7 @@ const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
   { id: "planner", label: "Ежедневник" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
+  { id: "ai", label: "AI" },
 ];
 
 const VIEW_OPTIONS: { id: Calendar2View; label: string }[] = [
@@ -66,10 +67,10 @@ export default function Calendar2Toolbar({
         <div className="flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
             <Link
-              href="/"
+              href="/settings"
               className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
             >
-              ← Терминал
+              Настройки
             </Link>
             <div>
               <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--cal2-text-secondary)]">

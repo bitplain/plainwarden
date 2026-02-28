@@ -67,6 +67,17 @@ describe("parseCalendar2UrlState", () => {
     expect(state.dateFrom).toBe("2026-03-01");
     expect(state.dateTo).toBe("2026-03-31");
   });
+
+  it("accepts ai tab value", () => {
+    const state = parseCalendar2UrlState(
+      new URLSearchParams({
+        tab: "ai",
+      }),
+      "2026-03-11",
+    );
+
+    expect(state.tab).toBe("ai");
+  });
 });
 
 describe("buildCalendar2UrlQuery", () => {

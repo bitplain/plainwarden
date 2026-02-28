@@ -10,9 +10,9 @@ const ACTION_PATTERNS: Record<string, RegExp[]> = {
 
 const NAVIGATION_PATTERNS: Array<{ route: string; regex: RegExp[] }> = [
   { route: "/calendar", regex: [/\b(calendar|календар)\b/i] },
-  { route: "/kanban", regex: [/\b(kanban|board|доска|канбан)\b/i] },
-  { route: "/notes", regex: [/\b(notes?|заметк)\b/i] },
-  { route: "/home", regex: [/\b(home|dashboard|главн)\b/i] },
+  { route: "/calendar?tab=kanban", regex: [/\b(kanban|board|доска|канбан)\b/i] },
+  { route: "/calendar?tab=notes", regex: [/\b(notes?|заметк)\b/i] },
+  { route: "/calendar?tab=planner", regex: [/\b(daily|planner|today|tomorrow|ежеднев|сегодня|завтра)\b/i] },
   { route: "/settings", regex: [/\b(settings?|настройк)\b/i] },
 ];
 

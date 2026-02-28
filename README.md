@@ -1,12 +1,13 @@
 # NetDen
 
-Mobile-first terminal workspace with setup wizard, auth, shell/slash command modes, and full calendar CRUD.
+Mobile-first calendar workspace with AI assistant, Kanban, Notes, Daily planner, and settings.
 Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 
 ## Что реализовано в v1
 
-- Главная в стиле терминала: старт по центру, при первом вводе переход в нижний dock
+- Основной пользовательский поток: `Календарь + AI + Настройки`
 - Бренд: `NetDen`
+- Корневой маршрут `/` перенаправляет на `/calendar`
 - Режимы ввода:
   - `slash` (зелёный)
   - `shell` (красный, с красной левой полосой)
@@ -25,11 +26,11 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 
 ## Маршруты
 
-- `/` — терминальная главная
+- `/` — редирект на `/calendar`
 - `/setup` — мастер первичной инициализации
 - `/login` — вход
 - `/settings` — настройки интерфейса CLI (приватно)
-- `/calendar` — календарь (приватно)
+- `/calendar` — календарь (вкладки: календарь, ежедневник, канбан, заметки, AI)
 - `POST /api/terminal/run` — запуск allowlisted shell-команд
 - `GET|POST /api/events`
 - `PATCH|DELETE /api/events/:id`
@@ -38,6 +39,11 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+
+## Legacy (possibly-unused)
+
+- `src/components/Terminal.tsx` и shell/slash API оставлены для совместимости, но не являются основным пользовательским потоком.
+- REST-эндпоинты заметок/канбана сохранены для совместимости и AI-инструментов, даже если отдельные страницы заметок/канбана убраны из UI.
 
 ## Переменные окружения
 

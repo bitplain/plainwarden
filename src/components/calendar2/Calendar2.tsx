@@ -35,6 +35,7 @@ import Calendar2DayView from "./Calendar2DayView";
 import DailyPlanner from "./DailyPlanner";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
+import Calendar2AiPanel from "./Calendar2AiPanel";
 import EventModal2 from "./EventModal2";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
@@ -589,6 +590,14 @@ export default function Calendar2() {
             />
           </div>
         );
+      case "ai":
+        return (
+          <div className="min-h-0 flex-1">
+            <Calendar2AiPanel />
+          </div>
+        );
+      default:
+        return null;
     }
   };
 

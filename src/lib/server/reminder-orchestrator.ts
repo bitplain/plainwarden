@@ -69,7 +69,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
           sourceId: card.id,
           title: card.title,
           dueDate: card.dueDate,
-          navigateTo: "/kanban",
+          navigateTo: "/calendar?tab=kanban",
         })),
     ],
   };

@@ -1,5 +1,5 @@
-import Terminal from "@/components/Terminal";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <Terminal />;
+  redirect("/calendar");
 }

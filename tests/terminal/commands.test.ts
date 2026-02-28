@@ -102,44 +102,6 @@ describe("terminal slash commands", () => {
     expect(result.navigateTo).toBe("/calendar");
   });
 
-  it("opens inline home from /home command", () => {
-    const result = executeSlashCommand("home", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
-    expect(result.action).toBe("open_home");
-  });
-
-  it("opens inline notes from /notes command", () => {
-    const result = executeSlashCommand("/notes", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
-    expect(result.action).toBe("open_notes");
-  });
-
-  it("navigates to kanban from /kanban command", () => {
-    const result = executeSlashCommand("/kanban", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
-    expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/kanban");
-  });
-
-  it("navigates to kanban from russian alias", () => {
-    const result = executeSlashCommand("канбан", {
-      isAuthenticated: true,
-      isSetupRequired: false,
-    });
-
-    expect(result.action).toBe("navigate");
-    expect(result.navigateTo).toBe("/kanban");
-  });
-
   it("opens inline settings from /settings command", () => {
     const result = executeSlashCommand("/settings", {
       isAuthenticated: true,
@@ -157,6 +119,16 @@ describe("terminal slash commands", () => {
 
     expect(result.action).toBeUndefined();
     expect(result.output.at(-1)).toContain("/login");
+  });
+
+  it("does not allow removed /kanban command", () => {
+    const result = executeSlashCommand("/kanban", {
+      isAuthenticated: true,
+      isSetupRequired: false,
+    });
+
+    expect(result.action).toBeUndefined();
+    expect(result.output.at(-1)).toContain("/settings");
   });
 
   it("returns unknown command guidance", () => {
