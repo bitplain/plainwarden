@@ -17,6 +17,17 @@ enum EventStatus {
   done
 }
 
+enum AgentReminderKind {
+  due_today
+  due_tomorrow
+  overdue
+}
+
+enum AgentReminderChannel {
+  in_app
+  push
+}
+
 model User {
   id             String          @id @default(uuid())
   email          String          @unique
@@ -30,6 +41,8 @@ model User {
   kanbanCards    KanbanCard[]
   kanbanComments KanbanComment[]
   kanbanWorklogs KanbanWorklog[]
+  pushSubscriptions PushSubscription[]
+  agentReminders AgentReminder[]
 }
 
 model Event {
@@ -263,4 +276,49 @@ model KanbanCardEventLink {
 
   @@unique([cardId, eventId])
   @@index([cardId])
+}
+
+model PushSubscription {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint       String
+  p256dh         String
+  auth           String
+  expirationTime DateTime?
+  userAgent      String?
+  failureCount   Int      @default(0)
+  lastSuccessAt  DateTime?
+  lastFailureAt  DateTime?
+  disabledAt     DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, endpoint])
+  @@index([userId, disabledAt])
+}
+
+model AgentReminder {
+  id          String               @id @default(uuid())
+  userId      String
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceType  String
+  sourceId    String
+  title       String
+  body        String
+  kind        AgentReminderKind
+  channel     AgentReminderChannel @default(in_app)
+  severity    Int                  @default(1)
+  dueDate     String?
+  navigateTo  String?
+  dedupeBucket String
+  dedupeKey   String               @unique
+  pushedAt    DateTime?
+  readAt      DateTime?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([userId, readAt, createdAt])
+  @@index([userId, pushedAt, createdAt])
+  @@index([userId, sourceType, sourceId])
 }
