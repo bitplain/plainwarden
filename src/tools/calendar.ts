@@ -1,6 +1,18 @@
+import { addDays, format, isValid, parseISO } from "date-fns";
 import type { AgentToolDescriptor, ToolExecutionContext, ToolResult } from "@/agent/types";
 import type { EventListFilters } from "@/lib/types";
 import { createEventForUser, deleteEventForUser, listEventsByUser, updateEventForUser } from "@/lib/server/json-db";
+
+const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+const RELATIVE_DATE_OFFSETS: Record<string, number> = {
+  today: 0,
+  tomorrow: 1,
+  "day after tomorrow": 2,
+  "сегодня": 0,
+  "завтра": 1,
+  "послезавтра": 2,
+};
 
 function toStringValue(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
@@ -17,13 +29,68 @@ function toNumberValue(value: unknown): number | undefined {
   return undefined;
 }
 
+function normalizeIsoDate(raw: string): string | undefined {
+  if (!ISO_DATE_REGEX.test(raw)) {
+    return undefined;
+  }
+
+  const parsed = parseISO(raw);
+  if (!isValid(parsed)) {
+    return undefined;
+  }
+
+  const normalized = format(parsed, "yyyy-MM-dd");
+  return normalized === raw ? normalized : undefined;
+}
+
+function normalizeCalendarDateValue(raw: string, nowIso: string): string | undefined {
+  const normalizedIso = normalizeIsoDate(raw);
+  if (normalizedIso) {
+    return normalizedIso;
+  }
+
+  const keyword = raw.toLowerCase();
+  const offset = RELATIVE_DATE_OFFSETS[keyword];
+  if (offset === undefined) {
+    return undefined;
+  }
+
+  const now = parseISO(nowIso);
+  const safeNow = isValid(now) ? now : new Date();
+  return format(addDays(safeNow, offset), "yyyy-MM-dd");
+}
+
+function buildDateValidationError(fieldName: string): string {
+  return `${fieldName} must be YYYY-MM-DD or relative keyword: today/tomorrow/day after tomorrow (сегодня/завтра/послезавтра)`;
+}
+
 async function listCalendarEvents(args: Record<string, unknown>, ctx: ToolExecutionContext): Promise<ToolResult> {
+  const rawDateFrom = toStringValue(args.dateFrom);
+  const rawDateTo = toStringValue(args.dateTo);
+  const dateFrom =
+    rawDateFrom === undefined ? undefined : normalizeCalendarDateValue(rawDateFrom, ctx.nowIso);
+  const dateTo = rawDateTo === undefined ? undefined : normalizeCalendarDateValue(rawDateTo, ctx.nowIso);
+
+  if (rawDateFrom !== undefined && dateFrom === undefined) {
+    return {
+      ok: false,
+      error: buildDateValidationError("dateFrom"),
+    };
+  }
+
+  if (rawDateTo !== undefined && dateTo === undefined) {
+    return {
+      ok: false,
+      error: buildDateValidationError("dateTo"),
+    };
+  }
+
   const filters: EventListFilters = {
     q: toStringValue(args.q),
     type: toStringValue(args.type) as EventListFilters["type"],
     status: toStringValue(args.status) as EventListFilters["status"],
-    dateFrom: toStringValue(args.dateFrom),
-    dateTo: toStringValue(args.dateTo),
+    dateFrom,
+    dateTo,
   };
 
   const limit = Math.min(100, Math.max(1, toNumberValue(args.limit) ?? 30));
@@ -37,12 +104,20 @@ async function listCalendarEvents(args: Record<string, unknown>, ctx: ToolExecut
 
 async function createCalendarEvent(args: Record<string, unknown>, ctx: ToolExecutionContext): Promise<ToolResult> {
   const title = toStringValue(args.title);
-  const date = toStringValue(args.date);
+  const rawDate = toStringValue(args.date);
 
-  if (!title || !date) {
+  if (!title || !rawDate) {
     return {
       ok: false,
       error: "title and date are required",
+    };
+  }
+
+  const date = normalizeCalendarDateValue(rawDate, ctx.nowIso);
+  if (!date) {
+    return {
+      ok: false,
+      error: buildDateValidationError("date"),
     };
   }
 
@@ -67,13 +142,22 @@ async function updateCalendarEvent(args: Record<string, unknown>, ctx: ToolExecu
     return { ok: false, error: "eventId is required" };
   }
 
+  const rawDate = toStringValue(args.date);
+  const date = rawDate === undefined ? undefined : normalizeCalendarDateValue(rawDate, ctx.nowIso);
+  if (rawDate !== undefined && date === undefined) {
+    return {
+      ok: false,
+      error: buildDateValidationError("date"),
+    };
+  }
+
   const updated = await updateEventForUser(
     ctx.userId,
     eventId,
     {
       title: toStringValue(args.title),
       description: toStringValue(args.description),
-      date: toStringValue(args.date),
+      date,
       time: toStringValue(args.time),
       status: toStringValue(args.status) as "pending" | "done" | undefined,
       type: toStringValue(args.type) as "event" | "task" | undefined,
@@ -141,7 +225,11 @@ export const calendarTools: AgentToolDescriptor[] = [
       properties: {
         title: { type: "string" },
         description: { type: "string" },
-        date: { type: "string" },
+        date: {
+          type: "string",
+          description:
+            "Date in YYYY-MM-DD, or relative keyword: today/tomorrow/day after tomorrow (сегодня/завтра/послезавтра)",
+        },
         time: { type: "string" },
         type: { type: "string", enum: ["event", "task"] },
         status: { type: "string", enum: ["pending", "done"] },
@@ -161,7 +249,11 @@ export const calendarTools: AgentToolDescriptor[] = [
         eventId: { type: "string" },
         title: { type: "string" },
         description: { type: "string" },
-        date: { type: "string" },
+        date: {
+          type: "string",
+          description:
+            "Date in YYYY-MM-DD, or relative keyword: today/tomorrow/day after tomorrow (сегодня/завтра/послезавтра)",
+        },
         time: { type: "string" },
         status: { type: "string", enum: ["pending", "done"] },
         type: { type: "string", enum: ["event", "task"] },
