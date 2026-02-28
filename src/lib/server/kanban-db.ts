@@ -50,9 +50,19 @@ export class KanbanActiveTimerError extends Error {
 
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
-function toBoard(
-  b: BoardWithColumnsCards,
-): KanbanBoard {
+const boardQueryArgs = {
+  include: {
+    columns: {
+      include: {
+        cards: { select: { id: true, title: true, position: true } },
+      },
+    },
+  },
+} satisfies Prisma.KanbanBoardDefaultArgs;
+
+type BoardWithColumns = Prisma.KanbanBoardGetPayload<typeof boardQueryArgs>;
+
+function toBoard(b: BoardWithColumns): KanbanBoard {
   return {
     id: b.id,
     userId: b.userId,
@@ -219,25 +229,13 @@ function toWorklog(w: Prisma.KanbanWorklogGetPayload<Record<string, never>>): Ka
 
 // ─── Board helpers ────────────────────────────────────────────────────────────
 
-const boardInclude = {
-  columns: {
-    include: {
-      cards: { select: { id: true, title: true, position: true } },
-    },
-  },
-} satisfies Prisma.KanbanBoardInclude;
-
-type BoardWithColumnsCards = Prisma.KanbanBoardGetPayload<{
-  include: typeof boardInclude;
-}>;
-
 async function getBoardOwnedByUser(
   boardId: string,
   userId: string,
-): Promise<BoardWithColumnsCards | null> {
+): Promise<BoardWithColumns | null> {
   return prisma.kanbanBoard.findFirst({
     where: { id: boardId, userId },
-    include: boardInclude,
+    include: boardQueryArgs.include,
   });
 }
 
