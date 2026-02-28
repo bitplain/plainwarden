@@ -8,6 +8,7 @@ const events: CalendarEvent[] = [
     title: "Подготовить демо",
     description: "demo",
     date: "2026-03-01",
+    time: "11:30",
     type: "task",
     status: "pending",
   },
@@ -55,5 +56,10 @@ describe("buildUnifiedContext", () => {
   it("limits snippet size for llm payload", () => {
     const context = buildUnifiedContext({ events, cards, notes, daily: [] }, { maxChars: 120 });
     expect(context.promptFragment.length).toBeLessThanOrEqual(120);
+  });
+
+  it("includes event time in prompt fragment", () => {
+    const context = buildUnifiedContext({ events, cards, notes, daily: [] });
+    expect(context.promptFragment).toContain("time=11:30");
   });
 });
