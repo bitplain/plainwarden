@@ -64,6 +64,26 @@ function parseCategory(value: string | null): Calendar2CategoryFilter {
     : "all";
 }
 
+function normalizeDateRange(input: {
+  dateFrom?: string;
+  dateTo?: string;
+}): { dateFrom: string; dateTo: string } {
+  const dateFrom = input.dateFrom ?? "";
+  const dateTo = input.dateTo ?? "";
+
+  if (dateFrom && dateTo && dateFrom > dateTo) {
+    return {
+      dateFrom: dateTo,
+      dateTo: dateFrom,
+    };
+  }
+
+  return {
+    dateFrom,
+    dateTo,
+  };
+}
+
 function setOrDelete(params: URLSearchParams, key: string, value?: string) {
   if (!value) {
     params.delete(key);
@@ -76,13 +96,18 @@ export function parseCalendar2UrlState(
   searchParams: URLSearchParams,
   fallbackDate: string,
 ): Calendar2UrlState {
+  const dateRange = normalizeDateRange({
+    dateFrom: normalizeDate(searchParams.get("dateFrom")) ?? "",
+    dateTo: normalizeDate(searchParams.get("dateTo")) ?? "",
+  });
+
   return {
     q: (searchParams.get("q") ?? "").trim(),
     tab: parseTab(searchParams.get("tab")),
     view: parseView(searchParams.get("view")),
     category: parseCategory(searchParams.get("category")),
-    dateFrom: normalizeDate(searchParams.get("dateFrom")) ?? "",
-    dateTo: normalizeDate(searchParams.get("dateTo")) ?? "",
+    dateFrom: dateRange.dateFrom,
+    dateTo: dateRange.dateTo,
     date: normalizeDate(searchParams.get("date")) ?? fallbackDate,
   };
 }
@@ -92,6 +117,10 @@ export function buildCalendar2UrlQuery(input: {
   state: Calendar2UrlState;
 }): string {
   const params = new URLSearchParams(input.currentSearchParams.toString());
+  const dateRange = normalizeDateRange({
+    dateFrom: normalizeDate(input.state.dateFrom),
+    dateTo: normalizeDate(input.state.dateTo),
+  });
 
   setOrDelete(params, "q", input.state.q.trim() || undefined);
   setOrDelete(params, "tab", input.state.tab === "calendar" ? undefined : input.state.tab);
@@ -101,8 +130,8 @@ export function buildCalendar2UrlQuery(input: {
     "category",
     input.state.category === "all" ? undefined : input.state.category,
   );
-  setOrDelete(params, "dateFrom", normalizeDate(input.state.dateFrom));
-  setOrDelete(params, "dateTo", normalizeDate(input.state.dateTo));
+  setOrDelete(params, "dateFrom", dateRange.dateFrom || undefined);
+  setOrDelete(params, "dateTo", dateRange.dateTo || undefined);
   setOrDelete(params, "date", normalizeDate(input.state.date));
 
   return params.toString();
