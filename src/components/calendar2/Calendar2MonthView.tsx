@@ -1,15 +1,18 @@
 "use client";
 
 import { format, isSameDay, isSameMonth } from "date-fns";
+import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
+import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2MonthViewProps {
   anchorDate: Date;
   days: Date[];
   eventsByDate: Record<string, CalendarEvent[]>;
   eventPriorities: Record<string, TaskPriority>;
+  bouncingEventId: string | null;
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
   onQuickAdd: (date: Date) => void;
@@ -34,6 +37,7 @@ export default function Calendar2MonthView({
   days,
   eventsByDate,
   eventPriorities,
+  bouncingEventId,
   onSelectDate,
   onSelectEvent,
   onQuickAdd,
@@ -109,28 +113,43 @@ export default function Calendar2MonthView({
               </div>
 
               <div className="space-y-0.5">
-                {visibleEvents.map((event) => (
-                  <button
-                    key={event.id}
-                    type="button"
-                    draggable
-                    onDragStart={(dragEvent) => {
-                      dragEvent.stopPropagation();
-                      dragEvent.dataTransfer.effectAllowed = "move";
-                      dragEvent.dataTransfer.setData("text/plain", event.id);
-                    }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelectEvent(event.id);
-                    }}
-                    className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}`}
-                  >
-                    {event.time && (
-                      <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
-                    )}
-                    {event.title}
-                  </button>
-                ))}
+                {visibleEvents.map((event) => {
+                  const isBouncing = bouncingEventId === event.id;
+                  return (
+                    <motion.button
+                      key={event.id}
+                      type="button"
+                      draggable
+                      layout
+                      animate={
+                        isBouncing
+                          ? { y: [0, -6, 0], scale: [1, 1.06, 1] }
+                          : { y: 0, scale: 1 }
+                      }
+                      transition={isBouncing ? BOUNCE_SPRING : { duration: 0 }}
+                      onDragStart={(_, info) => {}}
+                      {...({
+                        onDragStartCapture: (dragEvent: React.DragEvent) => {
+                          dragEvent.stopPropagation();
+                          dragEvent.dataTransfer.effectAllowed = "move";
+                          dragEvent.dataTransfer.setData("text/plain", event.id);
+                        },
+                      } as Record<string, unknown>)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectEvent(event.id);
+                      }}
+                      className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}${
+                        isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                      }`}
+                    >
+                      {event.time && (
+                        <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
+                      )}
+                      {event.title}
+                    </motion.button>
+                  );
+                })}
 
                 {extraCount > 0 && (
                   <p className="px-1 text-[10px] font-medium text-[var(--cal2-text-secondary)]">
