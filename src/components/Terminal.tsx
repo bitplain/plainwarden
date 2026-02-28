@@ -21,6 +21,7 @@ import AgentConsole from "@/components/AgentConsole";
 import AgentSettings from "@/components/AgentSettings";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const LiveClock = memo(function LiveClock() {
   const [now, setNow] = useState<Date | null>(null);
@@ -67,6 +68,14 @@ interface MeResponse {
   user?: {
     name?: string;
   };
+}
+
+interface AgentReminder {
+  id: string;
+  title: string;
+  body: string;
+  severity: number;
+  navigateTo?: string | null;
 }
 
 const CLI_SCALE_KEY = "netden:cli-scale";
@@ -174,8 +183,10 @@ export default function Terminal() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const loginEmailRef = useRef<HTMLInputElement>(null);
+  const seenReminderIdsRef = useRef<Set<string>>(new Set());
   const router = useRouter();
   const agentMemory = useAgentMemory();
+  const pushNotifications = usePushNotifications();
   const agent = useAgent({
     onNavigate: (path) => {
       router.push(path);
@@ -362,6 +373,69 @@ export default function Terminal() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      seenReminderIdsRef.current.clear();
+      return;
+    }
+
+    let cancelled = false;
+
+    const pollReminders = async () => {
+      try {
+        const response = await fetch("/api/agent/reminders?limit=10", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const payload = (await response.json().catch(() => null)) as
+          | { reminders?: AgentReminder[] }
+          | null;
+        const reminders = Array.isArray(payload?.reminders) ? payload.reminders : [];
+
+        for (const reminder of reminders) {
+          if (cancelled || seenReminderIdsRef.current.has(reminder.id)) {
+            continue;
+          }
+
+          seenReminderIdsRef.current.add(reminder.id);
+          setHistory((prev) => [
+            ...prev,
+            {
+              command: "[reminder]",
+              output: [
+                reminder.title,
+                reminder.body,
+                reminder.navigateTo ? `Open: ${reminder.navigateTo}` : "",
+              ].filter(Boolean),
+              mode: "slash",
+            },
+          ]);
+
+          await fetch(`/api/agent/reminders/${reminder.id}/read`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+          }).catch(() => null);
+        }
+      } catch {
+        // Ignore polling failures to keep console responsive.
+      }
+    };
+
+    void pollReminders();
+    const timer = window.setInterval(() => {
+      void pollReminders();
+    }, 60_000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [isAuthenticated]);
+
   async function runShell(line: string) {
     if (!isAuthenticated) {
       setHistory((prev) => [
@@ -514,6 +588,54 @@ export default function Terminal() {
 
     if (mode === "shell") {
       await runShell(trimmed);
+      return;
+    }
+
+    if (trimmed === "/push enable") {
+      const result = await pushNotifications.subscribe();
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: trimmed,
+          output: [result.message],
+          mode: "slash",
+          failed: !result.ok,
+        },
+      ]);
+      setInput("");
+      setHistoryIndex(-1);
+      return;
+    }
+
+    if (trimmed === "/push disable") {
+      const result = await pushNotifications.unsubscribe();
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: trimmed,
+          output: [result.message],
+          mode: "slash",
+          failed: !result.ok,
+        },
+      ]);
+      setInput("");
+      setHistoryIndex(-1);
+      return;
+    }
+
+    if (trimmed === "/push test") {
+      const result = await pushNotifications.sendTest("NetDen test notification");
+      setHistory((prev) => [
+        ...prev,
+        {
+          command: trimmed,
+          output: [result.message],
+          mode: "slash",
+          failed: !result.ok,
+        },
+      ]);
+      setInput("");
+      setHistoryIndex(-1);
       return;
     }
 
@@ -979,6 +1101,15 @@ export default function Terminal() {
                         : "Guest console mode. Only /login is available."}
                   </span>
                 </div>
+                {isAuthenticated && pushNotifications.supported && (
+                  <div className="terminal-idle-tip">
+                    <span className="terminal-idle-tip-dot">●</span>
+                    <span>
+                      Push: {pushNotifications.isSubscribed ? "enabled" : "disabled"} (commands:
+                      {" "}/push enable, /push disable, /push test)
+                    </span>
+                  </div>
+                )}
               </>
             )}
           </>

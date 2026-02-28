@@ -2,53 +2,63 @@
 
 ## Что сделано
 
-- Реализован базовый production-ready каркас AI-агента поверх существующей консоли.
-- Добавлены серверные API:
-  - `POST /api/stream` (SSE streaming)
-  - `POST /api/agent` (синхронный turn/confirm)
-  - `POST /api/tools` (защищённый debug execution)
-- Добавлен оркестратор `AgentCore` с:
-  - автоопределением интента и релевантных модулей,
-  - tool-calling через OpenRouter,
-  - human-in-the-loop подтверждением мутаций,
-  - базовой синхронизацией linked сущностей по `event:<id>`.
-- Добавлены tools для модулей:
-  - календарь, канбан, заметки, ежедневник.
-- Добавлены клиентские hooks и UI-компоненты:
-  - `useAgent`, `useAgentMemory`, `useLanguageDetect`
-  - `AgentConsole`, `ConfirmAction`, `AgentSettings`, `StreamingMessage`
-- Выполнена интеграция в существующий `Terminal` с минимальными изменениями:
-  - не-slash запросы в `slash` режиме отправляются в агента,
-  - отображается потоковый ответ,
-  - есть подтверждение действий.
-- Подготовлена архитектурная спецификация:
-  - `docs/agent-architecture-v3.md`
-- Подготовлен детальный план реализации:
-  - `docs/plans/2026-02-28-ai-agent-orchestrator-v3.md`
+- Реализован production-ready каркас этапа 5 для AI-агента:
+  - web push подписки,
+  - proактивные напоминания,
+  - cron-джоб генерации и доставки.
+- Добавлены Prisma сущности:
+  - `PushSubscription`
+  - `AgentReminder`
+  - enums `AgentReminderKind`, `AgentReminderChannel`
+- Добавлена миграция:
+  - `prisma/migrations/20260228143000_add_push_reminders/migration.sql`
+- Добавлены серверные модули:
+  - `src/lib/server/push-subscriptions-db.ts`
+  - `src/lib/server/push-delivery.ts`
+  - `src/lib/server/reminder-db.ts`
+  - `src/lib/server/reminder-engine.ts`
+  - `src/lib/server/reminder-orchestrator.ts`
+- Добавлены API endpoints:
+  - `POST /api/push/subscribe`
+  - `POST /api/push/unsubscribe`
+  - `POST /api/push/test`
+  - `GET /api/agent/reminders`
+  - `POST /api/agent/reminders/[id]/read`
+  - `POST /api/cron/reminders` (защищён секретом)
+- Добавлен service worker:
+  - `public/sw.js`
+- Добавлен клиентский hook:
+  - `src/hooks/usePushNotifications.ts`
+- Интеграция в терминал:
+  - команды `/push enable`, `/push disable`, `/push test`
+  - polling unread reminders из `/api/agent/reminders`
+  - отображение reminder-сообщений в потоке консоли
+- Добавлены тесты:
+  - `tests/agent/reminder-engine.test.ts`
+  - `tests/agent/reminder-anti-spam.test.ts`
 
 ## Что не сделано
 
-- Не реализован отдельный persistent memory backend (пока memory хранится на клиенте в localStorage).
-- Не реализована полноценная push-система (service worker + subscriptions + delivery backend).
-- Не добавлены метрики стоимости OpenRouter в отдельное хранилище (пока только structured logs).
-- Не добавлен полноценный distributed cache layer (Redis) и event bus.
+- Не настроен внешний scheduler (Vercel Cron / system cron) — endpoint реализован, но расписание нужно включить на инфраструктуре.
+- Нет server-side per-user timezone в профиле пользователя (сейчас логика по текущему `nowIso`, полученному при запуске job).
+- Не реализован advanced retry queue для transient push-ошибок (текущая версия помечает reminder как pushed после попытки, чтобы не спамить повтором).
 
 ## Что требует внимания
 
-- Нужны рабочие переменные окружения для OpenRouter:
-  - `OPENROUTER_API_KEY`
-  - `OPENROUTER_MODEL` (опционально)
-  - `OPENROUTER_HTTP_REFERER` (опционально)
-  - `OPENROUTER_APP_TITLE` (опционально)
-- Текущая стратегия sync считает `calendar event` canonical owner для linked-сущностей.
-- Для мультипользовательности потребуется ввод `workspaceId` в схему БД и индексы.
+- Необходимы переменные окружения:
+  - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+  - `VAPID_PRIVATE_KEY`
+  - `VAPID_SUBJECT` (например `mailto:ops@example.com`)
+  - `NETDEN_CRON_SECRET`
+- Для рабочей доставки нужно убедиться, что `public/sw.js` отдается без кэш-артефактов и браузер поддерживает Push API.
 
 ## Что проверить вручную
 
-1. В `Terminal` отправить не-slash запрос: убедиться в SSE-потоке текста.
-2. Запросить мутацию (например, "создай заметку..."):
-   - убедиться, что появляется ConfirmAction,
-   - без подтверждения запись не создаётся.
-3. Подтвердить действие: убедиться, что операция выполнена.
-4. Запросить навигацию ("open kanban") и проверить переход.
-5. Переключить настройки агента (`/agent settings`) и проверить сохранение поведения.
+1. Выполнить миграции и перезапуск приложения.
+2. В консоли выполнить `/push enable`, разрешить браузерное permission, затем `/push test`.
+3. Создать просроченную/сегодняшнюю задачу и вызвать `POST /api/cron/reminders` с корректным секретом.
+4. Проверить:
+   - появление reminder в терминальном потоке,
+   - доставку браузерного push,
+   - отметку read после показа reminder.
+5. Проверить, что повторный запуск cron не дублирует одинаковые reminders (dedupe).
