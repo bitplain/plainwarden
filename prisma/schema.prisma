@@ -50,6 +50,7 @@ model User {
   pushSubscriptions PushSubscription[]
   agentReminders AgentReminder[]
   llmConfig      UserLlmConfig?
+  journalEntries JournalEntry[]
 }
 
 model Event {
@@ -344,4 +345,69 @@ model UserLlmConfig {
   updatedAt       DateTime          @updatedAt
 
   @@index([userId, provider])
+}
+
+// ─── Journal ──────────────────────────────────────────────────────────────────
+
+model JournalEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String   @default("")
+  date      String
+  mood      String?
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+  @@index([userId])
+}
+
+// ─── Cross-module links ───────────────────────────────────────────────────────
+
+enum ItemType {
+  event
+  task
+  note
+  log
+}
+
+enum ItemLinkRelation {
+  references
+  blocks
+  belongs_to
+  scheduled_for
+}
+
+model ItemLink {
+  id           String           @id @default(uuid())
+  fromItemId   String
+  fromItemType ItemType
+  toItemId     String
+  toItemType   ItemType
+  relationType ItemLinkRelation
+  createdAt    DateTime         @default(now())
+
+  @@unique([fromItemId, toItemId, relationType])
+  @@index([fromItemId])
+  @@index([toItemId])
+}
+
+// ─── AI Action Log ────────────────────────────────────────────────────────────
+
+model AiActionLog {
+  id        String   @id @default(uuid())
+  sessionId String
+  userId    String
+  toolName  String
+  args      Json
+  resultOk  Boolean
+  result    Json
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([userId, createdAt])
 }

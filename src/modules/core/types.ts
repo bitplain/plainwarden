@@ -33,4 +33,5 @@ export interface NetdenModule {
   guards?: string[];
   initHooks?: string[];
   description?: string;
+  toolsVersion?: string;
 }

@@ -1,7 +1,9 @@
 import type { AgentModule, AgentToolDescriptor, ToolExecutionContext, ToolResult } from "@/agent/types";
 import { calendarTools } from "@/tools/calendar";
 import { dailyTools } from "@/tools/daily";
+import { journalTools } from "@/tools/journal";
 import { kanbanTools } from "@/tools/kanban";
+import { linkTools } from "@/tools/links";
 import { notesTools } from "@/tools/notes";
 
 const ALL_TOOLS: AgentToolDescriptor[] = [
@@ -9,6 +11,8 @@ const ALL_TOOLS: AgentToolDescriptor[] = [
   ...kanbanTools,
   ...notesTools,
   ...dailyTools,
+  ...journalTools,
+  ...linkTools,
 ];
 
 const TOOL_MAP = new Map(ALL_TOOLS.map((tool) => [tool.name, tool]));
