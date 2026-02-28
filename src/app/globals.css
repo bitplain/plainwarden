@@ -1842,6 +1842,50 @@ body {
   .terminal-brand-name {
     animation: nd-title-swap 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
+
+  /* ── Event Modal 2 ─ Linear Compact Card ── */
+
+  @keyframes cal2-modal-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes cal2-overlay-enter {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes cal2-stripe-shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+
+  .cal2-modal-overlay {
+    animation: cal2-overlay-enter 150ms ease-out both;
+  }
+
+  .cal2-modal-card {
+    animation: cal2-modal-enter 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    will-change: transform, opacity;
+  }
+
+  .cal2-accent-stripe {
+    background: linear-gradient(90deg, #5E6AD2, #7C3AED, #818CF8, #5E6AD2);
+    background-size: 200% 100%;
+    animation: cal2-stripe-shimmer 3s ease-in-out infinite;
+  }
+
+  .cal2-accent-stripe-task {
+    background: linear-gradient(90deg, #5E6AD2, #4F46E5, #6366F1, #5E6AD2);
+    background-size: 200% 100%;
+    animation: cal2-stripe-shimmer 3s ease-in-out infinite;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════

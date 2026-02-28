@@ -416,50 +416,78 @@ export default function EventModal2({
     }
   };
 
+  /* ── Priority dot colors ── */
+  const PRIORITY_DOTS: Record<TaskPriority, { dot: string; ring: string; dotActive: string }> = {
+    urgent: { dot: "bg-[#F87171]/40", ring: "", dotActive: "bg-[#F87171] ring-2 ring-[rgba(248,113,113,0.35)]" },
+    high: { dot: "bg-[#FBBF24]/40", ring: "", dotActive: "bg-[#FBBF24] ring-2 ring-[rgba(251,191,36,0.35)]" },
+    medium: { dot: "bg-[#5E6AD2]/40", ring: "", dotActive: "bg-[#5E6AD2] ring-2 ring-[rgba(94,106,210,0.35)]" },
+    low: { dot: "bg-[#555]/40", ring: "", dotActive: "bg-[#6B6B6B] ring-2 ring-[rgba(107,107,107,0.35)]" },
+  };
+
+  /* ── Shared styles ── */
+  const inputBase = "h-9 w-full rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[13px] text-[var(--cal2-text-primary)] outline-none transition-colors focus:border-[rgba(94,106,210,0.4)] placeholder:text-[var(--cal2-text-disabled)]";
+  const labelBase = "text-[11px] uppercase tracking-[0.06em] font-medium text-[var(--cal2-text-secondary)]";
+  const dividerLine = "h-px w-full bg-[var(--cal2-border)]";
+
   const renderLinkedEntities = () => {
     const hasLinked = linkedNotes.length > 0 || linkedKanbanCards.length > 0;
     if (!hasLinked) return null;
 
     return (
-      <div className="mt-4">
+      <div className="mt-5">
         <button
           type="button"
           onClick={() => setShowLinked((v) => !v)}
-          className="flex w-full items-center justify-between rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+          className="group flex w-full items-center gap-2 py-1.5 text-left"
         >
-          <span>Связанные ({linkedNotes.length + linkedKanbanCards.length})</span>
-          <span>{showLinked ? "▲" : "▼"}</span>
+          <span className={labelBase}>
+            Связанные
+          </span>
+          <span className="rounded-full bg-[var(--cal2-accent-soft)] px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-[var(--cal2-accent)]">
+            {linkedNotes.length + linkedKanbanCards.length}
+          </span>
+          <svg
+            className={`ml-auto h-3.5 w-3.5 text-[var(--cal2-text-disabled)] transition-transform duration-150 ${showLinked ? "rotate-180" : ""}`}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
         </button>
+
         {showLinked && (
-          <div className="mt-2 space-y-2">
+          <div className="mt-2 space-y-1.5">
             {linkedKanbanCards.map((card) => (
               <div
                 key={card.id}
-                className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2"
+                className="flex items-start gap-2.5 rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2.5"
               >
-                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  Kanban
-                </p>
-                <p className="mt-1 text-[12px] font-medium text-[var(--cal2-text-primary)]">
-                  {card.title}
-                </p>
-                <p className="text-[11px] text-[var(--cal2-text-secondary)]">{card.column}</p>
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[var(--cal2-accent-soft)] text-[9px] font-bold text-[var(--cal2-accent)]">
+                  K
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-medium text-[var(--cal2-text-primary)]">
+                    {card.title}
+                  </p>
+                  <p className="text-[11px] text-[var(--cal2-text-secondary)]">{card.column}</p>
+                </div>
               </div>
             ))}
             {linkedNotes.map((note) => (
               <div
                 key={note.id}
-                className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2"
+                className="flex items-start gap-2.5 rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2.5"
               >
-                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  Заметка
-                </p>
-                <p className="mt-1 text-[12px] font-medium text-[var(--cal2-text-primary)]">
-                  {note.title}
-                </p>
-                <p className="line-clamp-2 text-[11px] text-[var(--cal2-text-secondary)]">
-                  {note.content}
-                </p>
+                <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[rgba(251,191,36,0.12)] text-[9px] font-bold text-[#FBBF24]">
+                  N
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[12px] font-medium text-[var(--cal2-text-primary)]">
+                    {note.title}
+                  </p>
+                  <p className="line-clamp-1 text-[11px] text-[var(--cal2-text-secondary)]">
+                    {note.content}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
@@ -469,24 +497,22 @@ export default function EventModal2({
   };
 
   const renderScopeSelector = () => (
-    <div className="mb-4 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-      <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-        Применить к
-      </p>
-      <div className="mt-2 inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
+    <div className="mb-5">
+      <p className={`${labelBase} mb-2`}>Применить к</p>
+      <div className="inline-flex rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-0.5">
         {([
           { id: "this", label: "Только это" },
           { id: "all", label: "Вся серия" },
-          { id: "this_and_following", label: "Это и следующие" },
+          { id: "this_and_following", label: "Это и далее" },
         ] as const).map((scope) => (
           <button
             key={scope.id}
             type="button"
             onClick={() => setApplyScope(scope.id)}
-            className={`rounded-[4px] px-2 py-1 text-[11px] font-medium transition-colors ${
+            className={`rounded-[6px] px-3 py-1.5 text-[11px] font-medium transition-all duration-150 ${
               applyScope === scope.id
-                ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
-                : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
+                ? "bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)] shadow-[inset_0_0_0_1px_rgba(94,106,210,0.3)]"
+                : "text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
             }`}
           >
             {scope.label}
@@ -497,63 +523,87 @@ export default function EventModal2({
   );
 
   const renderForm = (submitLabel: string, onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>, onCancel: () => void) => (
-    <form className="space-y-3" onSubmit={(formEvent) => { void onSubmit(formEvent); }}>
-      <label className="grid gap-1.5">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-          Название
-        </span>
+    <form className="space-y-0" onSubmit={(formEvent) => { void onSubmit(formEvent); }}>
+      {/* ── Title input ── */}
+      <div className="mb-5">
         <input
           type="text"
           value={formData.title}
           onChange={(e) => handleChange("title", e.target.value)}
-          className={`h-10 rounded-[6px] border bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none transition-colors focus:border-[rgba(94,106,210,0.42)] ${
-            errors.title ? "border-[rgba(94,106,210,0.45)]" : "border-[var(--cal2-border)]"
+          className={`w-full border-0 border-b bg-transparent px-0 pb-2.5 pt-0 text-[16px] font-medium tracking-[-0.01em] text-[var(--cal2-text-primary)] outline-none transition-colors placeholder:text-[var(--cal2-text-disabled)] ${
+            errors.title
+              ? "border-b-[#F87171]"
+              : "border-b-[var(--cal2-border)] focus:border-b-[var(--cal2-accent)]"
           }`}
-          placeholder="Например, ревью инфраструктуры"
+          placeholder="Название события..."
+          autoFocus
         />
         {errors.title && (
-          <span className="text-[11px] text-[#d9ddff]">{errors.title}</span>
+          <span className="mt-1.5 block text-[11px] text-[#F87171]">{errors.title}</span>
         )}
-      </label>
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <label className="grid gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Тип</span>
-          <select
-            value={formData.type}
-            onChange={(e) => handleChange("type", e.target.value)}
-            className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
-          >
-            <option value="event">Событие</option>
-            <option value="task">Задача</option>
-          </select>
-        </label>
-
-        <label className="grid gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Приоритет</span>
-          <select
-            value={formData.priority}
-            onChange={(e) => handleChange("priority", e.target.value)}
-            className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
-          >
-            {Object.entries(PRIORITY_CONFIG).map(([key, config]) => (
-              <option key={key} value={key}>
-                {config.label}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
+      {/* ── Type toggle (segmented) ── */}
+      <div className="mb-4">
+        <p className={`${labelBase} mb-2`}>Тип</p>
+        <div className="inline-flex rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-0.5">
+          {([
+            { id: "event" as const, label: "Событие", icon: "◆" },
+            { id: "task" as const, label: "Задача", icon: "■" },
+          ]).map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => handleChange("type", t.id)}
+              className={`flex items-center gap-1.5 rounded-[6px] px-3.5 py-1.5 text-[12px] font-medium transition-all duration-150 ${
+                formData.type === t.id
+                  ? "bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)] shadow-[inset_0_0_0_1px_rgba(94,106,210,0.3)]"
+                  : "text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
+              }`}
+            >
+              <span className={`text-[10px] ${formData.type === t.id ? "text-[var(--cal2-accent)]" : ""}`}>{t.icon}</span>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Priority dots ── */}
+      <div className="mb-4">
+        <p className={`${labelBase} mb-2`}>Приоритет</p>
+        <div className="flex items-center gap-1">
+          {(Object.entries(PRIORITY_CONFIG) as [TaskPriority, typeof PRIORITY_CONFIG.urgent][]).map(
+            ([key, config]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleChange("priority", key)}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all duration-150 ${
+                  formData.priority === key
+                    ? "bg-[var(--cal2-surface-1)] text-[var(--cal2-text-primary)] shadow-[inset_0_0_0_1px_var(--cal2-border)]"
+                    : "text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
+                }`}
+              >
+                <span
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    formData.priority === key ? PRIORITY_DOTS[key].dotActive : PRIORITY_DOTS[key].dot
+                  }`}
+                />
+                {config.label}
+              </button>
+            ),
+          )}
+        </div>
+      </div>
+
+      {/* ── Category ── */}
       {categoriesForSelect.length > 0 && (
-        <label className="grid gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-            Категория
-          </span>
+        <div className="mb-4">
+          <p className={`${labelBase} mb-2`}>Категория</p>
           <select
             value={formData.categoryId}
             onChange={(e) => handleChange("categoryId", e.target.value)}
-            className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+            className={inputBase}
           >
             <option value="">— Без категории</option>
             {categoriesForSelect.map((cat) => (
@@ -562,55 +612,53 @@ export default function EventModal2({
               </option>
             ))}
           </select>
-        </label>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className={dividerLine} />
+
+      {/* ── Date & Time ── */}
+      <div className="grid grid-cols-2 gap-3 py-4">
         <label className="grid gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Дата</span>
+          <span className={labelBase}>Дата</span>
           <input
             type="date"
             value={formData.date}
             onChange={(e) => handleChange("date", e.target.value)}
             disabled={isSeriesWideEdit}
-            className={`h-10 rounded-[6px] border bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)] ${
-              errors.date ? "border-[rgba(94,106,210,0.45)]" : "border-[var(--cal2-border)]"
-            }`}
+            className={`${inputBase} ${errors.date ? "!border-[#F87171]" : ""} disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]`}
           />
           {isSeriesWideEdit && (
             <span className="text-[10px] text-[var(--cal2-text-secondary)]">
-              Дата недоступна для выбранного scope
+              Недоступно для scope
             </span>
           )}
           {errors.date && (
-            <span className="text-[11px] text-[#d9ddff]">{errors.date}</span>
+            <span className="text-[11px] text-[#F87171]">{errors.date}</span>
           )}
         </label>
 
         <label className="grid gap-1.5">
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-            Время (опц.)
-          </span>
+          <span className={labelBase}>Время</span>
           <input
             type="time"
             value={formData.time}
             onChange={(e) => handleChange("time", e.target.value)}
-            className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+            className={inputBase}
           />
         </label>
       </div>
 
+      {/* ── Recurrence ── */}
       {shouldEditRecurrence && (
-        <div className="grid gap-3">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="pb-4">
+          <div className="grid grid-cols-2 gap-3">
             <label className="grid gap-1.5">
-              <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                Повтор
-              </span>
+              <span className={labelBase}>Повтор</span>
               <select
                 value={formData.recurrenceFrequency}
                 onChange={(e) => handleChange("recurrenceFrequency", e.target.value)}
-                className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                className={inputBase}
               >
                 <option value="none">Не повторять</option>
                 <option value="daily">Каждый день</option>
@@ -621,47 +669,41 @@ export default function EventModal2({
 
             {formData.recurrenceFrequency !== "none" && (
               <label className="grid gap-1.5">
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  Интервал
-                </span>
+                <span className={labelBase}>Интервал</span>
                 <input
                   type="number"
                   min={1}
                   max={30}
                   value={formData.recurrenceInterval}
                   onChange={(e) => handleChange("recurrenceInterval", e.target.value)}
-                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                  className={inputBase}
                 />
               </label>
             )}
           </div>
 
           {formData.recurrenceFrequency !== "none" && (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <label className="grid gap-1.5">
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  Число повторов
-                </span>
+                <span className={labelBase}>Повторов</span>
                 <input
                   type="number"
                   min={1}
                   max={400}
                   value={formData.recurrenceCount}
                   onChange={(e) => handleChange("recurrenceCount", e.target.value)}
-                  placeholder="например, 12"
-                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                  placeholder="12"
+                  className={inputBase}
                 />
               </label>
 
               <label className="grid gap-1.5">
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  До даты
-                </span>
+                <span className={labelBase}>До даты</span>
                 <input
                   type="date"
                   value={formData.recurrenceUntil}
                   onChange={(e) => handleChange("recurrenceUntil", e.target.value)}
-                  className="h-10 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
+                  className={inputBase}
                 />
               </label>
             </div>
@@ -670,55 +712,62 @@ export default function EventModal2({
       )}
 
       {errors.recurrence && (
-        <span className="text-[11px] text-[#d9ddff]">{errors.recurrence}</span>
+        <span className="block pb-2 text-[11px] text-[#F87171]">{errors.recurrence}</span>
       )}
 
-      <label className="grid gap-1.5">
-        <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-          Описание
-        </span>
+      <div className={dividerLine} />
+
+      {/* ── Description ── */}
+      <div className="py-4">
+        <p className={`${labelBase} mb-2`}>Описание</p>
         <textarea
           value={formData.description}
           onChange={(e) => handleChange("description", e.target.value)}
-          className="min-h-20 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] text-[var(--cal2-text-primary)] outline-none focus:border-[rgba(94,106,210,0.42)]"
-          placeholder="Короткое описание"
+          className="min-h-[72px] w-full resize-none rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2.5 text-[13px] leading-relaxed text-[var(--cal2-text-primary)] outline-none transition-colors focus:border-[rgba(94,106,210,0.4)] placeholder:text-[var(--cal2-text-disabled)]"
+          placeholder="Добавьте описание..."
         />
-      </label>
+      </div>
 
+      {/* ── Time conflicts ── */}
       {timeConflicts.length > 0 && (
-        <div className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] text-[#d9ddff]">
-          <p className="font-medium">Конфликт времени: {timeConflicts.length}</p>
-          <p className="mt-1 text-[11px]">
-            Найдены события на эту же дату и время. Сохранение всё равно доступно.
-          </p>
-          <ul className="mt-2 space-y-0.5 text-[11px]">
-            {timeConflicts.slice(0, 3).map((conflict) => (
-              <li key={conflict.id} className="truncate text-[var(--cal2-text-primary)]">
-                {conflict.time ?? "--:--"} · {conflict.title}
-              </li>
-            ))}
-          </ul>
+        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-[rgba(251,191,36,0.25)] bg-[rgba(251,191,36,0.06)] px-3 py-2.5">
+          <span className="mt-0.5 text-[14px] leading-none">⚠</span>
+          <div>
+            <p className="text-[12px] font-medium text-[#FBBF24]">
+              Конфликт времени: {timeConflicts.length}
+            </p>
+            <ul className="mt-1 space-y-0.5">
+              {timeConflicts.slice(0, 3).map((conflict) => (
+                <li key={conflict.id} className="truncate text-[11px] text-[var(--cal2-text-secondary)]">
+                  {conflict.time ?? "--:--"} · {conflict.title}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       )}
 
+      {/* ── Submit error ── */}
       {submitError && (
-        <div className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] text-[#d9ddff]">
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-[rgba(248,113,113,0.25)] bg-[rgba(248,113,113,0.06)] px-3 py-2.5 text-[12px] text-[#F87171]">
+          <span className="text-[14px] leading-none">✕</span>
           {submitError}
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+      {/* ── Action buttons ── */}
+      <div className="flex items-center justify-end gap-2 pt-1">
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+          className="rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
         >
           Отмена
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] disabled:cursor-not-allowed disabled:border-[var(--cal2-border)] disabled:bg-[var(--cal2-surface-1)] disabled:text-[var(--cal2-text-disabled)]"
+          className="rounded-lg bg-[var(--cal2-accent)] px-5 py-2 text-[13px] font-semibold text-white shadow-[0_1px_2px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1)] transition-all hover:bg-[var(--cal2-accent-hover)] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isSubmitting ? "Сохраняем..." : submitLabel}
         </button>
@@ -726,192 +775,305 @@ export default function EventModal2({
     </form>
   );
 
+  const isTaskType = mode === "view" && event ? event.type === "task" : formData.type === "task";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--cal2-overlay)] px-4 backdrop-blur-[2px]"
+      className="cal2-modal-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-[3px]"
       onClick={onClose}
     >
       <div
-        className="nd-animate-in w-full max-w-lg rounded-[10px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-5 sm:p-6"
+        className="cal2-modal-card w-full max-w-md overflow-hidden rounded-xl border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] shadow-[0_25px_50px_-12px_rgba(0,0,0,0.6)]"
         onClick={(e) => e.stopPropagation()}
       >
-        {mode === "view" && event ? (
-          isEditMode ? (
-            <>
-              <h2 className="mb-4 text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Редактировать событие</h2>
-              {hasRecurringSeries && renderScopeSelector()}
-              {renderForm("Сохранить", handleUpdateSubmit, () => {
-                setIsEditMode(false);
-                setFormData(buildFormFromEvent(event, currentPriority));
-                setErrors({});
-                setSubmitError(null);
-              })}
-            </>
-          ) : (
-            <>
-              <div className="mb-4 flex items-start justify-between gap-3">
-                <div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">{event.title}</h2>
-                    {event.recurrenceException && (
-                      <span className="rounded-[4px] border border-[rgba(255,200,100,0.4)] bg-[rgba(255,200,100,0.12)] px-1.5 py-0.5 text-[10px] font-medium text-[#ffd080]">
-                        Исключение
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <span
-                  className={`shrink-0 rounded-[6px] border px-2.5 py-1 text-[11px] font-semibold ${
-                    event.type === "event"
-                      ? "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
-                      : "border-[var(--cal2-border)] bg-[rgba(255,255,255,0.05)] text-[var(--cal2-text-primary)]"
-                  }`}
-                >
-                  {event.type === "event" ? "Событие" : "Задача"}
-                </span>
-              </div>
+        {/* ── Accent top stripe ── */}
+        <div className={`h-[2px] w-full ${isTaskType ? "cal2-accent-stripe-task" : "cal2-accent-stripe"}`} />
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Дата</p>
-                  <p className="mt-1 text-[12px] text-[var(--cal2-text-primary)]">{event.date}</p>
+        <div className="p-5 sm:p-6">
+          {mode === "view" && event ? (
+            isEditMode ? (
+              <>
+                {/* ── Edit mode header ── */}
+                <div className="mb-5 flex items-center gap-2.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--cal2-accent-soft)] text-[10px] text-[var(--cal2-accent)]">
+                    ✎
+                  </span>
+                  <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[var(--cal2-text-primary)]">
+                    Редактировать
+                  </h2>
                 </div>
-                <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Время</p>
-                  <p className="mt-1 text-[12px] text-[var(--cal2-text-primary)]">{event.time ?? "Не указано"}</p>
-                </div>
-                <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Статус</p>
-                  <p
-                    className={`mt-1 text-[12px] font-medium ${
-                      (event.status ?? "pending") === "done"
-                        ? "text-[var(--cal2-text-primary)]"
-                        : "text-[#d6dbff]"
+
+                {hasRecurringSeries && renderScopeSelector()}
+
+                {renderForm("Сохранить", handleUpdateSubmit, () => {
+                  setIsEditMode(false);
+                  setFormData(buildFormFromEvent(event, currentPriority));
+                  setErrors({});
+                  setSubmitError(null);
+                })}
+              </>
+            ) : (
+              <>
+                {/* ── View mode ── */}
+                {/* Title + badge */}
+                <div className="mb-5 flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-[18px] font-semibold tracking-[-0.02em] leading-[1.2] text-[var(--cal2-text-primary)]">
+                        {event.title}
+                      </h2>
+                      {event.recurrenceException && (
+                        <span className="rounded-full bg-[rgba(251,191,36,0.1)] px-2 py-0.5 text-[10px] font-medium text-[#FBBF24]">
+                          Исключение
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-md px-2.5 py-1 text-[11px] font-semibold ${
+                      event.type === "event"
+                        ? "bg-[var(--cal2-accent-soft)] text-[var(--cal2-accent)]"
+                        : "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-secondary)]"
                     }`}
                   >
-                    {getStatusLabel(event.status ?? "pending")}
-                  </p>
+                    {event.type === "event" ? "◆ Событие" : "■ Задача"}
+                  </span>
                 </div>
-                <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Приоритет</p>
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {(Object.entries(PRIORITY_CONFIG) as [TaskPriority, typeof PRIORITY_CONFIG.urgent][]).map(
-                      ([key, config]) => (
-                        <button
-                          key={key}
-                          type="button"
-                          onClick={() => onPriorityChange?.(event.id, key)}
-                          className={`rounded-[4px] border px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                            currentPriority === key
-                              ? `${config.bg} ${config.border} ${config.color}`
-                              : "border-[var(--cal2-border)] bg-transparent text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
-                          }`}
-                        >
-                          {config.label}
-                        </button>
-                      ),
+
+                {/* ── Metadata rows ── */}
+                <div className="rounded-lg border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+                  {/* Date */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <span className={labelBase}>Дата</span>
+                    <span className="text-[13px] tabular-nums text-[var(--cal2-text-primary)]">{event.date}</span>
+                  </div>
+                  <div className="mx-3.5 h-px bg-[var(--cal2-border)]" />
+
+                  {/* Time */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <span className={labelBase}>Время</span>
+                    <span className={`text-[13px] ${event.time ? "tabular-nums text-[var(--cal2-text-primary)]" : "text-[var(--cal2-text-disabled)]"}`}>
+                      {event.time ?? "—"}
+                    </span>
+                  </div>
+                  <div className="mx-3.5 h-px bg-[var(--cal2-border)]" />
+
+                  {/* Status */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5">
+                    <span className={labelBase}>Статус</span>
+                    <button
+                      type="button"
+                      onClick={() => { void handleToggleStatus(); }}
+                      disabled={isTogglingStatus}
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-150 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        (event.status ?? "pending") === "done"
+                          ? "bg-[rgba(74,222,128,0.12)] text-[#4ADE80]"
+                          : "bg-[rgba(251,191,36,0.12)] text-[#FBBF24]"
+                      }`}
+                    >
+                      <span className={`h-1.5 w-1.5 rounded-full ${
+                        (event.status ?? "pending") === "done" ? "bg-[#4ADE80]" : "bg-[#FBBF24]"
+                      }`} />
+                      {isTogglingStatus ? "..." : getStatusLabel(event.status ?? "pending")}
+                    </button>
+                  </div>
+                  <div className="mx-3.5 h-px bg-[var(--cal2-border)]" />
+
+                  {/* Priority */}
+                  <div className="flex items-center justify-between px-3.5 py-2">
+                    <span className={labelBase}>Приоритет</span>
+                    <div className="flex items-center gap-0.5">
+                      {(Object.entries(PRIORITY_CONFIG) as [TaskPriority, typeof PRIORITY_CONFIG.urgent][]).map(
+                        ([key, config]) => (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => onPriorityChange?.(event.id, key)}
+                            className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-all duration-150 ${
+                              currentPriority === key
+                                ? "bg-[rgba(255,255,255,0.06)] text-[var(--cal2-text-primary)]"
+                                : "text-[var(--cal2-text-disabled)] hover:text-[var(--cal2-text-secondary)]"
+                            }`}
+                          >
+                            <span className={`h-2 w-2 rounded-full transition-all ${
+                              currentPriority === key ? PRIORITY_DOTS[key].dotActive : PRIORITY_DOTS[key].dot
+                            }`} />
+                            {currentPriority === key && config.label}
+                          </button>
+                        ),
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Category */}
+                  {event.categoryId && categories.length > 0 && (() => {
+                    const cat = categories.find((c) => c.id === event.categoryId);
+                    if (!cat) return null;
+                    return (
+                      <>
+                        <div className="mx-3.5 h-px bg-[var(--cal2-border)]" />
+                        <div className="flex items-center justify-between px-3.5 py-2.5">
+                          <span className={labelBase}>Категория</span>
+                          <span className="flex items-center gap-1.5 text-[12px] text-[var(--cal2-text-primary)]">
+                            <span
+                              className="h-2 w-2 rounded-full"
+                              style={{ backgroundColor: cat.color }}
+                            />
+                            {cat.label}
+                          </span>
+                        </div>
+                      </>
+                    );
+                  })()}
+
+                  {/* Recurrence info */}
+                  {event.recurrence && (
+                    <>
+                      <div className="mx-3.5 h-px bg-[var(--cal2-border)]" />
+                      <div className="flex items-center justify-between px-3.5 py-2.5">
+                        <span className={labelBase}>Повтор</span>
+                        <span className="text-[12px] text-[var(--cal2-text-primary)]">
+                          {event.recurrence.frequency === "daily" && "Ежедневно"}
+                          {event.recurrence.frequency === "weekly" && "Еженедельно"}
+                          {event.recurrence.frequency === "monthly" && "Ежемесячно"}
+                          {event.recurrence.interval > 1 && ` ×${event.recurrence.interval}`}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* ── Description ── */}
+                {event.description.trim() ? (
+                  <div className="mt-4 rounded-lg bg-[var(--cal2-surface-1)] px-3.5 py-3">
+                    <p className={`${labelBase} mb-1.5`}>Описание</p>
+                    <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-[var(--cal2-text-primary)]">
+                      {event.description.trim()}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="mt-4 px-1 text-[12px] italic text-[var(--cal2-text-disabled)]">
+                    Описание не добавлено
+                  </p>
+                )}
+
+                {/* ── Error ── */}
+                {submitError && (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg border border-[rgba(248,113,113,0.25)] bg-[rgba(248,113,113,0.06)] px-3 py-2.5 text-[12px] text-[#F87171]">
+                    <span className="text-[14px] leading-none">✕</span>
+                    {submitError}
+                  </div>
+                )}
+
+                {/* ── Scope selector for recurring ── */}
+                {hasRecurringSeries && <div className="mt-4">{renderScopeSelector()}</div>}
+
+                {/* ── Linked entities ── */}
+                {renderLinkedEntities()}
+
+                {/* ── Convert actions ── */}
+                {(onConvertToTask ?? onConvertToEvent ?? onConvertToNote) && (
+                  <div className="mt-4 flex flex-wrap items-center gap-1.5">
+                    <span className={`${labelBase} mr-1`}>Конвертация</span>
+                    {event.type === "event" && onConvertToTask && (
+                      <button
+                        type="button"
+                        onClick={() => { void handleConvertToTask(); }}
+                        disabled={isConverting}
+                        className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                      >
+                        {isConverting ? "..." : "→ Задача"}
+                      </button>
+                    )}
+                    {event.type === "task" && onConvertToEvent && (
+                      <button
+                        type="button"
+                        onClick={() => { void handleConvertToEvent(); }}
+                        disabled={isConverting}
+                        className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                      >
+                        {isConverting ? "..." : "→ Событие"}
+                      </button>
+                    )}
+                    {onConvertToNote && (
+                      <button
+                        type="button"
+                        onClick={() => { void handleConvertToNote(); }}
+                        disabled={isConverting}
+                        className="rounded-md px-2.5 py-1 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
+                      >
+                        {isConverting ? "..." : "→ Заметка"}
+                      </button>
                     )}
                   </div>
+                )}
+
+                {/* ── Main actions ── */}
+                <div className="mt-5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { void handleToggleStatus(); }}
+                    disabled={isTogglingStatus}
+                    className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-medium transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 ${
+                      nextStatus === "done"
+                        ? "bg-[rgba(74,222,128,0.1)] text-[#4ADE80] hover:bg-[rgba(74,222,128,0.16)]"
+                        : "bg-[rgba(251,191,36,0.1)] text-[#FBBF24] hover:bg-[rgba(251,191,36,0.16)]"
+                    }`}
+                  >
+                    {isTogglingStatus
+                      ? "..."
+                      : nextStatus === "done"
+                        ? "✓ Выполнено"
+                        : "↻ В работу"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsEditMode(true)}
+                    className="rounded-lg px-4 py-2 text-[13px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
+                  >
+                    Редактировать
+                  </button>
+
+                  <div className="flex-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => { void handleDelete(); }}
+                    disabled={isDeleting}
+                    className="rounded-lg px-3 py-2 text-[13px] font-medium text-[var(--cal2-text-disabled)] transition-colors hover:bg-[rgba(248,113,113,0.08)] hover:text-[#F87171] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    {isDeleting ? "..." : "Удалить"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--cal2-text-disabled)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-secondary)]"
+                    aria-label="Закрыть"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
                 </div>
+              </>
+            )
+          ) : (
+            <>
+              {/* ── Create mode ── */}
+              <div className="mb-5 flex items-center gap-2.5">
+                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[var(--cal2-accent-soft)] text-[11px] font-bold text-[var(--cal2-accent)]">
+                  +
+                </span>
+                <h2 className="text-[16px] font-semibold tracking-[-0.01em] text-[var(--cal2-text-primary)]">
+                  Новое событие
+                </h2>
               </div>
-
-              <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2">
-                <p className="text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Описание</p>
-                <p className="mt-1 whitespace-pre-wrap text-[12px] text-[var(--cal2-text-primary)]">
-                  {event.description.trim() || "Описание не добавлено"}
-                </p>
-              </div>
-
-              {submitError && (
-                <div className="mt-4 rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-3 py-2 text-[12px] text-[#d9ddff]">
-                  {submitError}
-                </div>
-              )}
-
-              {hasRecurringSeries && <div className="mt-4">{renderScopeSelector()}</div>}
-
-              {renderLinkedEntities()}
-
-              {/* Convert actions */}
-              {(onConvertToTask ?? onConvertToEvent ?? onConvertToNote) && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {event.type === "event" && onConvertToTask && (
-                    <button
-                      type="button"
-                      onClick={() => { void handleConvertToTask(); }}
-                      disabled={isConverting}
-                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
-                    >
-                      {isConverting ? "..." : "→ Задача"}
-                    </button>
-                  )}
-                  {event.type === "task" && onConvertToEvent && (
-                    <button
-                      type="button"
-                      onClick={() => { void handleConvertToEvent(); }}
-                      disabled={isConverting}
-                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
-                    >
-                      {isConverting ? "..." : "→ Событие"}
-                    </button>
-                  )}
-                  {onConvertToNote && (
-                    <button
-                      type="button"
-                      onClick={() => { void handleConvertToNote(); }}
-                      disabled={isConverting}
-                      className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
-                    >
-                      {isConverting ? "..." : "→ Заметка"}
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <button
-                  type="button"
-                  onClick={handleToggleStatus}
-                  disabled={isTogglingStatus}
-                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.07)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
-                >
-                  {isTogglingStatus
-                    ? "..."
-                    : nextStatus === "done"
-                      ? "✓ Выполнено"
-                      : "↻ В работу"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsEditMode(true)}
-                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-                >
-                  Редактировать
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:text-[var(--cal2-text-disabled)]"
-                >
-                  {isDeleting ? "..." : "Удалить"}
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-                >
-                  Закрыть
-                </button>
-              </div>
+              {renderForm("Создать", handleCreateSubmit, onClose)}
             </>
-          )
-        ) : (
-          <>
-            <h2 className="mb-4 text-[16px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Новое событие</h2>
-            {renderForm("Сохранить", handleCreateSubmit, onClose)}
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
