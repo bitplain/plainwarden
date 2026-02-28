@@ -7,11 +7,13 @@ import SettingsCliTab from "@/components/settings/SettingsCliTab";
 import SettingsApiTab from "@/components/settings/SettingsApiTab";
 import SettingsGitHubTab from "@/components/settings/SettingsGitHubTab";
 import SettingsTlsTab from "@/components/settings/SettingsTlsTab";
+import SettingsAiThemeTab from "@/components/settings/SettingsAiThemeTab";
 
-type SettingsTab = "cli" | "api" | "github" | "tls";
+type SettingsTab = "cli" | "ai" | "api" | "github" | "tls";
 
 const TAB_OPTIONS: { id: SettingsTab; label: string }[] = [
   { id: "cli", label: "Интерфейс" },
+  { id: "ai", label: "AI Виджет" },
   { id: "api", label: "API" },
   { id: "github", label: "GitHub" },
   { id: "tls", label: "TLS / ACME" },
@@ -29,6 +31,8 @@ export default function SettingsPage() {
     switch (activeTab) {
       case "cli":
         return <SettingsCliTab />;
+      case "ai":
+        return <SettingsAiThemeTab />;
       case "api":
         return <SettingsApiTab />;
       case "github":
