@@ -503,8 +503,8 @@ export default function SettingsPage() {
         <header className="home-header">
           <div className="home-header-left">
             {!isEmbedded ? (
-              <Link href="/" className="home-back-link">
-                ← Консоль
+              <Link href="/calendar" className="home-back-link">
+                ← Календарь
               </Link>
             ) : null}
             <div>
@@ -515,11 +515,8 @@ export default function SettingsPage() {
           </div>
           {!isEmbedded ? (
             <nav className="home-links">
-              <Link href="/home" className="home-link">
-                Главная
-              </Link>
-              <Link href="/notes" className="home-link">
-                Заметки
+              <Link href="/calendar" className="home-link">
+                Календарь
               </Link>
             </nav>
           ) : null}

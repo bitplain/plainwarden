@@ -88,11 +88,9 @@ const CLI_STROKE_MAX = 2;
 const CLI_STROKE_DEFAULT = 1;
 const PROMPT_PLACEHOLDER = "Ask anything";
 const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
-type TerminalPanel = "none" | "home" | "notes" | "settings";
+type TerminalPanel = "none" | "settings";
 
 const PANEL_ROUTE_MAP: Record<Exclude<TerminalPanel, "none">, string> = {
-  home: "/home?embedded=1",
-  notes: "/notes?embedded=1",
   settings: "/settings?embedded=1",
 };
 
@@ -157,6 +155,7 @@ function formatShellOutput(input: {
 }
 
 export default function Terminal() {
+  // Legacy compatibility surface (possibly-unused in the default calendar-first flow).
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [input, setInput] = useState("");
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
@@ -725,16 +724,6 @@ export default function Terminal() {
       return;
     }
 
-    if (result.action === "open_home") {
-      openPanel("home");
-      return;
-    }
-
-    if (result.action === "open_notes") {
-      openPanel("notes");
-      return;
-    }
-
     if (result.action === "open_settings") {
       openPanel("settings");
       return;
@@ -862,13 +851,9 @@ export default function Terminal() {
   const windowTitle =
     currentTerminalWindow === "login"
       ? "Вход"
-      : currentTerminalWindow === "home"
-          ? "Главная"
-          : currentTerminalWindow === "notes"
-            ? "Заметки"
-            : currentTerminalWindow === "settings"
+      : currentTerminalWindow === "settings"
               ? "Настройки"
-        : "NetDen";
+              : "NetDen";
 
   return (
     <div
@@ -940,7 +925,7 @@ export default function Terminal() {
 
       <div className={`terminal-calendar-shell ${panelVisible ? "terminal-calendar-shell-visible" : ""}`}>
         <div className="terminal-calendar-inner nd-panel-enter" key={activePanel}>
-          {activePanel === "home" || activePanel === "notes" || activePanel === "settings" ? (
+          {activePanel === "settings" ? (
             <div className="terminal-inline-page-shell">
               <button
                 type="button"

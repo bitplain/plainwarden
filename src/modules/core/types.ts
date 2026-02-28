@@ -7,8 +7,6 @@ export type TerminalAction =
   | "logout"
   | "login"
   | "undock"
-  | "open_home"
-  | "open_notes"
   | "open_settings";
 
 export interface TerminalComposerState {

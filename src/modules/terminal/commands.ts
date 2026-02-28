@@ -26,9 +26,6 @@ const AUTH_COMMANDS: SlashCommand[] = [
     description: "Open calendar page",
     aliases: ["calendar", "календарь"],
   },
-  { trigger: "/home", description: "Open home dashboard", aliases: ["home", "главная"] },
-  { trigger: "/kanban", description: "Open Kanban boards", aliases: ["kanban", "канбан"] },
-  { trigger: "/notes", description: "Open notes", aliases: ["notes", "заметки"] },
   { trigger: "/settings", description: "Open settings", aliases: ["settings"] },
   { trigger: "/help", description: "Show command help", aliases: ["help"] },
   { trigger: "/clear", description: "Clear terminal history", aliases: ["clear"] },
@@ -151,28 +148,6 @@ export function executeSlashCommand(
     return {
       output: ["Opening settings..."],
       action: "open_settings",
-    };
-  }
-
-  if (matchedCommand.trigger === "/home") {
-    return {
-      output: ["Opening home..."],
-      action: "open_home",
-    };
-  }
-
-  if (matchedCommand.trigger === "/notes") {
-    return {
-      output: ["Opening notes..."],
-      action: "open_notes",
-    };
-  }
-
-  if (matchedCommand.trigger === "/kanban") {
-    return {
-      output: ["Opening kanban..."],
-      action: "navigate",
-      navigateTo: "/kanban",
     };
   }
 

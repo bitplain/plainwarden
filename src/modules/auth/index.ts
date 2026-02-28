@@ -9,7 +9,6 @@ export const authModule: NetdenModule = {
     "events",
     "terminal-run",
     "settings",
-    "home",
     "notes",
     "github-billing",
     "acme",

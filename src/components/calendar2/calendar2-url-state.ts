@@ -3,7 +3,7 @@ import type { Calendar2Tab, Calendar2View } from "./calendar2-types";
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const TAB_VALUES = new Set<Calendar2Tab>(["calendar", "planner", "kanban", "notes"]);
+const TAB_VALUES = new Set<Calendar2Tab>(["calendar", "planner", "kanban", "notes", "ai"]);
 const VIEW_VALUES = new Set<Calendar2View>(["month", "week", "day"]);
 const CATEGORY_VALUES = new Set<Calendar2CategoryFilter>([
   "all",
