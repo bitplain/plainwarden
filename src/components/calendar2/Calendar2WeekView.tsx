@@ -2,15 +2,18 @@
 
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
+import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
+import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2WeekViewProps {
   weekDates: Date[];
   anchorDate: Date;
   eventsByDate: Record<string, CalendarEvent[]>;
   eventPriorities: Record<string, TaskPriority>;
+  bouncingEventId: string | null;
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
   onQuickAdd: (date: Date) => void;
@@ -33,6 +36,7 @@ export default function Calendar2WeekView({
   anchorDate,
   eventsByDate,
   eventPriorities,
+  bouncingEventId,
   onSelectDate,
   onSelectEvent,
   onQuickAdd,
@@ -102,27 +106,41 @@ export default function Calendar2WeekView({
                     </button>
                   )}
 
-                  {dayEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      draggable
-                      onDragStart={(dragEvent) => {
-                        dragEvent.dataTransfer.effectAllowed = "move";
-                        dragEvent.dataTransfer.setData("text/plain", event.id);
-                      }}
-                      onClick={() => onSelectEvent(event.id)}
-                      className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
-                    >
-                      <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
-                      <p className="mt-0.5 text-[13px] font-medium leading-[1.2]">{event.title}</p>
-                      {event.status === "done" && (
-                        <span className="mt-1 inline-block rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)]">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                  {dayEvents.map((event) => {
+                    const isBouncing = bouncingEventId === event.id;
+                    return (
+                      <motion.button
+                        key={event.id}
+                        type="button"
+                        draggable
+                        layout
+                        animate={
+                          isBouncing
+                            ? { y: [0, -8, 0], scale: [1, 1.05, 1] }
+                            : { y: 0, scale: 1 }
+                        }
+                        transition={isBouncing ? BOUNCE_SPRING : { duration: 0 }}
+                        {...({
+                          onDragStartCapture: (dragEvent: React.DragEvent) => {
+                            dragEvent.dataTransfer.effectAllowed = "move";
+                            dragEvent.dataTransfer.setData("text/plain", event.id);
+                          },
+                        } as Record<string, unknown>)}
+                        onClick={() => onSelectEvent(event.id)}
+                        className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
+                          isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                        }`}
+                      >
+                        <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
+                        <p className="mt-0.5 text-[13px] font-medium leading-[1.2]">{event.title}</p>
+                        {event.status === "done" && (
+                          <span className="mt-1 inline-block rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)]">
+                            ✓
+                          </span>
+                        )}
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </section>
             );

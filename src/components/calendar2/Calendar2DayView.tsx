@@ -2,6 +2,7 @@
 
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
+import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import {
   DAY_VIEW_END_HOUR,
@@ -9,11 +10,13 @@ import {
   getDaySlots,
 } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
+import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2DayViewProps {
   dayDate: Date;
   dayEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
+  bouncingEventId: string | null;
   onSelectEvent: (eventId: string) => void;
   onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
 }
@@ -42,6 +45,7 @@ export default function Calendar2DayView({
   dayDate,
   dayEvents,
   eventPriorities,
+  bouncingEventId,
   onSelectEvent,
   onMoveEvent,
 }: Calendar2DayViewProps) {
@@ -86,21 +90,35 @@ export default function Calendar2DayView({
               Без времени
             </h3>
             <div className="space-y-1.5">
-              {unscheduledEvents.map((event) => (
-                <button
-                  key={event.id}
-                  type="button"
-                  draggable
-                  onDragStart={(dragEvent) => {
-                    dragEvent.dataTransfer.effectAllowed = "move";
-                    dragEvent.dataTransfer.setData("text/plain", event.id);
-                  }}
-                  onClick={() => onSelectEvent(event.id)}
-                  className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
-                >
-                  <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
-                </button>
-              ))}
+              {unscheduledEvents.map((event) => {
+                const isBouncing = bouncingEventId === event.id;
+                return (
+                  <motion.button
+                    key={event.id}
+                    type="button"
+                    draggable
+                    layout
+                    animate={
+                      isBouncing
+                        ? { y: [0, -8, 0], scale: [1, 1.05, 1] }
+                        : { y: 0, scale: 1 }
+                    }
+                    transition={isBouncing ? BOUNCE_SPRING : { duration: 0 }}
+                    {...({
+                      onDragStartCapture: (dragEvent: React.DragEvent) => {
+                        dragEvent.dataTransfer.effectAllowed = "move";
+                        dragEvent.dataTransfer.setData("text/plain", event.id);
+                      },
+                    } as Record<string, unknown>)}
+                    onClick={() => onSelectEvent(event.id)}
+                    className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
+                      isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                    }`}
+                  >
+                    <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
+                  </motion.button>
+                );
+              })}
             </div>
           </section>
         )}
@@ -111,22 +129,36 @@ export default function Calendar2DayView({
               Вне сетки 08:00–21:00
             </h3>
             <div className="space-y-1.5">
-              {outsideGridEvents.map((event) => (
-                <button
-                  key={event.id}
-                  type="button"
-                  draggable
-                  onDragStart={(dragEvent) => {
-                    dragEvent.dataTransfer.effectAllowed = "move";
-                    dragEvent.dataTransfer.setData("text/plain", event.id);
-                  }}
-                  onClick={() => onSelectEvent(event.id)}
-                  className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
-                >
-                  <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
-                  <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
-                </button>
-              ))}
+              {outsideGridEvents.map((event) => {
+                const isBouncing = bouncingEventId === event.id;
+                return (
+                  <motion.button
+                    key={event.id}
+                    type="button"
+                    draggable
+                    layout
+                    animate={
+                      isBouncing
+                        ? { y: [0, -8, 0], scale: [1, 1.05, 1] }
+                        : { y: 0, scale: 1 }
+                    }
+                    transition={isBouncing ? BOUNCE_SPRING : { duration: 0 }}
+                    {...({
+                      onDragStartCapture: (dragEvent: React.DragEvent) => {
+                        dragEvent.dataTransfer.effectAllowed = "move";
+                        dragEvent.dataTransfer.setData("text/plain", event.id);
+                      },
+                    } as Record<string, unknown>)}
+                    onClick={() => onSelectEvent(event.id)}
+                    className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
+                      isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                    }`}
+                  >
+                    <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
+                    <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
+                  </motion.button>
+                );
+              })}
             </div>
           </section>
         )}
@@ -164,22 +196,36 @@ export default function Calendar2DayView({
                     </p>
                   )}
 
-                  {slotEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      type="button"
-                      draggable
-                      onDragStart={(dragEvent) => {
-                        dragEvent.dataTransfer.effectAllowed = "move";
-                        dragEvent.dataTransfer.setData("text/plain", event.id);
-                      }}
-                      onClick={() => onSelectEvent(event.id)}
-                      className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
-                    >
-                      <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
-                      <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
-                    </button>
-                  ))}
+                  {slotEvents.map((event) => {
+                    const isBouncing = bouncingEventId === event.id;
+                    return (
+                      <motion.button
+                        key={event.id}
+                        type="button"
+                        draggable
+                        layout
+                        animate={
+                          isBouncing
+                            ? { y: [0, -8, 0], scale: [1, 1.05, 1] }
+                            : { y: 0, scale: 1 }
+                        }
+                        transition={isBouncing ? BOUNCE_SPRING : { duration: 0 }}
+                        {...({
+                          onDragStartCapture: (dragEvent: React.DragEvent) => {
+                            dragEvent.dataTransfer.effectAllowed = "move";
+                            dragEvent.dataTransfer.setData("text/plain", event.id);
+                          },
+                        } as Record<string, unknown>)}
+                        onClick={() => onSelectEvent(event.id)}
+                        className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
+                          isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                        }`}
+                      >
+                        <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
+                        <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
+                      </motion.button>
+                    );
+                  })}
                 </div>
               </div>
             );

@@ -37,6 +37,7 @@ import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
 import Calendar2AiPanel from "./Calendar2AiPanel";
 import EventModal2 from "./EventModal2";
+import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
 type EventMovePayload = { date: string; time?: string };
@@ -135,6 +136,8 @@ export default function Calendar2() {
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
+  const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
+  const [bouncingEventId, setBouncingEventId] = useState<string | null>(null);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -409,24 +412,41 @@ export default function Calendar2() {
       return;
     }
 
-    const nextDate = payload.date;
-    const nextTime = payload.time === undefined ? sourceEvent.time : payload.time;
-
+    // If dropping on the same date with no time change, skip
     if (
-      sourceEvent.date === nextDate &&
-      (sourceEvent.time ?? undefined) === (nextTime ?? undefined)
+      sourceEvent.date === payload.date &&
+      (payload.time === undefined || payload.time === sourceEvent.time)
     ) {
       return;
     }
 
+    // Open time-picker dialog instead of immediate move
+    setMovePickerRequest({
+      event: sourceEvent,
+      targetDate: payload.date,
+      suggestedTime: payload.time,
+    });
+  };
+
+  const handleMoveConfirm = async (result: MoveTimePickerResult) => {
+    setMovePickerRequest(null);
+
     await updateEvent({
-      id: eventId,
-      date: nextDate,
-      time: nextTime,
+      id: result.eventId,
+      date: result.date,
+      time: result.time,
       recurrenceScope: "this",
-      ...withEventRevision(eventId),
+      ...withEventRevision(result.eventId),
     });
     await fetchEvents(liveCalendarQueryFilters);
+
+    // Trigger bounce animation on the moved event
+    setBouncingEventId(result.eventId);
+    setTimeout(() => setBouncingEventId(null), 700);
+  };
+
+  const handleMoveCancel = () => {
+    setMovePickerRequest(null);
   };
 
   const handleLogout = async () => {
@@ -523,6 +543,7 @@ export default function Calendar2() {
                 days={monthGridDays}
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
+                bouncingEventId={bouncingEventId}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -535,6 +556,7 @@ export default function Calendar2() {
                 anchorDate={anchorDate}
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
+                bouncingEventId={bouncingEventId}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -546,6 +568,7 @@ export default function Calendar2() {
                 dayDate={anchorDate}
                 dayEvents={dayEvents}
                 eventPriorities={resolvedPriorities}
+                bouncingEventId={bouncingEventId}
                 onSelectEvent={setSelectedEventId}
                 onMoveEvent={handleMoveEvent}
               />
@@ -748,6 +771,13 @@ export default function Calendar2() {
           onSave={handleSaveEvent}
         />
       )}
+
+      {/* Move event time picker dialog */}
+      <MoveTimePickerDialog
+        request={movePickerRequest}
+        onConfirm={handleMoveConfirm}
+        onCancel={handleMoveCancel}
+      />
     </div>
   );
 }
