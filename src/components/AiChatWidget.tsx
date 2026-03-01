@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { AgentMemoryItem } from "@/agent/types";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
+import ChatMarkdown from "@/components/ChatMarkdown";
 
 /* ── Theme support ── */
 const AI_THEME_KEY = "netden:ai-theme";
@@ -240,8 +241,11 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                     key={msg.id}
                     className={`aip-message ${msg.role === "user" ? "aip-message-user" : "aip-message-assistant"}`}
                   >
-                    <span>{msg.text || "\u00A0"}</span>
-                    {msg.streaming && <span className="aip-cursor" />}
+                    {msg.role === "assistant" ? (
+                      <ChatMarkdown content={msg.text} isStreaming={msg.streaming} />
+                    ) : (
+                      <span>{msg.text || "\u00A0"}</span>
+                    )}
                   </div>
                 ))}
 
