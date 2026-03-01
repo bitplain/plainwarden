@@ -19,15 +19,10 @@ interface Calendar2WeekViewProps {
   onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
 }
 
-function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPriority>) {
-  const priority = priorities[event.id];
-  if (priority) {
-    const config = PRIORITY_CONFIG[priority];
-    return `${config.bg} ${config.border} ${config.color}`;
-  }
+function getEventStyle(event: CalendarEvent, priorities?: Record<string, TaskPriority>) {
   return event.type === "event"
-    ? "bg-[var(--cal2-accent-soft)] border-[rgba(94,106,210,0.4)] text-[#d6dbff]"
-    : "bg-[rgba(255,255,255,0.06)] border-[var(--cal2-border)] text-[var(--cal2-text-primary)]";
+    ? "bg-[#1E3A8A20] border-[#3B82F6] text-[#93C5FD] rounded-[8px]" // Мягкий синий фон, событие
+    : "bg-[#2A2A2A] border-[#3A3A3A] text-[#E5E5E5] rounded-[6px]"; // Нейтральный фон, задача
 }
 const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
@@ -152,7 +147,7 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
           <button
             type="button"
             onClick={() => onQuickAdd(day)}
-            className="w-full rounded-[6px] border border-dashed border-[var(--cal2-border)] px-2 py-3 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:border-[rgba(94,106,210,0.4)] hover:text-[var(--cal2-text-primary)]"
+            className="relative flex flex-col w-full border border-dashed border-[var(--cal2-border)] px-2 py-3 text-[11px] text-[var(--cal2-text-secondary)] transition-colors hover:border-[rgba(94,106,210,0.4)] hover:text-[var(--cal2-text-primary)]"
           >
             + Добавить
           </button>
@@ -169,10 +164,19 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
                 dragEvent.dataTransfer.setData("text/plain", event.id);
               }}
               onClick={() => onSelectEvent(event.id)}
-              className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
+              className={`relative flex flex-col w-full border px-2.5 py-2 text-left transition-colors hover:brightness-110 ${getEventStyle(event)}`}
             >
-              <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
+              {event.type === "task" && eventPriorities[event.id] && (
+                <div
+                  className={`absolute left-0 top-0 bottom-0 w-[4px] rounded-l-[5px] ${PRIORITY_CONFIG[eventPriorities[event.id]].dot}`}
+                />
+              )}
+              <div className={`w-full ${event.type === "task" && eventPriorities[event.id] ? "ml-1.5" : ""}`}>
+
+              <p className="text-[10px] text-[#9CA3AF] opacity-80">{event.time ?? "—"}</p>
               <p className="mt-0.5 text-[13px] font-medium leading-[1.2]">{event.title}</p>
+              </div>
+
               {event.status === "done" && (
                 <span className="mt-1 inline-block rounded-[4px] border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.06)] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)]">
                   ✓

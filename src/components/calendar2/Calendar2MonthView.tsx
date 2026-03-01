@@ -21,15 +21,10 @@ interface Calendar2MonthViewProps {
 const MONTH_DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
-function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPriority>) {
-  const priority = priorities[event.id];
-  if (priority) {
-    const config = PRIORITY_CONFIG[priority];
-    return `${config.bg} ${config.border} ${config.color}`;
-  }
+function getEventStyle(event: CalendarEvent, priorities?: Record<string, TaskPriority>) {
   return event.type === "event"
-    ? "bg-[var(--cal2-accent-soft)] border-[rgba(94,106,210,0.4)] text-[#d6dbff]"
-    : "bg-[rgba(255,255,255,0.06)] border-[var(--cal2-border)] text-[var(--cal2-text-primary)]";
+    ? "bg-[#1E3A8A20] border-[#3B82F6] text-[#93C5FD] rounded-[8px]" // Мягкий синий фон, синяя рамка, события не приоритизируются
+    : "bg-[#2A2A2A] border-[#3A3A3A] text-[#E5E5E5] rounded-[6px]"; // Нейтральный серый фон для задач
 }
 
 /* ── Isolated month cell ── */
@@ -173,12 +168,19 @@ const MonthCell = React.memo(function MonthCell({
                 e.stopPropagation();
                 onSelectEvent(event.id);
               }}
-              className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}`}
+              className={`relative flex items-center w-full truncate border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:brightness-110 ${getEventStyle(event)}`}
             >
-              {event.time && (
-                <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
+              {event.type === "task" && eventPriorities[event.id] && (
+                <div
+                  className={`absolute left-0 top-0 bottom-0 w-[4px] rounded-l-sm ${PRIORITY_CONFIG[eventPriorities[event.id]].dot}`}
+                />
               )}
-              {event.title}
+              <div className={`flex w-full truncate ${event.type === "task" && eventPriorities[event.id] ? "ml-1" : ""}`}>
+                {event.time && (
+                  <span className="mr-1 text-[#9CA3AF]">{event.time}</span>
+                )}
+                <span className="truncate">{event.title}</span>
+              </div>
             </button>
           );
         })}

@@ -294,9 +294,8 @@ export default function KanbanBoard({
                         )}
 
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <span
-                            className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium ${priorityConfig.bg} ${priorityConfig.border} ${priorityConfig.color}`}
-                          >
+                          <span className="flex items-center gap-1 rounded-[4px] border border-[var(--cal2-border)] bg-[var(--cal2-surface)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--cal2-text-secondary)]">
+                            <span className={`h-1.5 w-1.5 rounded-full ${priorityConfig.dot}`} />
                             {priorityConfig.label}
                           </span>
 
