@@ -1233,6 +1233,18 @@ body {
   font-weight: 400;
 }
 
+.setup-ssl-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  border-left: 3px solid #d97706;
+  background: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+}
+
 /* ── Settings page (unified with Calendar2 style) ── */
 
 .settings-page-shell {
