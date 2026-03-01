@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
@@ -65,7 +65,6 @@ const MonthCell = React.memo(function MonthCell({
   onQuickAdd,
   onMoveEvent,
 }: MonthCellProps) {
-  const cellRef = useRef<HTMLDivElement>(null);
   const visibleEvents = dayEvents.slice(0, 3);
   const extraCount = dayEvents.length - visibleEvents.length;
 
@@ -90,12 +89,9 @@ const MonthCell = React.memo(function MonthCell({
     <div
       ref={cellRef}
       onClick={() => onQuickAdd(day)}
-      onDragEnter={onDragEnter}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={onDragLeave}
       onDrop={(e) => {
         e.preventDefault();
-        cellRef.current?.removeAttribute("data-drag-over");
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });

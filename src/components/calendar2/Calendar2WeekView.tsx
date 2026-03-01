@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React from "react";
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
@@ -62,28 +62,11 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
   onQuickAdd,
   onMoveEvent,
 }: WeekDayColumnProps) {
-  const sectionRef = useRef<HTMLElement>(null);
-
-  const onDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    sectionRef.current?.setAttribute("data-drag-over", "");
-  }, []);
-
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    const related = e.relatedTarget as Node | null;
-    if (related && sectionRef.current?.contains(related)) return;
-    sectionRef.current?.removeAttribute("data-drag-over");
-  }, []);
-
   return (
     <section
-      ref={sectionRef}
-      onDragEnter={onDragEnter}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={onDragLeave}
       onDrop={(e) => {
         e.preventDefault();
-        sectionRef.current?.removeAttribute("data-drag-over");
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });

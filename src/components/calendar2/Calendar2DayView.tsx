@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useRef } from "react";
+import React from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
@@ -64,7 +64,6 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
   onSelectEvent,
   onMoveEvent,
 }: DayTimeSlotProps) {
-  const slotRef = useRef<HTMLDivElement>(null);
   const timeStr = format(slot, "HH:mm");
 
   const onDragEnter = useCallback((e: React.DragEvent) => {
@@ -80,13 +79,9 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
 
   return (
     <div
-      ref={slotRef}
-      onDragEnter={onDragEnter}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={onDragLeave}
       onDrop={(e) => {
         e.preventDefault();
-        slotRef.current?.removeAttribute("data-drag-over");
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, {
