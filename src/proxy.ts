@@ -19,6 +19,7 @@ import { isDatabaseConfigured } from "@/lib/server/setup";
  */
 const PUBLIC_API_ROUTES = new Set([
   "/api/auth/login",
+  "/api/auth/logout", // must be accessible even when session is revoked
   "/api/auth/register",
   "/api/health",
   "/api/setup/run",
