@@ -200,7 +200,7 @@ export default function Calendar2WeekView({
                 bouncingEventId={bouncingEventId}
                 isSelected={isSameDay(day, anchorDate)}
                 isToday={isSameDay(day, today)}
-                isGlowing={glowingCellKey === dateKey}
+                isGlowing={glowingCellKey != null && glowingCellKey.startsWith(dateKey)}
                 onSelectDate={onSelectDate}
                 onSelectEvent={onSelectEvent}
                 onQuickAdd={onQuickAdd}

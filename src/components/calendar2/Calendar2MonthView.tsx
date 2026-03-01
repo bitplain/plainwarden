@@ -217,7 +217,7 @@ export default function Calendar2MonthView({
               isCurrentMonth={isSameMonth(day, anchorDate)}
               isCurrentDay={isSameDay(day, anchorDate)}
               isToday={isSameDay(day, today)}
-              isGlowing={glowingCellKey === dateKey}
+              isGlowing={glowingCellKey != null && glowingCellKey.startsWith(dateKey)}
               onSelectDate={onSelectDate}
               onSelectEvent={onSelectEvent}
               onQuickAdd={onQuickAdd}
