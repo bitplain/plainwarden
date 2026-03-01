@@ -352,6 +352,13 @@ export function SetupWizard() {
                   <option value="disable">disable</option>
                 </Select>
               </Field>
+              {sslMode === "require" ? (
+                <p className="setup-ssl-warning">
+                  ⚠ Режим <strong>require</strong> шифрует соединение, но не проверяет
+                  сертификат сервера — возможна MITM-атака. Для production-окружений
+                  используйте PostgreSQL с валидным CA-подписанным сертификатом.
+                </p>
+              ) : null}
             </div>
           ) : null}
 
