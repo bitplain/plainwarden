@@ -1,6 +1,14 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/server/session";
+import {
+  SESSION_COOKIE_NAME,
+  hashSessionToken,
+  isSessionActive,
+  verifySessionToken,
+} from "@/lib/server/session";
+
+// Use Node.js runtime — required for node:crypto and Prisma DB access
+export const runtime = "nodejs";
 
 /**
  * Routes that don't require session authentication.
@@ -19,7 +27,7 @@ const PUBLIC_API_ROUTES = new Set([
 /** HTTP methods that mutate state — checked for CSRF */
 const MUTATION_METHODS = new Set(["POST", "PATCH", "DELETE", "PUT"]);
 
-export function middleware(request: NextRequest): NextResponse {
+export async function middleware(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   // Only intercept /api/* routes
@@ -47,12 +55,20 @@ export function middleware(request: NextRequest): NextResponse {
     }
   }
 
-  // Session validation
+  // Session validation (HMAC signature + expiry)
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = verifySessionToken(token);
 
   if (!session) {
     return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Whitelist check — ensures revoked sessions are rejected
+  // Falls back to allowing the request if DB is unavailable (fail open)
+  const tokenHash = hashSessionToken(token!);
+  const active = await isSessionActive(tokenHash);
+  if (!active) {
+    return NextResponse.json({ message: "Session revoked" }, { status: 401 });
   }
 
   // Inject validated user info into request headers for downstream handlers.

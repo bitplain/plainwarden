@@ -35,6 +35,11 @@ function sign(value: string, secret: string): string {
   return crypto.createHmac("sha256", secret).update(value).digest("base64url");
 }
 
+/** SHA-256 hash of the raw token string, used as the whitelist key. */
+export function hashSessionToken(token: string): string {
+  return crypto.createHash("sha256").update(token).digest("hex");
+}
+
 export function createSessionToken(user: Pick<AuthUser, "id" | "email">): string {
   const now = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
@@ -106,3 +111,79 @@ export const sessionCookieOptions = {
   path: "/",
   maxAge: SESSION_MAX_AGE_SECONDS,
 };
+
+// ---------------------------------------------------------------------------
+// DB persistence helpers (session whitelist)
+// ---------------------------------------------------------------------------
+
+/**
+ * Saves a newly created token to the Session whitelist in PostgreSQL.
+ * Falls back silently if the database is unavailable.
+ */
+export async function persistSessionToken(
+  token: string,
+  userId: string,
+  expiresAt: Date,
+): Promise<void> {
+  try {
+    const { default: prisma } = await import("@/lib/server/prisma");
+    await prisma.session.create({
+      data: {
+        userId,
+        tokenHash: hashSessionToken(token),
+        expiresAt,
+      },
+    });
+  } catch {
+    // DB unavailable — degrade gracefully
+  }
+}
+
+/**
+ * Removes a token from the Session whitelist (logout / revocation).
+ * Falls back silently if the database is unavailable.
+ */
+export async function revokeSessionToken(token: string): Promise<void> {
+  try {
+    const { default: prisma } = await import("@/lib/server/prisma");
+    await prisma.session.deleteMany({
+      where: { tokenHash: hashSessionToken(token) },
+    });
+  } catch {
+    // DB unavailable — ignore
+  }
+}
+
+/**
+ * Returns true if the token hash exists in the whitelist (not revoked, not expired).
+ * Returns true on DB error to prevent lockout when the database is down.
+ */
+export async function isSessionActive(tokenHash: string): Promise<boolean> {
+  try {
+    const { default: prisma } = await import("@/lib/server/prisma");
+    const session = await prisma.session.findUnique({
+      where: { tokenHash },
+      select: { expiresAt: true },
+    });
+    if (!session) return false;
+    return session.expiresAt > new Date();
+  } catch {
+    // DB unavailable — allow request to proceed (fail open)
+    return true;
+  }
+}
+
+/**
+ * Periodically cleans up expired sessions.
+ * Called opportunistically — not required for correctness.
+ */
+export async function pruneExpiredSessions(): Promise<void> {
+  try {
+    const { default: prisma } = await import("@/lib/server/prisma");
+    await prisma.session.deleteMany({
+      where: { expiresAt: { lt: new Date() } },
+    });
+  } catch {
+    // ignore
+  }
+}
