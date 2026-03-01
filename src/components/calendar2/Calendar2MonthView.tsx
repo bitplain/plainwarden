@@ -1,12 +1,10 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
-import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
-import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2MonthViewProps {
   anchorDate: Date;
@@ -67,8 +65,7 @@ const MonthCell = React.memo(function MonthCell({
   onQuickAdd,
   onMoveEvent,
 }: MonthCellProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCountRef = useRef(0);
+  const cellRef = useRef<HTMLDivElement>(null);
   const visibleEvents = dayEvents.slice(0, 3);
   const extraCount = dayEvents.length - visibleEvents.length;
 
@@ -78,35 +75,35 @@ const MonthCell = React.memo(function MonthCell({
       ? "bg-transparent hover:bg-[rgba(255,255,255,0.03)]"
       : "bg-[rgba(0,0,0,0.2)] hover:bg-[rgba(255,255,255,0.02)]";
 
+  const onDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    cellRef.current?.setAttribute("data-drag-over", "");
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (related && cellRef.current?.contains(related)) return;
+    cellRef.current?.removeAttribute("data-drag-over");
+  }, []);
+
   return (
     <div
+      ref={cellRef}
       onClick={() => onQuickAdd(day)}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        dragCountRef.current++;
-        if (!isDragOver) setIsDragOver(true);
-      }}
+      onDragEnter={onDragEnter}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={() => {
-        dragCountRef.current--;
-        if (dragCountRef.current <= 0) {
-          dragCountRef.current = 0;
-          setIsDragOver(false);
-        }
-      }}
+      onDragLeave={onDragLeave}
       onDrop={(e) => {
         e.preventDefault();
-        dragCountRef.current = 0;
-        setIsDragOver(false);
+        cellRef.current?.removeAttribute("data-drag-over");
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });
         }
       }}
       className={[
-        "group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left transition-colors last:border-r-0",
+        "group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left last:border-r-0",
         bgClass,
-        isDragOver ? "cal2-cell-drag-over" : "",
         isGlowing ? "cal2-cell-drop-trace" : "",
       ]
         .filter(Boolean)
@@ -139,36 +136,28 @@ const MonthCell = React.memo(function MonthCell({
         {visibleEvents.map((event) => {
           const isBouncing = bouncingEventId === event.id;
           return (
-            <motion.button
+            <button
               key={event.id}
               type="button"
               draggable
-              animate={
-                isBouncing
-                  ? { y: [0, -6, 0], scale: [1, 1.04, 1] }
-                  : undefined
-              }
-              transition={isBouncing ? BOUNCE_SPRING : undefined}
-              {...({
-                onDragStartCapture: (dragEvent: React.DragEvent) => {
-                  dragEvent.stopPropagation();
-                  dragEvent.dataTransfer.effectAllowed = "move";
-                  dragEvent.dataTransfer.setData("text/plain", event.id);
-                },
-              } as Record<string, unknown>)}
+              onDragStartCapture={(dragEvent) => {
+                dragEvent.stopPropagation();
+                dragEvent.dataTransfer.effectAllowed = "move";
+                dragEvent.dataTransfer.setData("text/plain", event.id);
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectEvent(event.id);
               }}
               className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                isBouncing ? " cal2-event-bouncing" : ""
               }`}
             >
               {event.time && (
                 <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
               )}
               {event.title}
-            </motion.button>
+            </button>
           );
         })}
 
@@ -211,7 +200,7 @@ export default function Calendar2MonthView({
         ))}
       </div>
 
-      <div className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(100px,1fr))] md:grid-rows-[repeat(6,minmax(120px,1fr))]">
+      <div className="cal2-gpu-grid grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(100px,1fr))] md:grid-rows-[repeat(6,minmax(120px,1fr))]">
         {days.map((day) => {
           const dateKey = toDateKey(day);
           const dayEvents = eventsByDate[dateKey] ?? [];
