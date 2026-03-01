@@ -1,6 +1,6 @@
 /* ── Theme CSS Variables ── */
-/* Attribute selectors are not scoped by CSS Modules */
-[data-aip-theme] {
+/* Wrapped in :global() — attribute selectors are not pure CSS Module selectors */
+:global([data-aip-theme]) {
   --aip-a: 56 189 248;
   --aip-a2: 139 92 246;
   --aip-ok: 16 185 129;
@@ -16,7 +16,7 @@
   --aip-trigger-bg2: rgba(8, 10, 18, 0.98);
 }
 
-[data-aip-theme="ambient"] {
+:global([data-aip-theme="ambient"]) {
   --aip-a: 245 158 11;
   --aip-a2: 244 114 182;
   --aip-ok: 16 185 129;
@@ -32,7 +32,7 @@
   --aip-trigger-bg2: rgba(14, 10, 4, 0.98);
 }
 
-[data-aip-theme="terminal"] {
+:global([data-aip-theme="terminal"]) {
   --aip-a: 34 197 94;
   --aip-a2: 34 197 94;
   --aip-ok: 245 158 11;
