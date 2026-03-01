@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import styles from "@/styles/settings.module.css";
 
 const GITHUB_ORG_KEY = "netden:github:org";
 const GITHUB_TOKEN_KEY = "netden:github:token";
@@ -127,12 +128,12 @@ export default function SettingsGitHubTab() {
   );
 
   return (
-    <div className="settings-tab-content">
-      <form className="settings-grid" onSubmit={onLoadBilling}>
-        <label className="settings-field">
+    <div className={styles['settings-tab-content']}>
+      <form className={styles['settings-grid']} onSubmit={onLoadBilling}>
+        <label className={styles['settings-field']}>
           <span>Organization</span>
           <input
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
             value={org}
             onChange={(event) => setOrg(event.target.value)}
             placeholder="your-org"
@@ -140,10 +141,10 @@ export default function SettingsGitHubTab() {
           />
         </label>
 
-        <label className="settings-field">
+        <label className={styles['settings-field']}>
           <span>Personal access token</span>
           <input
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
             type="password"
             value={token}
             onChange={(event) => setToken(event.target.value)}
@@ -152,11 +153,11 @@ export default function SettingsGitHubTab() {
           />
         </label>
 
-        <div className="settings-inline">
-          <label className="settings-field">
+        <div className={styles['settings-inline']}>
+          <label className={styles['settings-field']}>
             <span>Год (опционально)</span>
             <input
-              className="settings-tab-input"
+              className={styles['settings-tab-input']}
               value={year}
               onChange={(event) => setYear(event.target.value)}
               placeholder="2026"
@@ -164,10 +165,10 @@ export default function SettingsGitHubTab() {
             />
           </label>
 
-          <label className="settings-field">
+          <label className={styles['settings-field']}>
             <span>Месяц (1-12)</span>
             <input
-              className="settings-tab-input"
+              className={styles['settings-tab-input']}
               value={month}
               onChange={(event) => setMonth(event.target.value)}
               placeholder="2"
@@ -176,34 +177,34 @@ export default function SettingsGitHubTab() {
           </label>
         </div>
 
-        <button type="submit" className="settings-tab-btn">
+        <button type="submit" className={styles['settings-tab-btn']}>
           {isLoading ? "Загрузка..." : "Загрузить лимиты"}
         </button>
       </form>
 
-      {error ? <p className="settings-tab-error">{error}</p> : null}
+      {error ? <p className={styles['settings-tab-error']}>{error}</p> : null}
 
-      <div className="settings-tab-cards-grid">
+      <div className={styles['settings-tab-cards-grid']}>
         {cards.map((card) => (
-          <div key={card.key} className="settings-tab-card">
-            <p className="settings-tab-card-title">{card.title}</p>
+          <div key={card.key} className={styles['settings-tab-card']}>
+            <p className={styles['settings-tab-card-title']}>{card.title}</p>
             {card.value ? (
               <>
-                <p className="settings-tab-card-body">
+                <p className={styles['settings-tab-card-body']}>
                   {card.value.quantity.toLocaleString("en-US")}
                   {card.value.unit ? ` ${card.value.unit}` : ""}
                 </p>
-                <p className="settings-tab-card-meta">Net amount: ${formatMoney(card.value.netAmount)}</p>
-                <p className="settings-tab-card-meta">Rows: {card.value.rows}</p>
+                <p className={styles['settings-tab-card-meta']}>Net amount: ${formatMoney(card.value.netAmount)}</p>
+                <p className={styles['settings-tab-card-meta']}>Rows: {card.value.rows}</p>
               </>
             ) : (
-              <p className="settings-tab-card-body">Нет данных</p>
+              <p className={styles['settings-tab-card-body']}>Нет данных</p>
             )}
           </div>
         ))}
       </div>
 
-      <p className="settings-tab-muted">
+      <p className={styles['settings-tab-muted']}>
         PAT в localStorage: {hasToken ? "сохранён" : "не сохранён"}.
         {lastSync ? ` Последняя синхронизация: ${lastSync}.` : ""}
       </p>

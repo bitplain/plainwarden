@@ -10,6 +10,8 @@ import {
   SetupSummary,
   SslMode,
 } from "@/lib/types";
+import homeStyles from "@/styles/home.module.css";
+import settingsStyles from "@/styles/settings.module.css";
 
 function Field({
   label,
@@ -21,10 +23,10 @@ function Field({
   children: React.ReactNode;
 }) {
   return (
-    <label className="settings-field">
+    <label className={settingsStyles['settings-field']}>
       <span>
         {label}
-        {hint ? <span className="settings-hint">{hint}</span> : null}
+        {hint ? <span className={settingsStyles['settings-hint']}>{hint}</span> : null}
       </span>
       {children}
     </label>
@@ -32,18 +34,18 @@ function Field({
 }
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return <input {...props} className="notes-input" />;
+  return <input {...props} className={homeStyles['notes-input']} />;
 }
 
 function Select(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select {...props} className="notes-input" />;
+  return <select {...props} className={homeStyles['notes-input']} />;
 }
 
 function Button({
   kind = "primary",
   ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { kind?: "primary" | "ghost" }) {
-  const cls = kind === "primary" ? "notes-submit" : "notes-submit settings-reset";
+  const cls = kind === "primary" ? homeStyles['notes-submit'] : `${homeStyles['notes-submit']} ${settingsStyles['settings-reset']}`;
 
   return <button {...props} className={cls} />;
 }
@@ -269,17 +271,17 @@ export function SetupWizard() {
   }
 
   return (
-    <div className="home-page-shell">
-      <div className="home-page-grid">
-        <header className="home-header">
-          <div className="home-header-left">
-            <Link href="/" className="home-back-link">
+    <div className={homeStyles['home-page-shell']}>
+      <div className={homeStyles['home-page-grid']}>
+        <header className={homeStyles['home-header']}>
+          <div className={homeStyles['home-header-left']}>
+            <Link href="/" className={homeStyles['home-back-link']}>
               ← Терминал
             </Link>
             <div>
-              <p className="home-kicker">NetDen</p>
-              <h1 className="home-title">Первичная настройка</h1>
-              <p className="home-subtitle">
+              <p className={homeStyles['home-kicker']}>NetDen</p>
+              <h1 className={homeStyles['home-title']}>Первичная настройка</h1>
+              <p className={homeStyles['home-subtitle']}>
                 Мастер создаст базу приложения, DB-роль, первого пользователя и подготовит переменные
                 для Timeweb App Platform.
               </p>
@@ -287,11 +289,11 @@ export function SetupWizard() {
           </div>
         </header>
 
-        <div className="home-card">
-          <div className="home-card-head">
-            <h2 className="home-card-title">Шаги</h2>
+        <div className={homeStyles['home-card']}>
+          <div className={homeStyles['home-card-head']}>
+            <h2 className={homeStyles['home-card-title']}>Шаги</h2>
           </div>
-          <div className="home-links">
+          <div className={homeStyles['home-links']}>
             <StepPill active={step === 0}>Введение</StepPill>
             <StepPill active={step === 1}>PostgreSQL</StepPill>
             <StepPill active={step === 2}>Провижининг</StepPill>
@@ -301,12 +303,12 @@ export function SetupWizard() {
           </div>
         </div>
 
-        <section className="home-card">
+        <section className={homeStyles['home-card']}>
           {step === 0 ? (
-            <div className="settings-grid">
-              <div className="acme-note">
-                <p className="home-inline-title">Что будет сделано</p>
-                <ul className="setup-list setup-list-disc">
+            <div className={settingsStyles['settings-grid']}>
+              <div className={settingsStyles['acme-note']}>
+                <p className={homeStyles['home-inline-title']}>Что будет сделано</p>
+                <ul className={`${settingsStyles['setup-list']} ${settingsStyles['setup-list-disc']}`}>
                   <li>Создание/обновление DB-роли приложения.</li>
                   <li>Создание базы данных и применение миграций Prisma.</li>
                   <li>Создание первого пользователя с начальными событиями.</li>
@@ -314,15 +316,15 @@ export function SetupWizard() {
                   <li>Вывод сводки для вставки в Timeweb Variables.</li>
                 </ul>
               </div>
-              <p className="home-muted">
+              <p className={homeStyles['home-muted']}>
                 После завершения setup обязательно обновите Variables и выполните redeploy.
               </p>
             </div>
           ) : null}
 
           {step === 1 ? (
-            <div className="settings-grid">
-              <div className="settings-inline">
+            <div className={settingsStyles['settings-grid']}>
+              <div className={settingsStyles['settings-inline']}>
                 <Field label="IP / host PostgreSQL" hint="например 127.0.0.1">
                   <Input value={pgHost} onChange={(e) => setPgHost(e.target.value)} autoFocus />
                 </Field>
@@ -353,7 +355,7 @@ export function SetupWizard() {
                 </Select>
               </Field>
               {sslMode === "require" ? (
-                <p className="setup-ssl-warning">
+                <p className={settingsStyles['setup-ssl-warning']}>
                   ⚠ Режим <strong>require</strong> шифрует соединение, но не проверяет
                   сертификат сервера — возможна MITM-атака. Для production-окружений
                   используйте PostgreSQL с валидным CA-подписанным сертификатом.
@@ -363,7 +365,7 @@ export function SetupWizard() {
           ) : null}
 
           {step === 2 ? (
-            <div className="settings-grid">
+            <div className={settingsStyles['settings-grid']}>
               <Field label="Имя базы приложения" hint="буквы, цифры, _">
                 <Input value={dbName} onChange={(e) => setDbName(e.target.value)} autoFocus />
               </Field>
@@ -381,7 +383,7 @@ export function SetupWizard() {
           ) : null}
 
           {step === 3 ? (
-            <div className="settings-grid">
+            <div className={settingsStyles['settings-grid']}>
               <Field label="Имя первого пользователя">
                 <Input
                   value={adminName}
@@ -413,8 +415,8 @@ export function SetupWizard() {
           ) : null}
 
           {step === 4 ? (
-            <div className="settings-grid">
-              <p className="acme-note">
+            <div className={settingsStyles['settings-grid']}>
+              <p className={settingsStyles['acme-note']}>
                 Нажмите «Запустить setup». Мастер применит миграции, создаст первого пользователя и
                 сгенерирует итоговые секреты.
               </p>
@@ -422,12 +424,12 @@ export function SetupWizard() {
           ) : null}
 
           {step === 5 ? (
-            <div className="settings-grid">
+            <div className={settingsStyles['settings-grid']}>
               {done && summary ? <SummaryTable summary={summary} /> : null}
 
-              <div className="acme-note">
-                <p className="home-inline-title">Обязательные шаги после setup</p>
-                <ol className="setup-list setup-list-decimal">
+              <div className={settingsStyles['acme-note']}>
+                <p className={homeStyles['home-inline-title']}>Обязательные шаги после setup</p>
+                <ol className={`${settingsStyles['setup-list']} ${settingsStyles['setup-list-decimal']}`}>
                   <li>Откройте Timeweb Apps → Variables.</li>
                   <li>Вставьте значения из сводки: DATABASE_URL и NETDEN_SESSION_SECRET.</li>
                   <li>Сделайте redeploy приложения.</li>
@@ -435,8 +437,8 @@ export function SetupWizard() {
                 </ol>
               </div>
 
-              <nav className="home-links">
-                <a href="/login" className="home-link">
+              <nav className={homeStyles['home-links']}>
+                <a href="/login" className={homeStyles['home-link']}>
                   Открыть /login
                 </a>
               </nav>
@@ -444,12 +446,12 @@ export function SetupWizard() {
           ) : null}
 
           {error ? (
-            <div className="notes-error">
+            <div className={homeStyles['notes-error']}>
               <p>{error}</p>
               {needsRecovery ? (
-                <div className="acme-note">
-                  <p className="home-inline-title">Доступно восстановление</p>
-                  <p className="home-muted">
+                <div className={settingsStyles['acme-note']}>
+                  <p className={homeStyles['home-inline-title']}>Доступно восстановление</p>
+                  <p className={homeStyles['home-muted']}>
                     Найдены существующие пользователи в БД. Можно восстановить setup-состояние без
                     удаления данных.
                   </p>
@@ -464,13 +466,13 @@ export function SetupWizard() {
                       {busy ? "Восстанавливаем..." : "Восстановить из БД"}
                     </Button>
                   </div>
-                  <p className="home-muted">Endpoint: {recoveryEndpoint}</p>
+                  <p className={homeStyles['home-muted']}>Endpoint: {recoveryEndpoint}</p>
                 </div>
               ) : null}
             </div>
           ) : null}
 
-          <div className="home-card-head setup-nav">
+          <div className={`${homeStyles['home-card-head']} ${settingsStyles['setup-nav']}`}>
             <Button kind="ghost" onClick={previousStep} disabled={busy || done || step === 0}>
               Назад
             </Button>
@@ -486,7 +488,7 @@ export function SetupWizard() {
           </div>
         </section>
 
-        <p className="home-muted">
+        <p className={homeStyles['home-muted']}>
           В этом режиме значения не сохраняются на диске контейнера: финальная сводка предназначена
           для ручного переноса в Timeweb Variables.
         </p>

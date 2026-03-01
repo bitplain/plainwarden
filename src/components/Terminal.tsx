@@ -22,6 +22,7 @@ import AgentSettings from "@/components/AgentSettings";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import styles from "@/components/Terminal.module.css";
 
 const LiveClock = memo(function LiveClock() {
   const [now, setNow] = useState<Date | null>(null);
@@ -47,7 +48,7 @@ const LiveClock = memo(function LiveClock() {
   }, []);
 
   return (
-    <span className="terminal-idle-clock" suppressHydrationWarning>
+    <span className={styles['terminal-idle-clock']} suppressHydrationWarning>
       {now ? formatter.format(now) : "--:--:--"}
     </span>
   );
@@ -857,32 +858,32 @@ export default function Terminal() {
 
   return (
     <div
-      className={`terminal-page terminal-page-${mode} ${hasStarted ? "terminal-started" : "terminal-idle"}`}
+      className={`${styles['terminal-page']} ${styles[`terminal-page-${mode}`]} ${hasStarted ? styles['terminal-started'] : styles['terminal-idle']}`}
       style={rootStyle}
     >
-      <div className="terminal-grid-overlay" aria-hidden />
+      <div className={styles['terminal-grid-overlay']} aria-hidden />
 
-      <header className={`terminal-brand ${hasStarted || showLoginForm ? "terminal-brand-active" : ""}`}>
-        <h1 key={windowTitle} className="terminal-brand-name">{windowTitle}</h1>
+      <header className={`${styles['terminal-brand']} ${hasStarted || showLoginForm ? styles['terminal-brand-active'] : ''}`}>
+        <h1 key={windowTitle} className={styles['terminal-brand-name']}>{windowTitle}</h1>
       </header>
 
       <div
-        className={`terminal-history-shell ${historyVisible ? "terminal-history-shell-visible" : ""}`}
+        className={`${styles['terminal-history-shell']} ${historyVisible ? styles['terminal-history-shell-visible'] : ''}`}
         onClick={() => inputRef.current?.focus()}
       >
-        <div className="terminal-stream">
+        <div className={styles['terminal-stream']}>
           {history.map((entry, index) => (
             <div
               key={`${entry.command}-${index}`}
-              className={`terminal-entry terminal-entry-${entry.mode} nd-animate-in`}
+              className={`${styles['terminal-entry']} ${styles[`terminal-entry-${entry.mode}`]} nd-animate-in`}
             >
-              <div className="terminal-command-row">
-                <span className="terminal-command-text">{entry.command}</span>
+              <div className={styles['terminal-command-row']}>
+                <span className={styles['terminal-command-text']}>{entry.command}</span>
               </div>
               {entry.output.length > 0 && (
-                <div className={`terminal-output ${entry.failed ? "terminal-output-failed" : ""}`}>
+                <div className={`${styles['terminal-output']} ${entry.failed ? styles['terminal-output-failed'] : ''}`}>
                   {entry.output.map((line, lineIndex) => (
-                    <div key={lineIndex} className="terminal-output-line">
+                    <div key={lineIndex} className={styles['terminal-output-line']}>
                       {line || "\u00A0"}
                     </div>
                   ))}
@@ -892,14 +893,14 @@ export default function Terminal() {
           ))}
 
           {historyVisible && history.length === 0 && (
-            <div className="terminal-entry nd-animate-in">
-              <div className="terminal-output">
+            <div className={`${styles['terminal-entry']} nd-animate-in`}>
+              <div className={styles['terminal-output']}>
                 {isRuntimeLoading ? (
-                  <div className="terminal-output-line">Checking runtime state...</div>
+                  <div className={styles['terminal-output-line']}>Checking runtime state...</div>
                 ) : (
                   <>
-                    <div className="terminal-output-line">System ready.</div>
-                    <div className="terminal-output-line">Use {idleCommandHint} to continue.</div>
+                    <div className={styles['terminal-output-line']}>System ready.</div>
+                    <div className={styles['terminal-output-line']}>Use {idleCommandHint} to continue.</div>
                   </>
                 )}
               </div>
@@ -923,20 +924,20 @@ export default function Terminal() {
         </div>
       </div>
 
-      <div className={`terminal-calendar-shell ${panelVisible ? "terminal-calendar-shell-visible" : ""}`}>
-        <div className="terminal-calendar-inner nd-panel-enter" key={activePanel}>
+      <div className={`${styles['terminal-calendar-shell']} ${panelVisible ? styles['terminal-calendar-shell-visible'] : ''}`}>
+        <div className={`${styles['terminal-calendar-inner']} nd-panel-enter`} key={activePanel}>
           {activePanel === "settings" ? (
-            <div className="terminal-inline-page-shell">
+            <div className={styles['terminal-inline-page-shell']}>
               <button
                 type="button"
-                className="terminal-inline-page-back"
+                className={styles['terminal-inline-page-back']}
                 onClick={closePanelToConsole}
                 aria-label="Вернуться к консоли"
               >
                 ← Консоль
               </button>
               <iframe
-                className="terminal-inline-page-frame"
+                className={styles['terminal-inline-page-frame']}
                 src={PANEL_ROUTE_MAP[activePanel]}
                 title={windowTitle}
                 loading="eager"
@@ -947,51 +948,51 @@ export default function Terminal() {
       </div>
 
       <footer
-        className={`terminal-composer ${historyVisible || panelVisible ? "terminal-composer-active" : ""}`}
+        className={`${styles['terminal-composer']} ${historyVisible || panelVisible ? styles['terminal-composer-active'] : ''}`}
       >
         {showLoginForm ? (
-          <form className="terminal-auth-shell nd-animate-in" onSubmit={handleLoginSubmit}>
-            <div className="terminal-auth-header">
-              <span className="terminal-auth-caret">›</span>
-              <span className="terminal-auth-title">Авторизация</span>
+          <form className={`${styles['terminal-auth-shell']} nd-animate-in`} onSubmit={handleLoginSubmit}>
+            <div className={styles['terminal-auth-header']}>
+              <span className={styles['terminal-auth-caret']}>›</span>
+              <span className={styles['terminal-auth-title']}>Авторизация</span>
             </div>
 
-            <label className="terminal-auth-field">
-              <span className="terminal-auth-label">email</span>
+            <label className={styles['terminal-auth-field']}>
+              <span className={styles['terminal-auth-label']}>email</span>
               <input
                 ref={loginEmailRef}
                 type="email"
                 value={loginEmail}
                 onChange={(event) => setLoginEmail(event.target.value)}
-                className="terminal-auth-input"
+                className={styles['terminal-auth-input']}
                 placeholder="user@example.com"
                 autoComplete="email"
                 required
               />
             </label>
 
-            <label className="terminal-auth-field">
-              <span className="terminal-auth-label">пароль</span>
+            <label className={styles['terminal-auth-field']}>
+              <span className={styles['terminal-auth-label']}>пароль</span>
               <input
                 type="password"
                 value={loginPassword}
                 onChange={(event) => setLoginPassword(event.target.value)}
-                className="terminal-auth-input"
+                className={styles['terminal-auth-input']}
                 placeholder="••••••••"
                 autoComplete="current-password"
                 required
               />
             </label>
 
-            {loginError ? <div className="terminal-auth-error">{loginError}</div> : null}
+            {loginError ? <div className={styles['terminal-auth-error']}>{loginError}</div> : null}
 
-            <button type="submit" className="terminal-auth-button" disabled={loginBusy}>
+            <button type="submit" className={styles['terminal-auth-button']} disabled={loginBusy}>
               {loginBusy ? "Подключение…" : "→ Войти"}
             </button>
           </form>
         ) : (
           <>
-            <div className={`terminal-input-shell terminal-input-shell-${mode}`}>
+            <div className={`${styles['terminal-input-shell']} ${styles[`terminal-input-shell-${mode}`]}`}>
               <input
                 ref={inputRef}
                 type="text"
@@ -1001,26 +1002,26 @@ export default function Terminal() {
                   setSelectedSlashIndex(0);
                 }}
                 onKeyDown={handleKeyDown}
-                className="terminal-input"
+                className={styles['terminal-input']}
                 placeholder={PROMPT_PLACEHOLDER}
                 autoFocus
                 spellCheck={false}
                 aria-label="Terminal input"
               />
 
-              <div className="terminal-input-preview-row" aria-hidden>
-                <span className={`terminal-input-preview-role terminal-input-preview-role-${mode}`}>
+              <div className={styles['terminal-input-preview-row']} aria-hidden>
+                <span className={`${styles['terminal-input-preview-role']} ${styles[`terminal-input-preview-role-${mode}`]}`}>
                   {mode === "slash" ? "Slash" : "Shell"}
                 </span>
-                <span className="terminal-input-preview-mode-word">mode</span>
+                <span className={styles['terminal-input-preview-mode-word']}>mode</span>
               </div>
             </div>
 
             {isMobile && (
-              <div className="terminal-mode-toggle" role="tablist" aria-label="Input mode switcher">
+              <div className={styles['terminal-mode-toggle']} role="tablist" aria-label="Input mode switcher">
                 <button
                   type="button"
-                  className={`terminal-mode-button ${mode === "slash" ? "is-active" : ""}`}
+                  className={`${styles['terminal-mode-button']} ${mode === "slash" ? styles['is-active'] : ""}`}
                   onClick={() => setMode("slash")}
                   aria-selected={mode === "slash"}
                   role="tab"
@@ -1029,7 +1030,7 @@ export default function Terminal() {
                 </button>
                 <button
                   type="button"
-                  className={`terminal-mode-button ${mode === "shell" ? "is-active" : ""}`}
+                  className={`${styles['terminal-mode-button']} ${mode === "shell" ? styles['is-active'] : ""}`}
                   onClick={() => setMode("shell")}
                   aria-selected={mode === "shell"}
                   role="tab"
@@ -1040,31 +1041,31 @@ export default function Terminal() {
             )}
 
             {slashMenuVisible && (
-              <div className="terminal-slash-menu">
+              <div className={styles['terminal-slash-menu']}>
                 {filteredSlashCommands.length > 0 ? (
                   filteredSlashCommands.map((slashCommand, index) => (
                     <button
                       key={slashCommand.trigger}
                       type="button"
-                      className={`terminal-slash-item ${index === selectedSlashIndex ? "terminal-slash-item-active" : ""}`}
+                      className={`${styles['terminal-slash-item']} ${index === selectedSlashIndex ? styles['terminal-slash-item-active'] : ''}`}
                       onMouseDown={(event) => event.preventDefault()}
                       onMouseEnter={() => setSelectedSlashIndex(index)}
                       onClick={() => void runInput(slashCommand.trigger)}
                     >
-                      <span className="terminal-slash-item-trigger">{slashCommand.trigger}</span>
-                      <span className="terminal-slash-item-description">{slashCommand.description}</span>
+                      <span className={styles['terminal-slash-item-trigger']}>{slashCommand.trigger}</span>
+                      <span className={styles['terminal-slash-item-description']}>{slashCommand.description}</span>
                     </button>
                   ))
                 ) : (
-                  <div className="terminal-slash-empty">No commands found.</div>
+                  <div className={styles['terminal-slash-empty']}>No commands found.</div>
                 )}
               </div>
             )}
 
             {!hasStarted && (
               <>
-                <div className="terminal-idle-meta">
-                  <span className="terminal-idle-mode-meta">
+                <div className={styles['terminal-idle-meta']}>
+                  <span className={styles['terminal-idle-mode-meta']}>
                     <span>
                       <strong>{isMobile ? "tap" : "tab"}</strong> switch mode
                     </span>
@@ -1074,8 +1075,8 @@ export default function Terminal() {
                     <strong>type</strong> /help to continue
                   </span>
                 </div>
-                <div className="terminal-idle-tip">
-                  <span className="terminal-idle-tip-dot">●</span>
+                <div className={styles['terminal-idle-tip']}>
+                  <span className={styles['terminal-idle-tip-dot']}>●</span>
                   <span>
                     {isRuntimeLoading
                       ? "Checking session..."
@@ -1087,8 +1088,8 @@ export default function Terminal() {
                   </span>
                 </div>
                 {isAuthenticated && pushNotifications.supported && (
-                  <div className="terminal-idle-tip">
-                    <span className="terminal-idle-tip-dot">●</span>
+                  <div className={styles['terminal-idle-tip']}>
+                    <span className={styles['terminal-idle-tip-dot']}>●</span>
                     <span>
                       Push: {pushNotifications.isSubscribed ? "enabled" : "disabled"} (commands:
                       {" "}/push enable, /push disable, /push test)

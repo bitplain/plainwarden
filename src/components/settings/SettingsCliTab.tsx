@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import styles from "@/styles/settings.module.css";
 
 const CLI_SCALE_KEY = "netden:cli-scale";
 const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
@@ -82,11 +83,11 @@ export default function SettingsCliTab() {
   };
 
   return (
-    <div className="settings-tab-content">
-      <div className="settings-range-block">
-        <div className="settings-tab-row">
-          <span className="settings-tab-label">Размер окна ввода CLI</span>
-          <strong className="settings-tab-value">{formatPercent(scale)}</strong>
+    <div className={styles['settings-tab-content']}>
+      <div className={styles['settings-range-block']}>
+        <div className={styles['settings-tab-row']}>
+          <span className={styles['settings-tab-label']}>Размер окна ввода CLI</span>
+          <strong className={styles['settings-tab-value']}>{formatPercent(scale)}</strong>
         </div>
 
         <input
@@ -96,26 +97,26 @@ export default function SettingsCliTab() {
           step={STEP}
           value={scale}
           onChange={(event) => saveScale(Number(event.target.value))}
-          className="settings-range"
+          className={styles['settings-range']}
         />
 
-        <div className="settings-range-meta">
+        <div className={styles['settings-range-meta']}>
           <span>{formatPercent(MIN)}</span>
           <span>{formatPercent(DEFAULT_SCALE)}</span>
           <span>{formatPercent(MAX)}</span>
         </div>
 
-        <button type="button" onClick={resetScale} className="settings-tab-btn-secondary">
+        <button type="button" onClick={resetScale} className={styles['settings-tab-btn-secondary']}>
           Сбросить размер
         </button>
       </div>
 
-      <div className="settings-range-divider" aria-hidden />
+      <div className={styles['settings-range-divider']} aria-hidden />
 
-      <div className="settings-range-block">
-        <div className="settings-tab-row">
-          <span className="settings-tab-label">Толщина командной строки</span>
-          <strong className="settings-tab-value">{formatStroke(stroke)}</strong>
+      <div className={styles['settings-range-block']}>
+        <div className={styles['settings-tab-row']}>
+          <span className={styles['settings-tab-label']}>Толщина командной строки</span>
+          <strong className={styles['settings-tab-value']}>{formatStroke(stroke)}</strong>
         </div>
 
         <input
@@ -125,16 +126,16 @@ export default function SettingsCliTab() {
           step={STROKE_STEP}
           value={stroke}
           onChange={(event) => saveStroke(Number(event.target.value))}
-          className="settings-range"
+          className={styles['settings-range']}
         />
 
-        <div className="settings-range-meta">
+        <div className={styles['settings-range-meta']}>
           <span>{formatStroke(STROKE_MIN)}</span>
           <span>{formatStroke(DEFAULT_STROKE)}</span>
           <span>{formatStroke(STROKE_MAX)}</span>
         </div>
 
-        <button type="button" onClick={resetStroke} className="settings-tab-btn-secondary">
+        <button type="button" onClick={resetStroke} className={styles['settings-tab-btn-secondary']}>
           Сбросить толщину
         </button>
       </div>

@@ -8,6 +8,7 @@ import SettingsApiTab from "@/components/settings/SettingsApiTab";
 import SettingsGitHubTab from "@/components/settings/SettingsGitHubTab";
 import SettingsTlsTab from "@/components/settings/SettingsTlsTab";
 import SettingsAiThemeTab from "@/components/settings/SettingsAiThemeTab";
+import styles from "@/styles/settings.module.css";
 
 type SettingsTab = "cli" | "ai" | "api" | "github" | "tls";
 
@@ -47,25 +48,25 @@ export default function SettingsPage() {
   return (
     <div
       style={CALENDAR2_LINEAR_VARS}
-      className={`settings-page-shell ${isEmbedded ? "settings-page-shell-embedded" : ""}`}
+      className={`${styles['settings-page-shell']} ${isEmbedded ? styles['settings-page-shell-embedded'] : ''}`}
     >
-      <div className={`settings-page-container ${isEmbedded ? "settings-page-container-embedded" : ""}`}>
+      <div className={`${styles['settings-page-container']} ${isEmbedded ? styles['settings-page-container-embedded'] : ''}`}>
         {/* Header */}
-        <header className="settings-page-header">
-          <div className="settings-page-header-left">
+        <header className={styles['settings-page-header']}>
+          <div className={styles['settings-page-header-left']}>
             {!isEmbedded ? (
-              <Link href="/calendar" className="settings-page-back">
+              <Link href="/calendar" className={styles['settings-page-back']}>
                 ← Календарь
               </Link>
             ) : null}
             <div>
-              <p className="settings-page-kicker">NetDen</p>
-              <h1 className="settings-page-title">Настройки</h1>
+              <p className={styles['settings-page-kicker']}>NetDen</p>
+              <h1 className={styles['settings-page-title']}>Настройки</h1>
             </div>
           </div>
           {!isEmbedded ? (
-            <nav className="settings-page-nav">
-              <Link href="/calendar" className="settings-page-nav-link">
+            <nav className={styles['settings-page-nav']}>
+              <Link href="/calendar" className={styles['settings-page-nav-link']}>
                 Календарь
               </Link>
             </nav>
@@ -73,8 +74,8 @@ export default function SettingsPage() {
         </header>
 
         {/* Tabs */}
-        <div className="settings-page-tabs-row">
-          <div className="settings-page-tabs">
+        <div className={styles['settings-page-tabs-row']}>
+          <div className={styles['settings-page-tabs']}>
             {TAB_OPTIONS.map((tab) => {
               const isActive = tab.id === activeTab;
               return (
@@ -82,7 +83,7 @@ export default function SettingsPage() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`settings-page-tab ${isActive ? "settings-page-tab-active" : ""}`}
+                  className={`${styles['settings-page-tab']} ${isActive ? styles['settings-page-tab-active'] : ''}`}
                 >
                   {tab.label}
                 </button>
@@ -92,7 +93,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Content */}
-        <section className="settings-page-panel">
+        <section className={styles['settings-page-panel']}>
           {renderContent()}
         </section>
       </div>

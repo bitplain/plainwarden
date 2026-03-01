@@ -2,6 +2,7 @@
 
 import { ChangeEvent } from "react";
 import type { AgentSettings as AgentSettingsType } from "@/agent/types";
+import styles from "@/components/Terminal.module.css";
 
 interface AgentSettingsProps {
   value: AgentSettingsType;
@@ -47,41 +48,41 @@ export default function AgentSettings({ value, onChange }: AgentSettingsProps) {
   };
 
   return (
-    <div className="terminal-entry terminal-entry-slash nd-animate-in">
-      <div className="terminal-command-row">
-        <span className="terminal-command-text">Agent settings</span>
+    <div className={`${styles['terminal-entry']} ${styles['terminal-entry-slash']} nd-animate-in`}>
+      <div className={styles['terminal-command-row']}>
+        <span className={styles['terminal-command-text']}>Agent settings</span>
       </div>
-      <div className="terminal-output">
-        <label className="terminal-output-line">
+      <div className={styles['terminal-output']}>
+        <label className={styles['terminal-output-line']}>
           Имя агента
           <input
-            className="terminal-auth-input"
+            className={styles['terminal-auth-input']}
             value={value.profile.name}
             onChange={onNameChange}
             placeholder="Нова"
           />
         </label>
 
-        <label className="terminal-output-line">
+        <label className={styles['terminal-output-line']}>
           Стиль
-          <select className="terminal-auth-input" value={value.profile.style} onChange={onStyleChange}>
+          <select className={styles['terminal-auth-input']} value={value.profile.style} onChange={onStyleChange}>
             <option value="friendly">friendly</option>
             <option value="balanced">balanced</option>
             <option value="formal">formal</option>
           </select>
         </label>
 
-        <label className="terminal-output-line">
+        <label className={styles['terminal-output-line']}>
           Роль пользователя
           <input
-            className="terminal-auth-input"
+            className={styles['terminal-auth-input']}
             value={value.role ?? ""}
             onChange={onRoleChange}
             placeholder="Team lead"
           />
         </label>
 
-        <label className="terminal-output-line">
+        <label className={styles['terminal-output-line']}>
           <input type="checkbox" checked={value.profile.adaptTone} onChange={onToneToggle} />
           Адаптировать тон к пользователю
         </label>

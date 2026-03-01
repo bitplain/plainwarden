@@ -4,6 +4,7 @@ import type { AgentActionProposal } from "@/agent/types";
 import type { AgentUIMessage } from "@/hooks/useAgent";
 import ConfirmAction from "@/components/ConfirmAction";
 import StreamingMessage from "@/components/StreamingMessage";
+import styles from "@/components/Terminal.module.css";
 
 interface AgentConsoleProps {
   messages: AgentUIMessage[];
@@ -23,20 +24,20 @@ export default function AgentConsole({
   }
 
   return (
-    <div className="terminal-entry terminal-entry-slash nd-animate-in">
-      <div className="terminal-command-row">
-        <span className="terminal-command-text">AI Agent</span>
+    <div className={`${styles['terminal-entry']} ${styles['terminal-entry-slash']} nd-animate-in`}>
+      <div className={styles['terminal-command-row']}>
+        <span className={styles['terminal-command-text']}>AI Agent</span>
       </div>
 
-      <div className="terminal-output">
+      <div className={styles['terminal-output']}>
         {messages.map((message) => (
-          <div key={message.id} className="terminal-output-line">
+          <div key={message.id} className={styles['terminal-output-line']}>
             <strong>{message.role === "user" ? "you" : "agent"}:</strong>{" "}
             <StreamingMessage text={message.text} isStreaming={Boolean(message.streaming)} />
           </div>
         ))}
 
-        {isStreaming ? <div className="terminal-output-line">Streaming...</div> : null}
+        {isStreaming ? <div className={styles['terminal-output-line']}>Streaming...</div> : null}
       </div>
 
       {pendingAction ? (

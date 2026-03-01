@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import styles from "@/styles/settings.module.css";
 
 type LogEntry = {
   at: string;
@@ -29,10 +30,10 @@ type AcmeStatusPayload = {
 };
 
 const STATUS_VIEW: Record<AcmeStatusPayload["status"], { label: string; cls: string }> = {
-  idle: { label: "Не запущено", cls: "acme-badge acme-badge-idle" },
-  issuing: { label: "Выпуск", cls: "acme-badge acme-badge-issuing" },
-  active: { label: "Активно", cls: "acme-badge acme-badge-active" },
-  failed: { label: "Ошибка", cls: "acme-badge acme-badge-failed" },
+  idle: { label: "Не запущено", cls: `${styles['acme-badge']} ${styles['acme-badge-idle']}` },
+  issuing: { label: "Выпуск", cls: `${styles['acme-badge']} ${styles['acme-badge-issuing']}` },
+  active: { label: "Активно", cls: `${styles['acme-badge']} ${styles['acme-badge-active']}` },
+  failed: { label: "Ошибка", cls: `${styles['acme-badge']} ${styles['acme-badge-failed']}` },
 };
 
 const STAGE_LABEL: Record<AcmeStatusPayload["stage"], string> = {
@@ -45,10 +46,10 @@ const STAGE_LABEL: Record<AcmeStatusPayload["stage"], string> = {
 };
 
 const RENEWAL_VIEW: Record<AcmeStatusPayload["renewalState"], { label: string; cls: string }> = {
-  unknown: { label: "Неизвестно", cls: "acme-badge acme-badge-idle" },
-  healthy: { label: "Ок", cls: "acme-badge acme-badge-active" },
-  renewal_due: { label: "Скоро renewal", cls: "acme-badge acme-badge-issuing" },
-  expired: { label: "Истек", cls: "acme-badge acme-badge-failed" },
+  unknown: { label: "Неизвестно", cls: `${styles['acme-badge']} ${styles['acme-badge-idle']}` },
+  healthy: { label: "Ок", cls: `${styles['acme-badge']} ${styles['acme-badge-active']}` },
+  renewal_due: { label: "Скоро renewal", cls: `${styles['acme-badge']} ${styles['acme-badge-issuing']}` },
+  expired: { label: "Истек", cls: `${styles['acme-badge']} ${styles['acme-badge-failed']}` },
 };
 
 function formatDate(iso: string | null): string {
@@ -200,18 +201,18 @@ export default function SettingsTlsTab() {
   }
 
   return (
-    <div className="settings-tab-content">
-      <div className="settings-tab-row">
-        <span className="settings-tab-label">Статус</span>
+    <div className={styles['settings-tab-content']}>
+      <div className={styles['settings-tab-row']}>
+        <span className={styles['settings-tab-label']}>Статус</span>
         <span className={badge.cls}>{badge.label}</span>
       </div>
 
-      <p className="settings-tab-muted">
+      <p className={styles['settings-tab-muted']}>
         Один раз выпускает сертификат для домена и дальше автоматически продлевается Caddy.
       </p>
 
-      <div className="settings-grid">
-        <label className="settings-field">
+      <div className={styles['settings-grid']}>
+        <label className={styles['settings-field']}>
           <span>Домен</span>
           <input
             value={domain}
@@ -221,11 +222,11 @@ export default function SettingsTlsTab() {
             }}
             placeholder="site.example.com"
             disabled={busy || loading}
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
           />
         </label>
 
-        <label className="settings-field">
+        <label className={styles['settings-field']}>
           <span>Email для ACME</span>
           <input
             value={email}
@@ -235,16 +236,16 @@ export default function SettingsTlsTab() {
             }}
             placeholder="admin@example.com"
             disabled={busy || loading}
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
           />
         </label>
 
-        <div className="acme-actions">
+        <div className={styles['acme-actions']}>
           <button
             type="button"
             onClick={() => void saveConfig()}
             disabled={busy || loading || !domain.trim() || !email.trim()}
-            className="settings-tab-btn"
+            className={styles['settings-tab-btn']}
           >
             Сохранить
           </button>
@@ -252,7 +253,7 @@ export default function SettingsTlsTab() {
             type="button"
             onClick={() => void issueCertificate()}
             disabled={busy || loading || !domain.trim() || !email.trim()}
-            className="settings-tab-btn"
+            className={styles['settings-tab-btn']}
           >
             {busy ? "Выпуск…" : "Выпустить / обновить сертификат"}
           </button>
@@ -266,16 +267,16 @@ export default function SettingsTlsTab() {
               );
             }}
             disabled={busy || loading}
-            className="settings-tab-btn-secondary"
+            className={styles['settings-tab-btn-secondary']}
           >
             {loading ? "Обновление…" : "Обновить статус"}
           </button>
         </div>
       </div>
 
-      <div className="acme-meta">
+      <div className={styles['acme-meta']}>
         <div>Стадия: {status ? STAGE_LABEL[status.stage] : "—"}</div>
-        <div className="acme-meta-row">
+        <div className={styles['acme-meta-row']}>
           <span>Монитор renew:</span>
           <span className={renewalBadge.cls}>{renewalBadge.label}</span>
         </div>
@@ -287,19 +288,19 @@ export default function SettingsTlsTab() {
         <div>Обновлено: {status ? formatDate(status.updatedAt) : "—"}</div>
       </div>
 
-      {status ? <div className="acme-note">{status.renewalMessage}</div> : null}
+      {status ? <div className={styles['acme-note']}>{status.renewalMessage}</div> : null}
 
       {status?.logs?.length ? (
-        <div className="acme-log">
-          <div className="acme-log-title">Журнал выпуска</div>
-          <div className="acme-log-list">
+        <div className={styles['acme-log']}>
+          <div className={styles['acme-log-title']}>Журнал выпуска</div>
+          <div className={styles['acme-log-list']}>
             {status.logs
               .slice()
               .reverse()
               .map((entry, idx) => (
                 <div
                   key={`${entry.at}-${idx}`}
-                  className={entry.level === "error" ? "acme-log-line acme-log-line-error" : "acme-log-line"}
+                  className={entry.level === "error" ? `${styles['acme-log-line']} ${styles['acme-log-line-error']}` : styles['acme-log-line']}
                 >
                   [{formatDate(entry.at)}] {entry.message}
                 </div>
@@ -308,9 +309,9 @@ export default function SettingsTlsTab() {
         </div>
       ) : null}
 
-      {msg ? <div className="acme-message">{msg}</div> : null}
-      {status?.lastError ? <div className="acme-error">{status.lastError}</div> : null}
-      {err ? <div className="acme-error">{err}</div> : null}
+      {msg ? <div className={styles['acme-message']}>{msg}</div> : null}
+      {status?.lastError ? <div className={styles['acme-error']}>{status.lastError}</div> : null}
+      {err ? <div className={styles['acme-error']}>{err}</div> : null}
     </div>
   );
 }
