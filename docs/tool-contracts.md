@@ -233,87 +233,6 @@ Each module exposes a set of tools that AI Core can invoke. Tools follow the Ope
 
 ---
 
-## Journal Module
-
-### `journal_list`
-- **Mutating**: false
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "date": { "type": "string", "description": "Exact date YYYY-MM-DD" },
-    "dateFrom": { "type": "string" },
-    "dateTo": { "type": "string" },
-    "q": { "type": "string" },
-    "tag": { "type": "string" }
-  }
-}
-```
-
-### `journal_get`
-- **Mutating**: false
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "required": ["entryId"],
-  "properties": {
-    "entryId": { "type": "string" }
-  }
-}
-```
-
-### `journal_create`
-- **Mutating**: true
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "required": ["title", "date"],
-  "properties": {
-    "title": { "type": "string" },
-    "body": { "type": "string" },
-    "date": { "type": "string", "description": "Date YYYY-MM-DD" },
-    "mood": { "type": "string" },
-    "tags": { "type": "array", "items": { "type": "string" } }
-  }
-}
-```
-
-### `journal_update`
-- **Mutating**: true
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "required": ["entryId"],
-  "properties": {
-    "entryId": { "type": "string" },
-    "title": { "type": "string" },
-    "body": { "type": "string" },
-    "date": { "type": "string" },
-    "mood": { "type": "string" },
-    "tags": { "type": "array", "items": { "type": "string" } }
-  }
-}
-```
-
-### `journal_delete`
-- **Mutating**: true
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "required": ["entryId"],
-  "properties": {
-    "entryId": { "type": "string" }
-  }
-}
-```
-
----
-
 ## Cross-Module Link Tools
 
 ### `items_link`
@@ -358,24 +277,6 @@ Each module exposes a set of tools that AI Core can invoke. Tools follow the Ope
   "required": ["itemId"],
   "properties": {
     "itemId": { "type": "string" }
-  }
-}
-```
-
----
-
-## Daily Overview Tool
-
-### `daily_overview`
-- **Mutating**: false
-- **Description**: Get daily planner overview for tasks and deadlines
-- **Input Schema**:
-```json
-{
-  "type": "object",
-  "properties": {
-    "startDate": { "type": "string" },
-    "days": { "type": "number" }
   }
 }
 ```

@@ -1,7 +1,7 @@
 import type { CalendarEvent, KanbanCard, Note } from "@/lib/types";
 
 export type AgentLanguage = "ru" | "en";
-export type AgentModule = "calendar" | "kanban" | "notes" | "daily";
+export type AgentModule = "calendar" | "kanban" | "notes";
 export type AgentIntentType = "query" | "action" | "navigate" | "clarify" | "unknown";
 export type AgentActionKind = "create" | "update" | "delete" | "move" | "generate";
 
@@ -68,15 +68,6 @@ export interface AgentTurnInput {
   memory: AgentMemoryItem[];
   settings: AgentSettings;
   actionDecision?: AgentActionDecision;
-}
-
-export interface DailyItem {
-  id: string;
-  title: string;
-  date: string;
-  source: "calendar" | "kanban";
-  status: "pending" | "done";
-  linkedEventId?: string;
 }
 
 export interface UnifiedEntity {

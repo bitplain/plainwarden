@@ -86,7 +86,7 @@ describe("buildCalendar2UrlQuery", () => {
       currentSearchParams: new URLSearchParams("embedded=1&legacy=1"),
       state: {
         q: " standup ",
-        tab: "planner",
+        tab: "kanban",
         view: "day",
         category: "pending",
         dateFrom: "2026-02-01",
@@ -99,7 +99,7 @@ describe("buildCalendar2UrlQuery", () => {
     expect(params.get("embedded")).toBe("1");
     expect(params.get("legacy")).toBe("1");
     expect(params.get("q")).toBe("standup");
-    expect(params.get("tab")).toBe("planner");
+    expect(params.get("tab")).toBe("kanban");
     expect(params.get("view")).toBe("day");
     expect(params.get("category")).toBe("pending");
     expect(params.get("dateFrom")).toBe("2026-02-01");

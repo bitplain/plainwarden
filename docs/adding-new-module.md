@@ -85,7 +85,7 @@ import { listForUser, createForUser } from "@/lib/server/<name>-db";
 export const myTools: AgentToolDescriptor[] = [
   {
     name: "my_module_list",
-    module: "daily",  // or appropriate AgentModule
+    module: "calendar",  // or appropriate AgentModule
     mutating: false,
     description: "List items",
     parameters: {

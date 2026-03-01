@@ -139,7 +139,7 @@ async function listLinks(
 export const linkTools: AgentToolDescriptor[] = [
   {
     name: "items_link",
-    module: "daily",
+    module: "calendar",
     mutating: true,
     description: "Create a link between two items (cross-module)",
     parameters: {
@@ -161,7 +161,7 @@ export const linkTools: AgentToolDescriptor[] = [
   },
   {
     name: "items_unlink",
-    module: "daily",
+    module: "calendar",
     mutating: true,
     description: "Remove a link between two items",
     parameters: {
@@ -180,7 +180,7 @@ export const linkTools: AgentToolDescriptor[] = [
   },
   {
     name: "items_list_links",
-    module: "daily",
+    module: "calendar",
     mutating: false,
     description: "List all links for a given item",
     parameters: {

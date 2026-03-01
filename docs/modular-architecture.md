@@ -11,7 +11,6 @@ src/
 │   ├── calendar/      # Calendar events module
 │   ├── kanban/        # Kanban boards (Tasks) module
 │   ├── notes/         # Notes module
-│   ├── journal/       # Journal / daily log module
 │   ├── auth/          # Authentication module
 │   ├── settings/      # User settings module
 │   ├── setup/         # Setup wizard module
@@ -20,8 +19,6 @@ src/
 │   ├── calendar.ts    # Calendar CRUD tools
 │   ├── kanban.ts      # Kanban CRUD tools
 │   ├── notes.ts       # Notes CRUD tools
-│   ├── journal.ts     # Journal CRUD tools
-│   ├── daily.ts       # Daily overview tool
 │   ├── links.ts       # Cross-module ItemLink tools
 │   └── index.ts       # Tool registry aggregator
 ├── agent/             # AI Core (AgentCore, intent, streaming, etc.)
@@ -37,7 +34,6 @@ src/
 │       ├── events/    # Calendar API
 │       ├── kanban/    # Kanban API
 │       ├── notes/     # Notes API
-│       ├── journal/   # Journal API
 │       ├── agent/     # AI Agent API
 │       └── stream/    # SSE streaming endpoint
 ├── lib/               # Shared utilities, DB access, types
@@ -65,12 +61,6 @@ src/
 - **DB**: `Note`, `NoteVersion`, `NoteLink`, `NoteEventLink` tables
 - **Tools**: `notes_search`, `notes_create`, `notes_update`, `notes_delete`
 - **API**: `/api/notes`
-
-### Journal
-- **Entities**: JournalEntry (daily log entries with mood and tags)
-- **DB**: `JournalEntry` table
-- **Tools**: `journal_list`, `journal_get`, `journal_create`, `journal_update`, `journal_delete`
-- **API**: `/api/journal`
 
 ## Cross-Module Data Model
 

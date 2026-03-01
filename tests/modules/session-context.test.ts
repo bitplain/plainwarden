@@ -81,7 +81,7 @@ describe("session context", () => {
     logAction({
       id: "a2",
       sessionId: "sess-b",
-      toolName: "journal_create",
+      toolName: "notes_create",
       args: {},
       result: { ok: true },
       createdAt: new Date().toISOString(),

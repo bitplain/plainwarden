@@ -1,7 +1,5 @@
 import type { AgentModule, AgentToolDescriptor, ToolExecutionContext, ToolResult } from "@/agent/types";
 import { calendarTools } from "@/tools/calendar";
-import { dailyTools } from "@/tools/daily";
-import { journalTools } from "@/tools/journal";
 import { kanbanTools } from "@/tools/kanban";
 import { linkTools } from "@/tools/links";
 import { notesTools } from "@/tools/notes";
@@ -10,8 +8,6 @@ const ALL_TOOLS: AgentToolDescriptor[] = [
   ...calendarTools,
   ...kanbanTools,
   ...notesTools,
-  ...dailyTools,
-  ...journalTools,
   ...linkTools,
 ];
 

@@ -15,7 +15,6 @@ import type {
   AgentTurnInput,
   AgentTurnResult,
   AgentUserContext,
-  DailyItem,
 } from "@/agent/types";
 import { detectLanguageCode } from "@/hooks/useLanguageDetect";
 import type { CalendarEvent, KanbanCard, Note } from "@/lib/types";
@@ -203,7 +202,7 @@ export class AgentCore {
     const dateFrom = format(now, "yyyy-MM-dd");
     const dateTo = format(addDays(now, 14), "yyyy-MM-dd");
 
-    const [calendar, kanban, notes, daily] = await Promise.all([
+    const [calendar, kanban, notes] = await Promise.all([
       modules.includes("calendar")
         ? executeTool("calendar_list_events", { dateFrom, dateTo, limit: 50 }, {
             userId: this.user.userId,
@@ -220,28 +219,17 @@ export class AgentCore {
             { userId: this.user.userId, nowIso: this.user.nowIso },
           )
         : Promise.resolve({ ok: true, data: [] }),
-      modules.includes("daily")
-        ? executeTool("daily_overview", { startDate: dateFrom, days: 14 }, {
-            userId: this.user.userId,
-            nowIso: this.user.nowIso,
-          })
-        : Promise.resolve({ ok: true, data: { items: [] } }),
     ]);
 
     const events = Array.isArray(calendar.data) ? (calendar.data as CalendarEvent[]) : [];
     const cards = Array.isArray(kanban.data) ? (kanban.data as KanbanCard[]) : [];
     const noteItems = Array.isArray(notes.data) ? (notes.data as Note[]) : [];
-    const dailyItems =
-      daily.data && typeof daily.data === "object" && Array.isArray((daily.data as { items?: unknown[] }).items)
-        ? ((daily.data as { items: DailyItem[] }).items ?? [])
-        : [];
 
     return buildUnifiedContext(
       {
         events,
         cards,
         notes: noteItems,
-        daily: dailyItems,
       },
       { maxChars: 2400 },
     );
@@ -280,7 +268,7 @@ export class AgentCore {
           language === "ru"
             ? `Не удалось выполнить действие: ${result.error ?? "unknown"}`
             : `Could not execute action: ${result.error ?? "unknown"}`,
-        usedModules: ["calendar", "kanban", "notes", "daily"],
+        usedModules: ["calendar", "kanban", "notes"],
       };
     }
 
@@ -289,7 +277,7 @@ export class AgentCore {
         language === "ru"
           ? `Готово. Действие выполнено успешно.${syncReport}`
           : `Done. Action completed successfully.${syncReport}`,
-      usedModules: ["calendar", "kanban", "notes", "daily"],
+      usedModules: ["calendar", "kanban", "notes"],
     };
   }
 

@@ -12,7 +12,6 @@ const NAVIGATION_PATTERNS: Array<{ route: string; regex: RegExp[] }> = [
   { route: "/calendar", regex: [/\b(calendar|календар)\b/i] },
   { route: "/calendar?tab=kanban", regex: [/\b(kanban|board|доска|канбан)\b/i] },
   { route: "/calendar?tab=notes", regex: [/\b(notes?|заметк)\b/i] },
-  { route: "/calendar?tab=planner", regex: [/\b(daily|planner|today|tomorrow|ежеднев|сегодня|завтра)\b/i] },
   { route: "/settings", regex: [/\b(settings?|настройк)\b/i] },
 ];
 
@@ -20,7 +19,6 @@ const MODULE_PATTERNS: Array<{ module: AgentModule; regex: RegExp[] }> = [
   { module: "calendar", regex: [/\b(calendar|event|meeting|календар|событи|расписан|deadline)\b/i] },
   { module: "kanban", regex: [/\b(kanban|board|card|column|канбан|доск|карточк|статус)\b/i] },
   { module: "notes", regex: [/\b(note|notes|wiki|заметк|конспект)\b/i] },
-  { module: "daily", regex: [/\b(daily|planner|routine|today|tomorrow|ежеднев|сегодня|завтра)\b/i] },
 ];
 
 function testAny(regexList: RegExp[], message: string): boolean {
@@ -29,14 +27,14 @@ function testAny(regexList: RegExp[], message: string): boolean {
 
 export function selectRelevantModules(message: string): AgentModule[] {
   const normalized = message.trim();
-  if (!normalized) return ["daily"];
+  if (!normalized) return ["calendar"];
 
   const selected = MODULE_PATTERNS.filter((rule) => testAny(rule.regex, normalized)).map(
     (rule) => rule.module,
   );
 
   if (selected.length === 0) {
-    return ["daily", "calendar", "kanban", "notes"];
+    return ["calendar", "kanban", "notes"];
   }
 
   return [...new Set(selected)];

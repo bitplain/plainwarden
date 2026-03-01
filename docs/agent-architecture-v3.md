@@ -20,12 +20,10 @@ flowchart LR
   TOOLS --> CAL[calendar.ts]
   TOOLS --> KAN[kanban.ts]
   TOOLS --> NOTE[notes.ts]
-  TOOLS --> DAI[daily.ts]
 
   CAL --> DB[(PostgreSQL via Prisma)]
   KAN --> DB
   NOTE --> DB
-  DAI --> DB
 
   CORE --> CTX[contextBuilder unified context]
   CORE --> ACT[(pending actions store)]
@@ -71,7 +69,7 @@ flowchart LR
 
 - Canonical ID: `globalEntityId`.
   - `event:<eventId>` для сущностей, связанных с календарным событием.
-  - fallback: `kanban:<cardId>`, `note:<noteId>`, `daily:<id>`.
+  - fallback: `kanban:<cardId>`, `note:<noteId>`.
 - При `calendar_*` мутациях выполняется синхронизация linked данных:
   - `KanbanCardEventLink`: обновление `title/dueDate` карточек.
   - `NoteEventLink`: обновление title заметок.
@@ -125,8 +123,8 @@ flowchart LR
 - Exit criteria: стабильный стрим + корректные read-ответы.
 
 ### Этап 2
-- Scope: read по всем 4 модулям, базовый cross-module ответ.
-- Dependencies: tools calendar/kanban/notes/daily.
+- Scope: read по всем 3 модулям, базовый cross-module ответ.
+- Dependencies: tools calendar/kanban/notes.
 - Tests: module relevance + context fusion.
 - Exit criteria: корректные multi-module ответы.
 

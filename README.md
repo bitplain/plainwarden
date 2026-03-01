@@ -1,6 +1,6 @@
 # NetDen
 
-Mobile-first calendar workspace with AI assistant, Kanban, Notes, Daily planner, and settings.
+Mobile-first calendar workspace with AI assistant, Kanban, Notes, and settings.
 Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 
 ## Что реализовано в v1
@@ -30,7 +30,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `/setup` — мастер первичной инициализации
 - `/login` — вход
 - `/settings` — настройки интерфейса CLI (приватно)
-- `/calendar` — календарь (вкладки: календарь, ежедневник, канбан, заметки, AI)
+- `/calendar` — календарь (вкладки: календарь, канбан, заметки, AI)
 - `POST /api/terminal/run` — запуск allowlisted shell-команд
 - `GET|POST /api/events`
 - `PATCH|DELETE /api/events/:id`

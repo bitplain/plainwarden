@@ -1,11 +1,10 @@
-import type { DailyItem, UnifiedContext, UnifiedEntity } from "@/agent/types";
+import type { UnifiedContext, UnifiedEntity } from "@/agent/types";
 import type { CalendarEvent, KanbanCard, Note } from "@/lib/types";
 
 interface BuildContextInput {
   events: CalendarEvent[];
   cards: KanbanCard[];
   notes: Note[];
-  daily: DailyItem[];
 }
 
 interface BuildContextOptions {
@@ -91,34 +90,6 @@ export function buildUnifiedContext(
       event: undefined,
       cards: [],
       notes: [note],
-    });
-  }
-
-  for (const dailyItem of input.daily) {
-    const globalEntityId = dailyItem.linkedEventId
-      ? toEventGlobalId(dailyItem.linkedEventId)
-      : `daily:${dailyItem.id}`;
-    const existing = entityMap.get(globalEntityId);
-    if (existing) {
-      pushSource(existing, "daily");
-      if (!existing.date) {
-        existing.date = dailyItem.date;
-      }
-      if (!existing.status) {
-        existing.status = dailyItem.status;
-      }
-      continue;
-    }
-
-    entityMap.set(globalEntityId, {
-      globalEntityId,
-      title: dailyItem.title,
-      sources: ["daily"],
-      date: dailyItem.date,
-      status: dailyItem.status,
-      event: undefined,
-      cards: [],
-      notes: [],
     });
   }
 

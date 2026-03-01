@@ -4,7 +4,7 @@
 
 **Goal:** Встроить AI-агента поверх существующей консоли NetDen с tool-calling, стримингом, подтверждением мутаций, персонализацией и cross-module контекстом.
 
-**Architecture:** Добавляется серверный оркестратор `AgentCore` + модульные tools (calendar/kanban/notes/daily) + SSE-стрим route. Текущий `Terminal` сохраняется, интеграция делается точечно: не-slash ввод уходит в агент, мутации подтверждаются отдельным UI-компонентом.
+**Architecture:** Добавляется серверный оркестратор `AgentCore` + модульные tools (calendar/kanban/notes) + SSE-стрим route. Текущий `Terminal` сохраняется, интеграция делается точечно: не-slash ввод уходит в агент, мутации подтверждаются отдельным UI-компонентом.
 
 **Tech Stack:** Next.js App Router, React 19, TypeScript strict, Prisma, OpenRouter Chat Completions API (tool calling), SSE.
 
@@ -41,7 +41,6 @@ Run: `npm test -- tests/agent/language-and-intent.test.ts tests/agent/context-bu
 - Create: `src/tools/calendar.ts`
 - Create: `src/tools/kanban.ts`
 - Create: `src/tools/notes.ts`
-- Create: `src/tools/daily.ts`
 - Create: `src/tools/index.ts`
 
 **Step 1: Добавить read/mutate операции с проверкой владельца (userId).**
