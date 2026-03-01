@@ -66,7 +66,6 @@ body {
 
 .cal2-cell-drop-trace {
   position: relative;
-  overflow: clip;
 }
 
 .cal2-cell-drop-trace::before {

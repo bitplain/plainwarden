@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "motion/react";
@@ -65,16 +65,26 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
   onMoveEvent,
 }: WeekDayColumnProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const dragCountRef = useRef(0);
 
   return (
     <section
-      onDragOver={(e) => {
+      onDragEnter={(e) => {
         e.preventDefault();
+        dragCountRef.current++;
         if (!isDragOver) setIsDragOver(true);
       }}
-      onDragLeave={() => setIsDragOver(false)}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={() => {
+        dragCountRef.current--;
+        if (dragCountRef.current <= 0) {
+          dragCountRef.current = 0;
+          setIsDragOver(false);
+        }
+      }}
       onDrop={(e) => {
         e.preventDefault();
+        dragCountRef.current = 0;
         setIsDragOver(false);
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
@@ -88,7 +98,7 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ contain: "layout style" }}
+      style={{ contain: "layout style paint" }}
     >
       <button
         type="button"

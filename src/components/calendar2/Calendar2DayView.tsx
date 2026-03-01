@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "motion/react";
@@ -67,17 +67,27 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
   onMoveEvent,
 }: DayTimeSlotProps) {
   const [isDragOver, setIsDragOver] = useState(false);
+  const dragCountRef = useRef(0);
   const timeStr = format(slot, "HH:mm");
 
   return (
     <div
-      onDragOver={(e) => {
+      onDragEnter={(e) => {
         e.preventDefault();
+        dragCountRef.current++;
         if (!isDragOver) setIsDragOver(true);
       }}
-      onDragLeave={() => setIsDragOver(false)}
+      onDragOver={(e) => e.preventDefault()}
+      onDragLeave={() => {
+        dragCountRef.current--;
+        if (dragCountRef.current <= 0) {
+          dragCountRef.current = 0;
+          setIsDragOver(false);
+        }
+      }}
       onDrop={(e) => {
         e.preventDefault();
+        dragCountRef.current = 0;
         setIsDragOver(false);
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
@@ -94,7 +104,7 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
       ]
         .filter(Boolean)
         .join(" ")}
-      style={{ contain: "layout style" }}
+      style={{ contain: "layout style paint" }}
     >
       <div className="pt-1 text-[11px] font-medium text-[var(--cal2-text-secondary)]">
         {timeStr}
