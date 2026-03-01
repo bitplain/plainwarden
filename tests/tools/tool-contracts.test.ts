@@ -55,15 +55,9 @@ describe("tool contracts validation", () => {
     expect(names).toContain("notes_delete");
   });
 
-  it("daily/journal tools are present", () => {
-    const dailyTools = getToolsByModules(["daily"]);
-    const names = dailyTools.map((t) => t.name);
-    expect(names).toContain("daily_overview");
-    expect(names).toContain("journal_list");
-    expect(names).toContain("journal_get");
-    expect(names).toContain("journal_create");
-    expect(names).toContain("journal_update");
-    expect(names).toContain("journal_delete");
+  it("link tools are present", () => {
+    const calendarTools = getToolsByModules(["calendar"]);
+    const names = calendarTools.map((t) => t.name);
     expect(names).toContain("items_link");
     expect(names).toContain("items_unlink");
     expect(names).toContain("items_list_links");
@@ -74,8 +68,6 @@ describe("tool contracts validation", () => {
     expect(isMutatingTool("calendar_create_event")).toBe(true);
     expect(isMutatingTool("calendar_update_event")).toBe(true);
     expect(isMutatingTool("calendar_delete_event")).toBe(true);
-    expect(isMutatingTool("journal_list")).toBe(false);
-    expect(isMutatingTool("journal_create")).toBe(true);
     expect(isMutatingTool("items_link")).toBe(true);
     expect(isMutatingTool("items_list_links")).toBe(false);
   });
@@ -95,9 +87,9 @@ describe("tool contracts validation", () => {
   });
 
   it("getToolDescriptor returns correct tool", () => {
-    const tool = getToolDescriptor("journal_create");
+    const tool = getToolDescriptor("calendar_create_event");
     expect(tool).toBeDefined();
-    expect(tool?.name).toBe("journal_create");
+    expect(tool?.name).toBe("calendar_create_event");
     expect(tool?.mutating).toBe(true);
   });
 

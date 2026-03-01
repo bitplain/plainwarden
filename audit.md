@@ -21,7 +21,6 @@
   - `src/components/calendar2/Calendar2MonthView.tsx`
   - `src/components/calendar2/Calendar2WeekView.tsx`
   - `src/components/calendar2/Calendar2DayView.tsx`
-  - `src/components/calendar2/DailyPlanner.tsx`
   - `src/components/calendar2/KanbanBoard.tsx`
   - `src/components/calendar2/NotesPanel.tsx`
   - `src/components/calendar2/EventModal2.tsx`
@@ -89,7 +88,7 @@
 - Приоритет: средняя.
 
 7) **Обработка времени без таймзон**
-- Локация: весь calendar2; ключевые: `Calendar2.tsx` (toDayStart), `calendar2-url-state.ts`, `date-utils.ts`, `DailyPlanner.tsx`.
+- Локация: весь calendar2; ключевые: `Calendar2.tsx` (toDayStart), `calendar2-url-state.ts`, `date-utils.ts`.
 - Симптом: даты собираются из строк `YYYY-MM-DD` и `new Date(...)` без таймзон. `toDayStart` использует локальную зону. При переходах DST/таймзоны возможны смещения (особенно если пользователь меняет TZ в системе).
 - Влияние: редкие смещения дней, неверное отображение даты в календаре.
 - Рекомендация: фиксировать формат (локальная зона как источник правды) и явно документировать, либо перейти на timezone‑aware обработку (date-fns-tz) в критичных местах.
@@ -135,8 +134,6 @@
   - Используются функции date-fns в `src/components/calendar2/date-utils.ts` (month grid, week dates, shiftAnchorDate) — логика корректна, but TZ‑чувствительна к локальному времени.
 - Переходы DST/таймзоны
   - Используется локальная зона, без TZ‑коррекции. Возможны редкие сдвиги дня при смене TZ.
-- Временные блоки в DailyPlanner
-  - Сравнение часов по `startTime`/`endTime` без минут — корректно для hour‑granularity, но если будут блоки с не‑часовыми значениями, логика станет некорректной.
 
 **API контракты и типизация**
 - `UpdateEventInput.revision` поддержан в типах и сервере, но не используется клиентом (см. проблему №4).

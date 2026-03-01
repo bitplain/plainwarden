@@ -49,7 +49,7 @@ export default function Calendar2AiPanel() {
         <div>
           <h2 className="text-[14px] font-semibold text-[var(--cal2-text-primary)]">AI-помощник</h2>
           <p className="mt-1 text-[12px] text-[var(--cal2-text-secondary)]">
-            Работает с календарём, ежедневником, канбаном и заметками. Деструктивные действия требуют подтверждения.
+            Работает с календарём, канбаном и заметками. Деструктивные действия требуют подтверждения.
           </p>
         </div>
         <div className="text-[11px] text-[var(--cal2-text-secondary)]">

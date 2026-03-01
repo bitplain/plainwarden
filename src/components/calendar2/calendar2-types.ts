@@ -1,7 +1,7 @@
 import type { CalendarEvent } from "@/lib/types";
 
 export type Calendar2View = "month" | "week" | "day";
-export type Calendar2Tab = "calendar" | "planner" | "kanban" | "notes" | "ai";
+export type Calendar2Tab = "calendar" | "kanban" | "notes" | "ai";
 
 export type TaskPriority = "urgent" | "high" | "medium" | "low";
 
@@ -27,17 +27,6 @@ export interface Note {
   linkedEventId?: string;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface TimeBlock {
-  id: string;
-  date: string;
-  startTime: string;
-  endTime: string;
-  title: string;
-  description: string;
-  isRecurring: boolean;
-  recurringDays?: number[];
 }
 
 export interface CalendarCategory {

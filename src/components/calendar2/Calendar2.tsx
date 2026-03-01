@@ -32,7 +32,6 @@ import Calendar2Sidebar from "./Calendar2Sidebar";
 import Calendar2MonthView from "./Calendar2MonthView";
 import Calendar2WeekView from "./Calendar2WeekView";
 import Calendar2DayView from "./Calendar2DayView";
-import DailyPlanner from "./DailyPlanner";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
 import Calendar2AiPanel from "./Calendar2AiPanel";
@@ -573,19 +572,6 @@ export default function Calendar2() {
                 onMoveEvent={handleMoveEvent}
               />
             )}
-          </div>
-        );
-      case "planner":
-        return (
-          <div className="min-h-0 flex-1">
-            <DailyPlanner
-              anchorDate={anchorDate}
-              events={allSorted}
-              timeBlocks={localStore.timeBlocks}
-              onAddTimeBlock={localStore.addTimeBlock}
-              onDeleteTimeBlock={localStore.deleteTimeBlock}
-              onSelectEvent={setSelectedEventId}
-            />
           </div>
         );
       case "kanban":

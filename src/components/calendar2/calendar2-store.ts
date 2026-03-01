@@ -10,13 +10,11 @@ import type {
   KanbanColumn,
   Note,
   TaskPriority,
-  TimeBlock,
 } from "./calendar2-types";
 
 interface Calendar2LocalState {
   kanbanCards: KanbanCard[];
   notes: Note[];
-  timeBlocks: TimeBlock[];
   categories: CalendarCategory[];
   notifications: AppNotification[];
   auditLog: AuditEntry[];
@@ -143,15 +141,13 @@ function isValidState(data: unknown): data is Calendar2LocalState {
   const obj = data as Record<string, unknown>;
   return (
     Array.isArray(obj.kanbanCards) &&
-    Array.isArray(obj.notes) &&
-    Array.isArray(obj.timeBlocks)
+    Array.isArray(obj.notes)
   );
 }
 
 const EMPTY_STATE: Calendar2LocalState = {
   kanbanCards: [],
   notes: [],
-  timeBlocks: [],
   categories: [],
   notifications: [],
   auditLog: [],
@@ -317,29 +313,6 @@ export function useCalendar2Store() {
     }));
   }, []);
 
-  const addTimeBlock = useCallback(
-    (input: Omit<TimeBlock, "id">) => {
-      const block: TimeBlock = { id: generateId(), ...input };
-      setState((prev) => ({ ...prev, timeBlocks: [...prev.timeBlocks, block] }));
-      return block;
-    },
-    [],
-  );
-
-  const updateTimeBlock = useCallback((id: string, updates: Partial<Omit<TimeBlock, "id">>) => {
-    setState((prev) => ({
-      ...prev,
-      timeBlocks: prev.timeBlocks.map((block) => (block.id === id ? { ...block, ...updates } : block)),
-    }));
-  }, []);
-
-  const deleteTimeBlock = useCallback((id: string) => {
-    setState((prev) => ({
-      ...prev,
-      timeBlocks: prev.timeBlocks.filter((block) => block.id !== id),
-    }));
-  }, []);
-
   // ── Categories ──────────────────────────────────────────────────────────────
 
   const addCategory = useCallback(
@@ -433,7 +406,6 @@ export function useCalendar2Store() {
   return {
     kanbanCards: state.kanbanCards,
     notes: state.notes,
-    timeBlocks: state.timeBlocks,
     categories: state.categories,
     notifications: state.notifications,
     auditLog: state.auditLog,
@@ -445,9 +417,6 @@ export function useCalendar2Store() {
     addNote,
     updateNote,
     deleteNote,
-    addTimeBlock,
-    updateTimeBlock,
-    deleteTimeBlock,
     addCategory,
     updateCategory,
     deleteCategory,

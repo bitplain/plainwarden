@@ -26,7 +26,6 @@ interface Calendar2ToolbarProps {
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
   { id: "calendar", label: "Календарь" },
-  { id: "planner", label: "Ежедневник" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
   { id: "ai", label: "AI" },

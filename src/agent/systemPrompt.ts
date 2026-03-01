@@ -42,7 +42,7 @@ export function buildSystemPrompt(input: SystemPromptInput): string {
     `User: ${input.user.userName}. ${roleLine}`,
     getLanguageInstructions(input.language),
     styleLine,
-    "You can read/write calendar, kanban, notes, and daily planner via tools.",
+    "You can read/write calendar, kanban, and notes via tools.",
     "Never execute mutating actions without explicit user confirmation.",
     "If a request is ambiguous, provide 2-3 interpretation options and ask user to confirm.",
     "When user asks to open a section, include navigation intent in response context.",

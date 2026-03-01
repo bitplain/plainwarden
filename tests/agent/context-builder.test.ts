@@ -44,7 +44,7 @@ const notes: Note[] = [
 
 describe("buildUnifiedContext", () => {
   it("unifies linked entities by global id", () => {
-    const context = buildUnifiedContext({ events, cards, notes, daily: [] });
+    const context = buildUnifiedContext({ events, cards, notes });
     const linked = context.entities.find((entity) => entity.globalEntityId === "event:evt-1");
 
     expect(linked).toBeDefined();
@@ -54,12 +54,12 @@ describe("buildUnifiedContext", () => {
   });
 
   it("limits snippet size for llm payload", () => {
-    const context = buildUnifiedContext({ events, cards, notes, daily: [] }, { maxChars: 120 });
+    const context = buildUnifiedContext({ events, cards, notes }, { maxChars: 120 });
     expect(context.promptFragment.length).toBeLessThanOrEqual(120);
   });
 
   it("includes event time in prompt fragment", () => {
-    const context = buildUnifiedContext({ events, cards, notes, daily: [] });
+    const context = buildUnifiedContext({ events, cards, notes });
     expect(context.promptFragment).toContain("time=11:30");
   });
 });

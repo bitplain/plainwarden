@@ -22,7 +22,6 @@ const CONTEXT_CHIPS = [
   { id: "calendar", icon: "◈", label: "Календарь", prompt: "Расскажи о моих ближайших событиях" },
   { id: "tasks", icon: "◇", label: "Задачи", prompt: "Покажи мои текущие задачи" },
   { id: "notes", icon: "▧", label: "Заметки", prompt: "Что в моих заметках?" },
-  { id: "journal", icon: "◎", label: "Журнал", prompt: "Покажи мой журнал за сегодня" },
 ] as const;
 
 const QUICK_SUGGESTIONS = [
