@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import {
   getAcmeRenewalMonitor,
   isAcmeProbeRefreshDue,
@@ -24,10 +24,8 @@ function readString(value: unknown, field: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 

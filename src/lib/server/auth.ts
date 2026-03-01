@@ -131,3 +131,15 @@ export async function getAuthenticatedUser(
 
   return user;
 }
+
+/**
+ * Reads the validated user ID injected by middleware (x-user-id header).
+ * Returns null if the header is absent (e.g., in tests or non-middleware context).
+ *
+ * This is the preferred way for route handlers to obtain the current user ID —
+ * the session has already been verified by middleware, so no additional DB lookup
+ * or token re-verification is needed.
+ */
+export function getUserIdFromRequest(request: NextRequest): string | null {
+  return request.headers.get("x-user-id") ?? null;
+}

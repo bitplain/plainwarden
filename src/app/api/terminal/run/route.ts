@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { handleRouteError, HttpError, readJsonBody } from "@/lib/server/validators";
 import { resolveAllowlistedCommand } from "@/modules/terminal/shell/allowlist";
 import { parseCommandLine } from "@/modules/terminal/shell/parse";
@@ -11,10 +11,8 @@ export async function POST(request: NextRequest) {
       throw new HttpError(400, "Missing terminal request header");
     }
 
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 

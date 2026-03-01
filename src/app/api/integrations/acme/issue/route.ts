@@ -6,14 +6,12 @@ import {
   issueAcmeCertificate,
   readAcmeConfig,
 } from "@/lib/server/acme";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 

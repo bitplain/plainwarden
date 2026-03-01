@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { deleteEventForUser, updateEventForUser } from "@/lib/server/json-db";
 import type { RecurrenceScope } from "@/lib/types";
 import {
@@ -31,10 +31,8 @@ function readRecurrenceScope(value: string | null): RecurrenceScope {
 
 async function updateEvent(request: NextRequest, context: RouteContext) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -61,7 +59,7 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const updated = await updateEventForUser(user.id, id, updatePayload, {
+    const updated = await updateEventForUser(userId, id, updatePayload, {
       scope,
       revision,
     });
@@ -86,10 +84,8 @@ export async function PUT(request: NextRequest, context: RouteContext) {
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -102,7 +98,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     }
 
     const scope = readRecurrenceScope(request.nextUrl.searchParams.get("scope"));
-    const deleted = await deleteEventForUser(user.id, id, { scope });
+    const deleted = await deleteEventForUser(userId, id, { scope });
     if (!deleted) {
       throw new HttpError(404, "Event not found");
     }

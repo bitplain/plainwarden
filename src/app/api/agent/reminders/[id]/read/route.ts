@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { markReminderReadForUser } from "@/lib/server/reminder-db";
 import { HttpError, handleRouteError } from "@/lib/server/validators";
 
@@ -9,9 +9,8 @@ interface Params {
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       throw new HttpError(400, "id is required");
     }
 
-    const ok = await markReminderReadForUser(user.id, id);
+    const ok = await markReminderReadForUser(userId, id);
     if (!ok) {
       throw new HttpError(404, "Reminder not found");
     }

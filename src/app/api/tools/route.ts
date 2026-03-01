@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { executeTool, getToolDescriptor } from "@/tools";
 
@@ -13,10 +13,8 @@ export async function POST(request: NextRequest) {
       throw new HttpError(403, "Forbidden");
     }
 
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const args = isRecord(body.args) ? body.args : {};
     const result = await executeTool(toolName, args, {
-      userId: user.id,
+      userId: userId,
       nowIso: new Date().toISOString(),
     });
 

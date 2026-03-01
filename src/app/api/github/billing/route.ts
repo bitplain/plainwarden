@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { fetchGitHubBillingUsage } from "@/lib/server/github-billing";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 
@@ -34,10 +34,8 @@ function readPositiveInt(value: unknown): number | undefined {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { createCardInColumn, listCardsInColumn } from "@/lib/server/kanban-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { validateCreateCardInput } from "@/lib/server/kanban-validators";
@@ -10,12 +10,13 @@ interface Params {
 
 export async function GET(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) throw new HttpError(401, "Unauthorized");
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
 
     const { id } = await params;
-    const cards = await listCardsInColumn(user.id, id);
+    const cards = await listCardsInColumn(userId, id);
     return NextResponse.json(cards);
   } catch (error) {
     return handleRouteError(error);
@@ -24,14 +25,15 @@ export async function GET(request: NextRequest, { params }: Params) {
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) throw new HttpError(401, "Unauthorized");
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
 
     const { id } = await params;
     const body = await readJsonBody(request);
     const input = validateCreateCardInput(body);
-    const card = await createCardInColumn(user.id, id, input);
+    const card = await createCardInColumn(userId, id, input);
     if (!card) throw new HttpError(404, "Column not found");
     return NextResponse.json(card, { status: 201 });
   } catch (error) {
