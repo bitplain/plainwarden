@@ -200,6 +200,7 @@ export default function Calendar2MonthView({
         {days.map((day) => {
           const dateKey = toDateKey(day);
           const dayEvents = eventsByDate[dateKey] ?? [];
+          const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
           return (
             <MonthCell
@@ -208,7 +209,7 @@ export default function Calendar2MonthView({
               dateKey={dateKey}
               dayEvents={dayEvents}
               eventPriorities={eventPriorities}
-              bouncingEventId={bouncingEventId}
+              bouncingEventId={cellBouncingId}
               isCurrentMonth={isSameMonth(day, anchorDate)}
               isCurrentDay={isSameDay(day, anchorDate)}
               isToday={isSameDay(day, today)}

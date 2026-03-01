@@ -263,6 +263,7 @@ export default function Calendar2DayView({
             const hour = Number(format(slot, "H"));
             const slotEvents = slottedEvents.get(hour) ?? [];
             const timeStr = format(slot, "HH:mm");
+            const slotBouncingId = bouncingEventId != null && slotEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
             return (
               <DayTimeSlot
@@ -271,7 +272,7 @@ export default function Calendar2DayView({
                 dayDateKey={dayDateKey}
                 slotEvents={slotEvents}
                 eventPriorities={eventPriorities}
-                bouncingEventId={bouncingEventId}
+                bouncingEventId={slotBouncingId}
                 isGlowing={glowingCellKey === `${dayDateKey}T${timeStr}`}
                 onSelectEvent={onSelectEvent}
                 onMoveEvent={onMoveEvent}

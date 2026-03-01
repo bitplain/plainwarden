@@ -171,6 +171,7 @@ export default function Calendar2WeekView({
           {weekDates.map((day) => {
             const dateKey = toDateKey(day);
             const dayEvents = eventsByDate[dateKey] ?? [];
+            const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
             return (
               <WeekDayColumn
@@ -179,7 +180,7 @@ export default function Calendar2WeekView({
                 dateKey={dateKey}
                 dayEvents={dayEvents}
                 eventPriorities={eventPriorities}
-                bouncingEventId={bouncingEventId}
+                bouncingEventId={cellBouncingId}
                 isSelected={isSameDay(day, anchorDate)}
                 isToday={isSameDay(day, today)}
                 isGlowing={glowingCellKey != null && glowingCellKey.startsWith(dateKey)}
