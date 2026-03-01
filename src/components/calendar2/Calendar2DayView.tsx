@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useMemo, useRef } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
@@ -11,11 +11,12 @@ import {
 } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
+const EMPTY_SLOT_EVENTS: CalendarEvent[] = [];
+
 interface Calendar2DayViewProps {
   dayDate: Date;
   dayEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   glowingCellKey: string | null;
   onSelectEvent: (eventId: string) => void;
   onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
@@ -48,7 +49,6 @@ interface DayTimeSlotProps {
   dayDateKey: string;
   slotEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   isGlowing: boolean;
   onSelectEvent: (eventId: string) => void;
   onMoveEvent: (eventId: string, payload: { date: string; time?: string }) => void | Promise<void>;
@@ -59,29 +59,59 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
   dayDateKey,
   slotEvents,
   eventPriorities,
-  bouncingEventId,
   isGlowing,
   onSelectEvent,
   onMoveEvent,
 }: DayTimeSlotProps) {
+  const slotRef = useRef<HTMLDivElement>(null);
   const timeStr = format(slot, "HH:mm");
+  const markDragOver = useCallback(() => {
+    const slotEl = slotRef.current;
+    if (!slotEl) {
+      return;
+    }
 
-  const onDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    slotRef.current?.setAttribute("data-drag-over", "");
+    const activeTargets = document.querySelectorAll<HTMLElement>(
+      ".cal2-drop-target[data-drag-over]",
+    );
+    for (const target of activeTargets) {
+      if (target !== slotEl) {
+        target.removeAttribute("data-drag-over");
+      }
+    }
+
+    slotEl.setAttribute("data-drag-over", "true");
   }, []);
 
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    const related = e.relatedTarget as Node | null;
-    if (related && slotRef.current?.contains(related)) return;
+  const clearDragOver = useCallback(() => {
     slotRef.current?.removeAttribute("data-drag-over");
   }, []);
 
+  const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    markDragOver();
+  }, [markDragOver]);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && slotRef.current?.contains(related)) {
+      return;
+    }
+    clearDragOver();
+  }, [clearDragOver]);
+
   return (
     <div
-      onDragOver={(e) => e.preventDefault()}
+      ref={slotRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={(e) => {
+        e.preventDefault();
+        markDragOver();
+      }}
+      onDragLeave={handleDragLeave}
       onDrop={(e) => {
         e.preventDefault();
+        clearDragOver();
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, {
@@ -91,8 +121,8 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
         }
       }}
       className={[
-        "relative grid grid-cols-[60px_1fr] items-start gap-3 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 py-2 sm:px-3",
-        isGlowing ? "cal2-cell-drop-trace" : "",
+        "cal2-drop-target relative grid grid-cols-[60px_1fr] items-start gap-3 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 py-2 sm:px-3",
+        isGlowing ? "cal2-cell-drop-flash" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -109,7 +139,6 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
         )}
 
         {slotEvents.map((event) => {
-          const isBouncing = bouncingEventId === event.id;
           return (
             <button
               key={event.id}
@@ -120,9 +149,7 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
                 dragEvent.dataTransfer.setData("text/plain", event.id);
               }}
               onClick={() => onSelectEvent(event.id)}
-              className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " cal2-event-bouncing" : ""
-              }`}
+              className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
             >
               <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
               <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
@@ -139,7 +166,6 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
 interface DayEventCardProps {
   event: CalendarEvent;
   eventPriorities: Record<string, TaskPriority>;
-  isBouncing: boolean;
   showTime: boolean;
   onSelectEvent: (eventId: string) => void;
 }
@@ -147,7 +173,6 @@ interface DayEventCardProps {
 const DayEventCard = React.memo(function DayEventCard({
   event,
   eventPriorities,
-  isBouncing,
   showTime,
   onSelectEvent,
 }: DayEventCardProps) {
@@ -160,9 +185,7 @@ const DayEventCard = React.memo(function DayEventCard({
         dragEvent.dataTransfer.setData("text/plain", event.id);
       }}
       onClick={() => onSelectEvent(event.id)}
-      className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-        isBouncing ? " cal2-event-bouncing" : ""
-      }`}
+      className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
     >
       {showTime && (
         <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
@@ -178,28 +201,35 @@ export default function Calendar2DayView({
   dayDate,
   dayEvents,
   eventPriorities,
-  bouncingEventId,
   glowingCellKey,
   onSelectEvent,
   onMoveEvent,
 }: Calendar2DayViewProps) {
-  const slots = getDaySlots(dayDate);
-  const slottedEvents = new Map<number, CalendarEvent[]>();
-  const unscheduledEvents: CalendarEvent[] = [];
-  const outsideGridEvents: CalendarEvent[] = [];
+  const slots = useMemo(() => getDaySlots(dayDate), [dayDate]);
+  const { slottedEvents, unscheduledEvents, outsideGridEvents } = useMemo(() => {
+    const byHour = new Map<number, CalendarEvent[]>();
+    const unscheduled: CalendarEvent[] = [];
+    const outsideGrid: CalendarEvent[] = [];
 
-  for (const event of dayEvents) {
-    const hour = getEventHour(event);
-    if (hour === null) {
-      unscheduledEvents.push(event);
-    } else if (hour < DAY_VIEW_START_HOUR || hour > DAY_VIEW_END_HOUR) {
-      outsideGridEvents.push(event);
-    } else {
-      const list = slottedEvents.get(hour) ?? [];
-      list.push(event);
-      slottedEvents.set(hour, list);
+    for (const event of dayEvents) {
+      const hour = getEventHour(event);
+      if (hour === null) {
+        unscheduled.push(event);
+      } else if (hour < DAY_VIEW_START_HOUR || hour > DAY_VIEW_END_HOUR) {
+        outsideGrid.push(event);
+      } else {
+        const list = byHour.get(hour) ?? [];
+        list.push(event);
+        byHour.set(hour, list);
+      }
     }
-  }
+
+    return {
+      slottedEvents: byHour,
+      unscheduledEvents: unscheduled,
+      outsideGridEvents: outsideGrid,
+    };
+  }, [dayEvents]);
 
   const dayDateKey = format(dayDate, "yyyy-MM-dd");
 
@@ -229,7 +259,6 @@ export default function Calendar2DayView({
                   key={event.id}
                   event={event}
                   eventPriorities={eventPriorities}
-                  isBouncing={bouncingEventId === event.id}
                   showTime={false}
                   onSelectEvent={onSelectEvent}
                 />
@@ -249,7 +278,6 @@ export default function Calendar2DayView({
                   key={event.id}
                   event={event}
                   eventPriorities={eventPriorities}
-                  isBouncing={bouncingEventId === event.id}
                   showTime
                   onSelectEvent={onSelectEvent}
                 />
@@ -258,12 +286,11 @@ export default function Calendar2DayView({
           </section>
         )}
 
-        <section className="cal2-gpu-grid space-y-1.5">
+        <section className="space-y-1.5">
           {slots.map((slot) => {
             const hour = Number(format(slot, "H"));
-            const slotEvents = slottedEvents.get(hour) ?? [];
+            const slotEvents = slottedEvents.get(hour) ?? EMPTY_SLOT_EVENTS;
             const timeStr = format(slot, "HH:mm");
-            const slotBouncingId = bouncingEventId != null && slotEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
             return (
               <DayTimeSlot
@@ -272,7 +299,6 @@ export default function Calendar2DayView({
                 dayDateKey={dayDateKey}
                 slotEvents={slotEvents}
                 eventPriorities={eventPriorities}
-                bouncingEventId={slotBouncingId}
                 isGlowing={glowingCellKey === `${dayDateKey}T${timeStr}`}
                 onSelectEvent={onSelectEvent}
                 onMoveEvent={onMoveEvent}
