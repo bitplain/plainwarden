@@ -66,14 +66,16 @@ body {
 
 .cal2-cell-drop-trace {
   position: relative;
+  overflow: clip;
 }
 
 .cal2-cell-drop-trace::before {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: 0;
   border-radius: inherit;
   padding: 1.5px;
+  will-change: opacity;
   background: conic-gradient(
     from var(--cal2-trace-angle),
     transparent 0%,
