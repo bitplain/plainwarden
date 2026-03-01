@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
@@ -67,8 +67,6 @@ const MonthCell = React.memo(function MonthCell({
   onQuickAdd,
   onMoveEvent,
 }: MonthCellProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCountRef = useRef(0);
   const visibleEvents = dayEvents.slice(0, 3);
   const extraCount = dayEvents.length - visibleEvents.length;
 
@@ -81,23 +79,9 @@ const MonthCell = React.memo(function MonthCell({
   return (
     <div
       onClick={() => onQuickAdd(day)}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        dragCountRef.current++;
-        if (!isDragOver) setIsDragOver(true);
-      }}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={() => {
-        dragCountRef.current--;
-        if (dragCountRef.current <= 0) {
-          dragCountRef.current = 0;
-          setIsDragOver(false);
-        }
-      }}
       onDrop={(e) => {
         e.preventDefault();
-        dragCountRef.current = 0;
-        setIsDragOver(false);
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });
@@ -106,7 +90,6 @@ const MonthCell = React.memo(function MonthCell({
       className={[
         "group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left transition-colors last:border-r-0",
         bgClass,
-        isDragOver ? "cal2-cell-drag-over" : "",
         isGlowing ? "cal2-cell-drop-trace" : "",
       ]
         .filter(Boolean)

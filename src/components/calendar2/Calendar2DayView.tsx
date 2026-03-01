@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import { motion } from "motion/react";
@@ -66,29 +66,13 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
   onSelectEvent,
   onMoveEvent,
 }: DayTimeSlotProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCountRef = useRef(0);
   const timeStr = format(slot, "HH:mm");
 
   return (
     <div
-      onDragEnter={(e) => {
-        e.preventDefault();
-        dragCountRef.current++;
-        if (!isDragOver) setIsDragOver(true);
-      }}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={() => {
-        dragCountRef.current--;
-        if (dragCountRef.current <= 0) {
-          dragCountRef.current = 0;
-          setIsDragOver(false);
-        }
-      }}
       onDrop={(e) => {
         e.preventDefault();
-        dragCountRef.current = 0;
-        setIsDragOver(false);
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, {
@@ -99,7 +83,6 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
       }}
       className={[
         "relative grid grid-cols-[60px_1fr] items-start gap-3 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 py-2 sm:px-3",
-        isDragOver ? "cal2-cell-drag-over" : "",
         isGlowing ? "cal2-cell-drop-trace" : "",
       ]
         .filter(Boolean)
