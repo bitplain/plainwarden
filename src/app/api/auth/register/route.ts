@@ -8,6 +8,7 @@ import {
 import {
   SESSION_COOKIE_NAME,
   createSessionToken,
+  persistSessionToken,
   sessionCookieOptions,
 } from "@/lib/server/session";
 import {
@@ -51,6 +52,8 @@ export async function POST(request: NextRequest) {
     const user = await registerUser(input, { mustBeFirst: true });
     const response = NextResponse.json({ user: sanitizeUser(user) }, { status: 201 });
     const sessionToken = createSessionToken(user);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await persistSessionToken(sessionToken, user.id, expiresAt);
     response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
 
     return response;

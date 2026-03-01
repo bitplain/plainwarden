@@ -50,6 +50,7 @@ model User {
   pushSubscriptions PushSubscription[]
   agentReminders AgentReminder[]
   llmConfig      UserLlmConfig?
+  sessions       Session[]
 }
 
 model Event {
@@ -391,6 +392,20 @@ model AiActionLog {
 
   @@index([sessionId])
   @@index([userId, createdAt])
+}
+
+/// Active session whitelist — allows server-side session revocation.
+/// A session is considered valid only if its tokenHash exists here.
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique /// SHA-256(raw token)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 /// Persists rate-limit counters across restarts and instances.

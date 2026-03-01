@@ -3,6 +3,7 @@ import { authenticateUser, bootstrapAuth, sanitizeUser } from "@/lib/server/auth
 import {
   SESSION_COOKIE_NAME,
   createSessionToken,
+  persistSessionToken,
   sessionCookieOptions,
 } from "@/lib/server/session";
 import {
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
     }
 
     const token = createSessionToken(user);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await persistSessionToken(token, user.id, expiresAt);
+
     const response = NextResponse.json({ user: sanitizeUser(user) });
     response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions);
 
