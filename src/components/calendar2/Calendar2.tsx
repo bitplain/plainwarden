@@ -137,6 +137,7 @@ export default function Calendar2() {
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
   const [bouncingEventId, setBouncingEventId] = useState<string | null>(null);
+  const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -312,6 +313,11 @@ export default function Calendar2() {
     handlePriorityChange(`${input.title}::${input.date}`, priority);
     localStore.addAuditEntry({ action: "create", eventId: "", eventTitle: input.title });
     await fetchEvents(liveCalendarQueryFilters);
+
+    // Green border trace on the target cell
+    const cellKey = input.time ? `${input.date}T${input.time}` : input.date;
+    setGlowingCellKey(cellKey);
+    setTimeout(() => setGlowingCellKey(null), 1100);
   };
 
   const handleDeleteEvent = async (
@@ -442,6 +448,11 @@ export default function Calendar2() {
     // Trigger bounce animation on the moved event
     setBouncingEventId(result.eventId);
     setTimeout(() => setBouncingEventId(null), 700);
+
+    // Green border trace on the target cell
+    const cellKey = result.time ? `${result.date}T${result.time}` : result.date;
+    setGlowingCellKey(cellKey);
+    setTimeout(() => setGlowingCellKey(null), 1100);
   };
 
   const handleMoveCancel = () => {
@@ -543,6 +554,7 @@ export default function Calendar2() {
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
                 bouncingEventId={bouncingEventId}
+                glowingCellKey={glowingCellKey}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -556,6 +568,7 @@ export default function Calendar2() {
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
                 bouncingEventId={bouncingEventId}
+                glowingCellKey={glowingCellKey}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
                 onQuickAdd={handleQuickAdd}
@@ -568,6 +581,7 @@ export default function Calendar2() {
                 dayEvents={dayEvents}
                 eventPriorities={resolvedPriorities}
                 bouncingEventId={bouncingEventId}
+                glowingCellKey={glowingCellKey}
                 onSelectEvent={setSelectedEventId}
                 onMoveEvent={handleMoveEvent}
               />
