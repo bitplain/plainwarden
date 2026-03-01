@@ -80,31 +80,23 @@ export const KANBAN_COLUMNS: { id: KanbanColumn; label: string }[] = [
 
 export const PRIORITY_CONFIG: Record<
   TaskPriority,
-  { label: string; color: string; border: string; bg: string }
+  { label: string; dot: string }
 > = {
   urgent: {
     label: "Срочно",
-    color: "text-[#d6dbff]",
-    border: "border-[rgba(94,106,210,0.44)]",
-    bg: "bg-[rgba(94,106,210,0.22)]",
+    dot: "bg-[#EF4444]",
   },
   high: {
     label: "Высокий",
-    color: "text-[var(--cal2-text-primary)]",
-    border: "border-[rgba(255,255,255,0.14)]",
-    bg: "bg-[rgba(255,255,255,0.07)]",
+    dot: "bg-[#F59E0B]",
   },
   medium: {
     label: "Средний",
-    color: "text-[#c2c2c2]",
-    border: "border-[rgba(255,255,255,0.1)]",
-    bg: "bg-[rgba(255,255,255,0.05)]",
+    dot: "bg-[#6366F1]",
   },
   low: {
     label: "Низкий",
-    color: "text-[var(--cal2-text-secondary)]",
-    border: "border-[rgba(255,255,255,0.08)]",
-    bg: "bg-[rgba(255,255,255,0.04)]",
+    dot: "bg-[#6B7280]",
   },
 };
 
