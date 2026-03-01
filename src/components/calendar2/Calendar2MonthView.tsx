@@ -2,11 +2,9 @@
 
 import React, { useRef, useState } from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
-import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
-import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2MonthViewProps {
   anchorDate: Date;
@@ -139,36 +137,28 @@ const MonthCell = React.memo(function MonthCell({
         {visibleEvents.map((event) => {
           const isBouncing = bouncingEventId === event.id;
           return (
-            <motion.button
+            <button
               key={event.id}
               type="button"
               draggable
-              animate={
-                isBouncing
-                  ? { y: [0, -6, 0], scale: [1, 1.04, 1] }
-                  : undefined
-              }
-              transition={isBouncing ? BOUNCE_SPRING : undefined}
-              {...({
-                onDragStartCapture: (dragEvent: React.DragEvent) => {
-                  dragEvent.stopPropagation();
-                  dragEvent.dataTransfer.effectAllowed = "move";
-                  dragEvent.dataTransfer.setData("text/plain", event.id);
-                },
-              } as Record<string, unknown>)}
+              onDragStartCapture={(dragEvent) => {
+                dragEvent.stopPropagation();
+                dragEvent.dataTransfer.effectAllowed = "move";
+                dragEvent.dataTransfer.setData("text/plain", event.id);
+              }}
               onClick={(e) => {
                 e.stopPropagation();
                 onSelectEvent(event.id);
               }}
               className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                isBouncing ? " cal2-event-bouncing" : ""
               }`}
             >
               {event.time && (
                 <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
               )}
               {event.title}
-            </motion.button>
+            </button>
           );
         })}
 
@@ -215,6 +205,7 @@ export default function Calendar2MonthView({
         {days.map((day) => {
           const dateKey = toDateKey(day);
           const dayEvents = eventsByDate[dateKey] ?? [];
+          const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
           return (
             <MonthCell
@@ -223,7 +214,7 @@ export default function Calendar2MonthView({
               dateKey={dateKey}
               dayEvents={dayEvents}
               eventPriorities={eventPriorities}
-              bouncingEventId={bouncingEventId}
+              bouncingEventId={cellBouncingId}
               isCurrentMonth={isSameMonth(day, anchorDate)}
               isCurrentDay={isSameDay(day, anchorDate)}
               isToday={isSameDay(day, today)}

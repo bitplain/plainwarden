@@ -3,11 +3,9 @@
 import React, { useRef, useState } from "react";
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
-import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
-import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2WeekViewProps {
   weekDates: Date[];
@@ -140,25 +138,17 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
         {dayEvents.map((event) => {
           const isBouncing = bouncingEventId === event.id;
           return (
-            <motion.button
+            <button
               key={event.id}
               type="button"
               draggable
-              animate={
-                isBouncing
-                  ? { y: [0, -6, 0], scale: [1, 1.04, 1] }
-                  : undefined
-              }
-              transition={isBouncing ? BOUNCE_SPRING : undefined}
-              {...({
-                onDragStartCapture: (dragEvent: React.DragEvent) => {
-                  dragEvent.dataTransfer.effectAllowed = "move";
-                  dragEvent.dataTransfer.setData("text/plain", event.id);
-                },
-              } as Record<string, unknown>)}
+              onDragStartCapture={(dragEvent) => {
+                dragEvent.dataTransfer.effectAllowed = "move";
+                dragEvent.dataTransfer.setData("text/plain", event.id);
+              }}
               onClick={() => onSelectEvent(event.id)}
               className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                isBouncing ? " cal2-event-bouncing" : ""
               }`}
             >
               <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
@@ -168,7 +158,7 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
                   ✓
                 </span>
               )}
-            </motion.button>
+            </button>
           );
         })}
       </div>
@@ -199,6 +189,7 @@ export default function Calendar2WeekView({
           {weekDates.map((day) => {
             const dateKey = toDateKey(day);
             const dayEvents = eventsByDate[dateKey] ?? [];
+            const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
 
             return (
               <WeekDayColumn
@@ -207,7 +198,7 @@ export default function Calendar2WeekView({
                 dateKey={dateKey}
                 dayEvents={dayEvents}
                 eventPriorities={eventPriorities}
-                bouncingEventId={bouncingEventId}
+                bouncingEventId={cellBouncingId}
                 isSelected={isSameDay(day, anchorDate)}
                 isToday={isSameDay(day, today)}
                 isGlowing={glowingCellKey != null && glowingCellKey.startsWith(dateKey)}
