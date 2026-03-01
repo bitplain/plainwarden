@@ -392,3 +392,13 @@ model AiActionLog {
   @@index([sessionId])
   @@index([userId, createdAt])
 }
+
+/// Persists rate-limit counters across restarts and instances.
+/// Each row represents one sliding-window bucket identified by a composite key.
+model RateLimitBucket {
+  key     String   @id   /// e.g. "auth:login:192.168.1.1"
+  count   Int      @default(1)
+  resetAt DateTime /// UTC timestamp when this bucket expires
+
+  @@index([resetAt])
+}

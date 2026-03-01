@@ -11,7 +11,7 @@ import {
   readJsonBody,
   validateLoginInput,
 } from "@/lib/server/validators";
-import { checkRateLimit, getClientAddress } from "@/lib/server/rate-limit";
+import { checkRateLimitAsync, getClientAddress } from "@/lib/server/rate-limit";
 
 const LOGIN_RATE_LIMIT = {
   maxRequests: 5,
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   try {
     await bootstrapAuth();
 
-    const rateLimit = checkRateLimit(
+    const rateLimit = await checkRateLimitAsync(
       `auth:login:${getClientAddress(request)}`,
       LOGIN_RATE_LIMIT,
     );

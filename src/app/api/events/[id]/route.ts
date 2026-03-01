@@ -38,7 +38,7 @@ async function updateEvent(request: NextRequest, context: RouteContext) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const rateLimitResponse = getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
+    const rateLimitResponse = await getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
     if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await context.params;
@@ -93,7 +93,7 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const rateLimitResponse = getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
+    const rateLimitResponse = await getRateLimitResponse(request, "events:mutate", MUTATE_EVENT_RATE_LIMIT);
     if (rateLimitResponse) return rateLimitResponse;
 
     const { id } = await context.params;

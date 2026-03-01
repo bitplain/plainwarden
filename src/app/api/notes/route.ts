@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const rateLimitResponse = getRateLimitResponse(request, "notes:create", CREATE_NOTE_RATE_LIMIT);
+    const rateLimitResponse = await getRateLimitResponse(request, "notes:create", CREATE_NOTE_RATE_LIMIT);
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await readJsonBody(request);

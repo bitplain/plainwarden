@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const rateLimitResponse = getRateLimitResponse(request, "events:create", CREATE_EVENT_RATE_LIMIT);
+    const rateLimitResponse = await getRateLimitResponse(request, "events:create", CREATE_EVENT_RATE_LIMIT);
     if (rateLimitResponse) return rateLimitResponse;
 
     const body = await readJsonBody(request);

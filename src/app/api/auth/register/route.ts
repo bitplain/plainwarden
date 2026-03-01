@@ -16,7 +16,7 @@ import {
   readJsonBody,
   validateRegisterInput,
 } from "@/lib/server/validators";
-import { checkRateLimit, getClientAddress } from "@/lib/server/rate-limit";
+import { checkRateLimitAsync, getClientAddress } from "@/lib/server/rate-limit";
 
 const REGISTER_RATE_LIMIT = {
   maxRequests: 5,
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   try {
     await bootstrapAuth();
 
-    const rateLimit = checkRateLimit(
+    const rateLimit = await checkRateLimitAsync(
       `auth:register:${getClientAddress(request)}`,
       REGISTER_RATE_LIMIT,
     );
