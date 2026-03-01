@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useNetdenStore } from "@/lib/store";
+import homeStyles from "@/styles/home.module.css";
+import settingsStyles from "@/styles/settings.module.css";
 
 export default function RegisterPage() {
   const buildSha = process.env.NEXT_PUBLIC_BUILD_SHA || "dev";
@@ -43,67 +45,67 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="home-page-shell">
-      <div className="home-page-grid">
-        <header className="home-header">
-          <div className="home-header-left">
-            <Link href="/" className="home-back-link">
+    <div className={homeStyles['home-page-shell']}>
+      <div className={homeStyles['home-page-grid']}>
+        <header className={homeStyles['home-header']}>
+          <div className={homeStyles['home-header-left']}>
+            <Link href="/" className={homeStyles['home-back-link']}>
               ← Терминал
             </Link>
             <div>
-              <p className="home-kicker">NetDen</p>
-              <h1 className="home-title">Регистрация</h1>
-              <p className="home-subtitle">
+              <p className={homeStyles['home-kicker']}>NetDen</p>
+              <h1 className={homeStyles['home-title']}>Регистрация</h1>
+              <p className={homeStyles['home-subtitle']}>
                 Резервная регистрация первого пользователя (если setup не создал его автоматически).
               </p>
             </div>
           </div>
-          <nav className="home-links">
-            <Link href="/login" className="home-link">
+          <nav className={homeStyles['home-links']}>
+            <Link href="/login" className={homeStyles['home-link']}>
               Вход
             </Link>
           </nav>
         </header>
 
-        <section className="home-card">
-          <h2 className="home-card-title">Данные пользователя</h2>
+        <section className={homeStyles['home-card']}>
+          <h2 className={homeStyles['home-card-title']}>Данные пользователя</h2>
 
-          <form className="notes-form" onSubmit={handleSubmit}>
-            {formError ? <p className="notes-error">{formError}</p> : null}
+          <form className={homeStyles['notes-form']} onSubmit={handleSubmit}>
+            {formError ? <p className={homeStyles['notes-error']}>{formError}</p> : null}
 
-            <label className="settings-field">
+            <label className={settingsStyles['settings-field']}>
               <span>Имя</span>
               <input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="notes-input"
+                className={homeStyles['notes-input']}
                 placeholder="Алекс"
                 autoComplete="name"
                 required
               />
             </label>
 
-            <label className="settings-field">
+            <label className={settingsStyles['settings-field']}>
               <span>Email</span>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="notes-input"
+                className={homeStyles['notes-input']}
                 placeholder="you@example.com"
                 autoComplete="email"
                 required
               />
             </label>
 
-            <label className="settings-field">
+            <label className={settingsStyles['settings-field']}>
               <span>Пароль</span>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="notes-input"
+                className={homeStyles['notes-input']}
                 placeholder="Минимум 8 символов"
                 autoComplete="new-password"
                 minLength={8}
@@ -114,14 +116,14 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isAuthLoading}
-              className="notes-submit"
+              className={homeStyles['notes-submit']}
             >
               {isAuthLoading ? "Создаём..." : "Создать пользователя"}
             </button>
           </form>
         </section>
 
-        <p className="home-muted">Build: {buildSha}</p>
+        <p className={homeStyles['home-muted']}>Build: {buildSha}</p>
       </div>
     </div>
   );

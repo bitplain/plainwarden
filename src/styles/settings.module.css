@@ -1,0 +1,531 @@
+/* ═══════════════════════════════════════════════════════
+   Settings CSS Module
+   ═══════════════════════════════════════════════════════ */
+
+/* ── Utility fields ── */
+.settings-grid {
+  display: grid;
+  gap: 0.54rem;
+}
+
+.settings-inline {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.52rem;
+}
+
+.settings-field {
+  display: grid;
+  gap: 0.24rem;
+  color: #b9c4e2;
+  font-size: 0.78rem;
+}
+
+.settings-range {
+  width: 100%;
+  accent-color: #5eb8ff;
+}
+
+.settings-range-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #8190b5;
+  font-size: 0.74rem;
+}
+
+.settings-range-block {
+  display: grid;
+  gap: 0.42rem;
+}
+
+.settings-range-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 0.2rem 0 0.1rem;
+}
+
+.settings-reset {
+  width: fit-content;
+}
+
+.settings-hint {
+  margin-left: 0.5rem;
+  opacity: 0.5;
+  font-weight: 400;
+}
+
+/* ── SSL warning ── */
+.setup-ssl-warning {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  border-left: 3px solid #d97706;
+  background: rgba(217, 119, 6, 0.08);
+  color: #d97706;
+  border-radius: 0 4px 4px 0;
+  line-height: 1.5;
+}
+
+/* ── Settings page shell ── */
+.settings-page-shell {
+  min-height: 100dvh;
+  background: var(--cal2-bg);
+  color: var(--cal2-text-primary);
+  font-family: var(--font-geist-mono);
+}
+
+.settings-page-shell-embedded {
+  min-height: 100%;
+  background: #000;
+}
+
+.settings-page-container {
+  width: min(900px, 100% - 1.2rem);
+  margin: 0 auto;
+  padding: 1rem 0 1.6rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.settings-page-container-embedded {
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.62rem 1rem;
+}
+
+.settings-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--cal2-border);
+  border-radius: 8px;
+  background: var(--cal2-surface-1);
+  padding: 0.75rem 1rem;
+}
+
+.settings-page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.settings-page-back {
+  border-radius: 6px;
+  border: 1px solid var(--cal2-border);
+  background: var(--cal2-surface-2);
+  padding: 0.375rem 0.625rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--cal2-text-secondary);
+  text-decoration: none;
+  transition: color 150ms ease, background-color 150ms ease;
+  white-space: nowrap;
+  align-self: flex-start;
+}
+
+.settings-page-back:hover {
+  color: var(--cal2-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-page-kicker {
+  margin: 0;
+  color: var(--cal2-text-secondary);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.settings-page-title {
+  margin: 0.12rem 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--cal2-text-primary);
+}
+
+.settings-page-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.settings-page-nav-link {
+  border-radius: 6px;
+  border: 1px solid var(--cal2-border);
+  background: var(--cal2-surface-2);
+  color: var(--cal2-text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  padding: 0.42rem 0.6rem;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.settings-page-nav-link:hover {
+  color: var(--cal2-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-page-tabs-row {
+  display: flex;
+  align-items: center;
+}
+
+.settings-page-tabs {
+  display: inline-flex;
+  border-radius: 6px;
+  border: 1px solid var(--cal2-border);
+  background: var(--cal2-surface-2);
+  padding: 2px;
+}
+
+.settings-page-tab {
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 0.375rem 0.625rem;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+  background: none;
+  color: var(--cal2-text-secondary);
+  font-family: var(--font-geist-mono);
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.settings-page-tab:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--cal2-text-primary);
+}
+
+.settings-page-tab-active {
+  border-color: rgba(94, 106, 210, 0.42);
+  background: var(--cal2-accent-soft);
+  color: var(--cal2-text-primary);
+}
+
+.settings-page-tab-active:hover {
+  background: var(--cal2-accent-soft-strong);
+}
+
+.settings-page-panel {
+  border: 1px solid var(--cal2-border);
+  border-radius: 8px;
+  background: var(--cal2-surface-1);
+  padding: 0.75rem 1rem;
+}
+
+/* ── Settings tab content ── */
+.settings-tab-content {
+  display: grid;
+  gap: 0.56rem;
+}
+
+.settings-tab-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.settings-tab-label {
+  color: var(--cal2-text-secondary);
+  font-size: 0.82rem;
+}
+
+.settings-tab-value {
+  color: var(--cal2-text-primary);
+  font-size: 0.92rem;
+}
+
+.settings-tab-section-title {
+  margin: 0;
+  color: var(--cal2-text-secondary);
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-tab-input,
+.settings-tab-input[type="password"] {
+  width: 100%;
+  border: 1px solid var(--cal2-border);
+  border-radius: 6px;
+  background: var(--cal2-surface-2);
+  color: var(--cal2-text-primary);
+  font-family: var(--font-geist-mono);
+  font-size: 0.84rem;
+  padding: 0.52rem 0.56rem;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+
+.settings-tab-input:focus {
+  border-color: rgba(94, 106, 210, 0.62);
+}
+
+.settings-tab-input:disabled {
+  color: var(--cal2-text-disabled);
+  cursor: not-allowed;
+}
+
+.settings-tab-btn {
+  border: 1px solid rgba(94, 106, 210, 0.45);
+  border-radius: 6px;
+  background: var(--cal2-accent-soft);
+  color: var(--cal2-text-primary);
+  font-family: var(--font-geist-mono);
+  font-size: 0.82rem;
+  padding: 0.52rem 0.62rem;
+  cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.settings-tab-btn:hover {
+  background: var(--cal2-accent-soft-strong);
+  border-color: rgba(94, 106, 210, 0.65);
+}
+
+.settings-tab-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-tab-btn-secondary {
+  border: 1px solid var(--cal2-border);
+  border-radius: 6px;
+  background: var(--cal2-surface-2);
+  color: var(--cal2-text-secondary);
+  font-family: var(--font-geist-mono);
+  font-size: 0.82rem;
+  padding: 0.52rem 0.62rem;
+  cursor: pointer;
+  width: fit-content;
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+}
+
+.settings-tab-btn-secondary:hover {
+  color: var(--cal2-text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-tab-btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.settings-tab-card {
+  border: 1px solid var(--cal2-border);
+  border-radius: 6px;
+  background: var(--cal2-surface-2);
+  padding: 0.5rem 0.56rem;
+}
+
+.settings-tab-card-title {
+  margin: 0;
+  color: var(--cal2-text-primary);
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+.settings-tab-card-body {
+  margin: 0.3rem 0 0;
+  color: var(--cal2-text-secondary);
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+.settings-tab-card-meta {
+  margin: 0.3rem 0 0;
+  color: var(--cal2-text-disabled);
+  font-size: 0.74rem;
+}
+
+.settings-tab-cards-grid {
+  display: grid;
+  gap: 0.48rem;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+}
+
+.settings-tab-error {
+  margin: 0;
+  color: #f87171;
+  font-size: 0.82rem;
+}
+
+.settings-tab-muted {
+  margin: 0;
+  color: var(--cal2-text-secondary);
+  font-size: 0.82rem;
+}
+
+/* ── Agent status lamp ── */
+.agent-status-lamp {
+  display: inline-block;
+  width: 0.52rem;
+  height: 0.52rem;
+  margin-right: 0.35rem;
+  border-radius: 999px;
+  background: #8a95b5;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.agent-status-lamp-valid {
+  background: #2fd06a;
+  box-shadow: 0 0 0 1px rgba(47, 208, 106, 0.45), 0 0 10px rgba(47, 208, 106, 0.45);
+}
+
+.agent-status-lamp-invalid {
+  background: #f25656;
+  box-shadow: 0 0 0 1px rgba(242, 86, 86, 0.4), 0 0 10px rgba(242, 86, 86, 0.3);
+}
+
+/* ── Setup list & nav ── */
+.setup-list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.2rem;
+  color: #939cb8;
+  font-size: 0.82rem;
+}
+
+.setup-list-disc {
+  list-style: disc;
+}
+
+.setup-list-decimal {
+  list-style: decimal;
+}
+
+.setup-nav {
+  margin-top: 0.5rem;
+}
+
+/* ── ACME / TLS ── */
+.acme-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.45rem;
+  padding: 0 0.52rem;
+  border: 0.5px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.acme-badge-idle {
+  background: rgba(255, 255, 255, 0.08);
+  color: #c3ccde;
+}
+
+.acme-badge-issuing {
+  background: rgba(245, 158, 11, 0.18);
+  color: #ffd69a;
+  border-color: rgba(245, 158, 11, 0.38);
+}
+
+.acme-badge-active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #9debcf;
+  border-color: rgba(16, 185, 129, 0.38);
+}
+
+.acme-badge-failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ffb1b1;
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.acme-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.48rem;
+}
+
+.acme-meta {
+  display: grid;
+  gap: 0.16rem;
+  color: #95a1c0;
+  font-size: 0.78rem;
+}
+
+.acme-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.acme-note {
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.34);
+  color: #b6c2e3;
+  padding: 0.48rem 0.56rem;
+  font-size: 0.78rem;
+}
+
+.acme-log {
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.34);
+  padding: 0.56rem;
+}
+
+.acme-log-title {
+  margin-bottom: 0.36rem;
+  color: #b5bfd9;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.acme-log-list {
+  max-height: 11.5rem;
+  overflow: auto;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.acme-log-line {
+  color: #9eaacf;
+  font-size: 0.75rem;
+}
+
+.acme-log-line-error {
+  color: #f6b3b3;
+}
+
+.acme-message {
+  color: #9debcf;
+  font-size: 0.8rem;
+}
+
+.acme-error {
+  color: #ffb3b3;
+  font-size: 0.8rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .settings-inline {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-page-container {
+    width: calc(100% - 0.74rem);
+    gap: 0.48rem;
+  }
+
+  .settings-page-header {
+    padding: 0.56rem;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .settings-page-tabs {
+    flex-wrap: wrap;
+  }
+
+  .settings-page-panel {
+    padding: 0.62rem;
+  }
+}

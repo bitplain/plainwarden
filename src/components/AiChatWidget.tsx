@@ -5,6 +5,7 @@ import type { AgentMemoryItem } from "@/agent/types";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
 import ChatMarkdown from "@/components/ChatMarkdown";
+import styles from "@/components/AiChatWidget.module.css";
 
 /* ── Theme support ── */
 const AI_THEME_KEY = "netden:ai-theme";
@@ -186,59 +187,59 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
       <button
         type="button"
         onClick={handleToggle}
-        className={`aip-trigger ${isOpen ? "aip-trigger-open" : ""}`}
+        className={`${styles['aip-trigger']} ${isOpen ? styles['aip-trigger-open'] : ''}`}
         aria-label={isOpen ? "Закрыть AI" : "Открыть AI"}
       >
         {isOpen ? (
-          <CloseIcon className="aip-trigger-icon" />
+          <CloseIcon className={styles['aip-trigger-icon']} />
         ) : (
-          <SparkleIcon className="aip-trigger-icon" />
+          <SparkleIcon className={styles['aip-trigger-icon']} />
         )}
       </button>
 
       {/* Slide-up panel */}
-      <div className={`aip-panel ${isOpen ? "aip-panel-open" : ""}`}>
-        <div className="aip-shell">
-          <div className={`aip-inner ${isFocused ? "aip-inner-focused" : ""} ${isStreaming ? "aip-streaming" : ""}`}>
+      <div className={`${styles['aip-panel']} ${isOpen ? styles['aip-panel-open'] : ''}`}>
+        <div className={styles['aip-shell']}>
+          <div className={`${styles['aip-inner']} ${isFocused ? styles['aip-inner-focused'] : ''} ${isStreaming ? styles['aip-streaming'] : ''}`}>
 
             {/* Header */}
-            <div className="aip-header">
-              <span className="aip-header-icon">◈</span>
-              <span className="aip-header-title">AI Ассистент</span>
-              <span className="aip-header-shortcut">⌘K</span>
+            <div className={styles['aip-header']}>
+              <span className={styles['aip-header-icon']}>◈</span>
+              <span className={styles['aip-header-title']}>AI Ассистент</span>
+              <span className={styles['aip-header-shortcut']}>⌘K</span>
             </div>
 
             {/* Context chips */}
-            <div className={`aip-chips ${isOpen ? "aip-chips-visible" : ""}`}>
+            <div className={`${styles['aip-chips']} ${isOpen ? styles['aip-chips-visible'] : ''}`}>
               {CONTEXT_CHIPS.map((chip, i) => (
                 <button
                   key={chip.id}
                   type="button"
-                  className={`aip-chip ${chipsReady ? "aip-chip-visible" : ""} ${activeChip === chip.id ? "aip-chip-active" : ""}`}
+                  className={`${styles['aip-chip']} ${chipsReady ? styles['aip-chip-visible'] : ''} ${activeChip === chip.id ? styles['aip-chip-active'] : ''}`}
                   style={{ transitionDelay: chipsReady ? `${60 + i * 40}ms` : "0ms" }}
                   onClick={() => handleChipClick(chip.id, chip.prompt)}
                 >
-                  <span className="aip-chip-icon">{chip.icon}</span>
+                  <span className={styles['aip-chip-icon']}>{chip.icon}</span>
                   {chip.label}
                 </button>
               ))}
             </div>
 
-            <div className="aip-separator" />
+            <div className={styles['aip-separator']} />
 
             {/* Streaming status bar */}
-            <div className={`aip-status-bar ${isStreaming ? "aip-status-bar-active" : ""}`} />
+            <div className={`${styles['aip-status-bar']} ${isStreaming ? styles['aip-status-bar-active'] : ''}`} />
 
             {/* Response area */}
             <div
               ref={responseRef}
-              className={`aip-response ${hasContent ? "aip-response-visible" : ""}`}
+              className={`${styles['aip-response']} ${hasContent ? styles['aip-response-visible'] : ''}`}
             >
-              <div className="aip-response-inner">
+              <div className={styles['aip-response-inner']}>
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
-                    className={`aip-message ${msg.role === "user" ? "aip-message-user" : "aip-message-assistant"}`}
+                    className={`${styles['aip-message']} ${msg.role === "user" ? styles['aip-message-user'] : styles['aip-message-assistant']}`}
                   >
                     {msg.role === "assistant" ? (
                       <ChatMarkdown content={msg.text} isStreaming={msg.streaming} />
@@ -249,11 +250,11 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                 ))}
 
                 {isStreaming && messages.length === 0 && (
-                  <div className="aip-message aip-message-assistant aip-message-thinking">
-                    <span className="aip-thinking">
-                      <span className="aip-thinking-dot" />
-                      <span className="aip-thinking-dot" />
-                      <span className="aip-thinking-dot" />
+                  <div className={`${styles['aip-message']} ${styles['aip-message-assistant']} ${styles['aip-message-thinking']}`}>
+                    <span className={styles['aip-thinking']}>
+                      <span className={styles['aip-thinking-dot']} />
+                      <span className={styles['aip-thinking-dot']} />
+                      <span className={styles['aip-thinking-dot']} />
                     </span>
                   </div>
                 )}
@@ -261,12 +262,12 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
 
               {/* Pending action */}
               {pendingAction && (
-                <div className="aip-action">
-                  <div className="aip-action-summary">{pendingAction.summary}</div>
-                  <div className="aip-action-buttons">
+                <div className={styles['aip-action']}>
+                  <div className={styles['aip-action-summary']}>{pendingAction.summary}</div>
+                  <div className={styles['aip-action-buttons']}>
                     <button
                       type="button"
-                      className="aip-action-btn aip-action-btn-confirm"
+                      className={`${styles['aip-action-btn']} ${styles['aip-action-btn-confirm']}`}
                       onClick={() => void handleResolveAction(true)}
                       disabled={isStreaming}
                     >
@@ -274,7 +275,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                     </button>
                     <button
                       type="button"
-                      className="aip-action-btn aip-action-btn-decline"
+                      className={`${styles['aip-action-btn']} ${styles['aip-action-btn-decline']}`}
                       onClick={() => void handleResolveAction(false)}
                       disabled={isStreaming}
                     >
@@ -287,12 +288,12 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
 
             {/* Quick suggestions (empty state only) */}
             {!hasContent && !inputValue.trim() && (
-              <div className={`aip-suggestions ${isOpen ? "aip-suggestions-visible" : ""}`}>
+              <div className={`${styles['aip-suggestions']} ${isOpen ? styles['aip-suggestions-visible'] : ''}`}>
                 {QUICK_SUGGESTIONS.map((s) => (
                   <button
                     key={s}
                     type="button"
-                    className="aip-suggestion"
+                    className={styles['aip-suggestion']}
                     onClick={() => {
                       setInputValue(s);
                       inputRef.current?.focus();
@@ -305,7 +306,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
             )}
 
             {/* Input row */}
-            <div className="aip-input-row">
+            <div className={styles['aip-input-row']}>
               <input
                 ref={inputRef}
                 type="text"
@@ -317,7 +318,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                className="aip-input"
+                className={styles['aip-input']}
                 placeholder="Спросите что угодно…"
                 disabled={isStreaming}
                 spellCheck={false}
@@ -327,7 +328,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
                 type="button"
                 onClick={() => void handleSend()}
                 disabled={isStreaming || !inputValue.trim()}
-                className={`aip-send ${showSendButton ? "aip-send-visible" : ""}`}
+                className={`${styles['aip-send']} ${showSendButton ? styles['aip-send-visible'] : ''}`}
                 aria-label="Отправить"
               >
                 <SendIcon />

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import styles from "@/styles/settings.module.css";
 
 interface OpenRouterModelOption {
   id: string;
@@ -71,9 +72,9 @@ export default function SettingsApiTab() {
   }, [openRouterConfig.status]);
 
   const openRouterLampClass = useMemo(() => {
-    if (openRouterConfig.status === "valid") return "agent-status-lamp agent-status-lamp-valid";
-    if (openRouterConfig.status === "invalid") return "agent-status-lamp agent-status-lamp-invalid";
-    return "agent-status-lamp";
+    if (openRouterConfig.status === "valid") return `${styles['agent-status-lamp']} ${styles['agent-status-lamp-valid']}`;
+    if (openRouterConfig.status === "invalid") return `${styles['agent-status-lamp']} ${styles['agent-status-lamp-invalid']}`;
+    return styles['agent-status-lamp'];
   }, [openRouterConfig.status]);
 
   const saveOpenRouterKey = async (event: FormEvent<HTMLFormElement>) => {
@@ -219,12 +220,12 @@ export default function SettingsApiTab() {
   };
 
   return (
-    <div className="settings-tab-content">
-      <form className="settings-grid" onSubmit={saveOpenRouterKey}>
-        <label className="settings-field">
+    <div className={styles['settings-tab-content']}>
+      <form className={styles['settings-grid']} onSubmit={saveOpenRouterKey}>
+        <label className={styles['settings-field']}>
           <span>OpenRouter API key</span>
           <input
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
             type="password"
             value={openRouterKey}
             onChange={(event) => setOpenRouterKey(event.target.value)}
@@ -233,14 +234,14 @@ export default function SettingsApiTab() {
           />
         </label>
 
-        <div className="settings-inline">
-          <button type="submit" className="settings-tab-btn" disabled={openRouterBusy}>
+        <div className={styles['settings-inline']}>
+          <button type="submit" className={styles['settings-tab-btn']} disabled={openRouterBusy}>
             {openRouterBusy ? "Проверка..." : "Сохранить и проверить ключ"}
           </button>
 
           <button
             type="button"
-            className="settings-tab-btn-secondary"
+            className={styles['settings-tab-btn-secondary']}
             onClick={() => void clearOpenRouterKey()}
             disabled={openRouterBusy || !openRouterConfig.hasKey}
           >
@@ -249,21 +250,21 @@ export default function SettingsApiTab() {
         </div>
       </form>
 
-      <div className="settings-tab-card">
-        <p className="settings-tab-card-title">Статус ключа</p>
-        <p className="settings-tab-card-body">
+      <div className={styles['settings-tab-card']}>
+        <p className={styles['settings-tab-card-title']}>Статус ключа</p>
+        <p className={styles['settings-tab-card-body']}>
           <span className={openRouterLampClass} aria-hidden /> {openRouterStatusLabel}
         </p>
-        <p className="settings-tab-card-meta">
+        <p className={styles['settings-tab-card-meta']}>
           {openRouterConfig.keyMask ? `Подключён: ${openRouterConfig.keyMask}` : "Ключ не подключён"}
         </p>
       </div>
 
-      <div className="settings-grid">
-        <label className="settings-field">
+      <div className={styles['settings-grid']}>
+        <label className={styles['settings-field']}>
           <span>Модель по умолчанию</span>
           <select
-            className="settings-tab-input"
+            className={styles['settings-tab-input']}
             value={openRouterConfig.model}
             onChange={(event) => void updateOpenRouterModel(event.target.value)}
             disabled={openRouterBusy || openRouterModels.length === 0}
@@ -281,7 +282,7 @@ export default function SettingsApiTab() {
 
         <button
           type="button"
-          className="settings-tab-btn"
+          className={styles['settings-tab-btn']}
           onClick={() => void refreshOpenRouterModels()}
           disabled={openRouterBusy || !openRouterConfig.hasKey}
         >
@@ -289,9 +290,9 @@ export default function SettingsApiTab() {
         </button>
       </div>
 
-      {openRouterError ? <p className="settings-tab-error">{openRouterError}</p> : null}
-      {openRouterNotice ? <p className="settings-tab-muted">{openRouterNotice}</p> : null}
-      <p className="settings-tab-muted">Ключ хранится на сервере в зашифрованном виде и не пишется в `.env`.</p>
+      {openRouterError ? <p className={styles['settings-tab-error']}>{openRouterError}</p> : null}
+      {openRouterNotice ? <p className={styles['settings-tab-muted']}>{openRouterNotice}</p> : null}
+      <p className={styles['settings-tab-muted']}>Ключ хранится на сервере в зашифрованном виде и не пишется в `.env`.</p>
     </div>
   );
 }

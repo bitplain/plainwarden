@@ -1,6 +1,7 @@
 "use client";
 
 import type { AgentActionProposal } from "@/agent/types";
+import styles from "@/components/Terminal.module.css";
 
 interface ConfirmActionProps {
   action: AgentActionProposal;
@@ -11,18 +12,18 @@ interface ConfirmActionProps {
 
 export default function ConfirmAction({ action, onConfirm, onDecline, disabled = false }: ConfirmActionProps) {
   return (
-    <div className="terminal-entry terminal-entry-slash nd-animate-in">
-      <div className="terminal-command-row">
-        <span className="terminal-command-text">Action pending</span>
+    <div className={`${styles['terminal-entry']} ${styles['terminal-entry-slash']} nd-animate-in`}>
+      <div className={styles['terminal-command-row']}>
+        <span className={styles['terminal-command-text']}>Action pending</span>
       </div>
-      <div className="terminal-output">
-        <div className="terminal-output-line">{action.summary}</div>
-        <div className="terminal-output-line">Expires: {new Date(action.expiresAt).toLocaleString()}</div>
+      <div className={styles['terminal-output']}>
+        <div className={styles['terminal-output-line']}>{action.summary}</div>
+        <div className={styles['terminal-output-line']}>Expires: {new Date(action.expiresAt).toLocaleString()}</div>
       </div>
-      <div className="terminal-mode-toggle" style={{ marginTop: 8 }}>
+      <div className={styles['terminal-mode-toggle']} style={{ marginTop: 8 }}>
         <button
           type="button"
-          className="terminal-mode-button"
+          className={styles['terminal-mode-button']}
           onClick={onConfirm}
           disabled={disabled}
           aria-label="Подтвердить действие"
@@ -31,7 +32,7 @@ export default function ConfirmAction({ action, onConfirm, onDecline, disabled =
         </button>
         <button
           type="button"
-          className="terminal-mode-button"
+          className={styles['terminal-mode-button']}
           onClick={onDecline}
           disabled={disabled}
           aria-label="Отклонить действие"

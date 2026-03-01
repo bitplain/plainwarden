@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useNetdenStore } from "@/lib/store";
+import styles from "./login.module.css";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -46,38 +47,38 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="login-page">
+    <div className={styles['login-page']}>
       {/* Background mesh */}
-      <div className="login-bg-mesh" aria-hidden />
+      <div className={styles['login-bg-mesh']} aria-hidden />
 
-      <div className="login-center">
+      <div className={styles['login-center']}>
         {/* Brand */}
-        <div className={`login-brand ${fieldsReady ? "login-brand-visible" : ""}`}>
-          <span className="login-brand-mark">◈</span>
-          <span className="login-brand-name">NetDen</span>
+        <div className={`${styles['login-brand']} ${fieldsReady ? styles['login-brand-visible'] : ''}`}>
+          <span className={styles['login-brand-mark']}>◈</span>
+          <span className={styles['login-brand-name']}>NetDen</span>
         </div>
 
         {/* Card */}
-        <div className={`login-card ${fieldsReady ? "login-card-visible" : ""}`}>
-          <div className="login-card-inner">
-            <h1 className="login-heading">Вход</h1>
-            <p className="login-subheading">
+        <div className={`${styles['login-card']} ${fieldsReady ? styles['login-card-visible'] : ''}`}>
+          <div className={styles['login-card-inner']}>
+            <h1 className={styles['login-heading']}>Вход</h1>
+            <p className={styles['login-subheading']}>
               Войдите, чтобы продолжить работу с календарём, задачами и заметками.
             </p>
 
-            <form className="login-form" onSubmit={handleSubmit}>
-              {formError && <div className="login-error">{formError}</div>}
+            <form className={styles['login-form']} onSubmit={handleSubmit}>
+              {formError && <div className={styles['login-error']}>{formError}</div>}
 
               <label
-                className={`login-field ${fieldsReady ? "login-field-visible" : ""}`}
+                className={`${styles['login-field']} ${fieldsReady ? styles['login-field-visible'] : ''}`}
                 style={{ transitionDelay: fieldsReady ? "160ms" : "0ms" }}
               >
-                <span className="login-label">Email</span>
+                <span className={styles['login-label']}>Email</span>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="login-input"
+                  className={styles['login-input']}
                   placeholder="you@example.com"
                   autoComplete="email"
                   autoFocus
@@ -86,15 +87,15 @@ export default function LoginPage() {
               </label>
 
               <label
-                className={`login-field ${fieldsReady ? "login-field-visible" : ""}`}
+                className={`${styles['login-field']} ${fieldsReady ? styles['login-field-visible'] : ''}`}
                 style={{ transitionDelay: fieldsReady ? "240ms" : "0ms" }}
               >
-                <span className="login-label">Пароль</span>
+                <span className={styles['login-label']}>Пароль</span>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="login-input"
+                  className={styles['login-input']}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   required
@@ -104,15 +105,15 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isAuthLoading}
-                className={`login-submit ${fieldsReady ? "login-submit-visible" : ""}`}
+                className={`${styles['login-submit']} ${fieldsReady ? styles['login-submit-visible'] : ''}`}
               >
                 {isAuthLoading ? "Подключение…" : "Войти →"}
               </button>
             </form>
 
-            <div className="login-footer">
-              <span className="login-footer-text">Нет аккаунта?</span>
-              <Link href="/register" className="login-footer-link">
+            <div className={styles['login-footer']}>
+              <span className={styles['login-footer-text']}>Нет аккаунта?</span>
+              <Link href="/register" className={styles['login-footer-link']}>
                 Регистрация
               </Link>
             </div>
@@ -120,8 +121,8 @@ export default function LoginPage() {
         </div>
 
         {/* Hint */}
-        <div className={`login-hint ${fieldsReady ? "login-hint-visible" : ""}`}>
-          <span className="login-hint-key">↵</span>
+        <div className={`${styles['login-hint']} ${fieldsReady ? styles['login-hint-visible'] : ''}`}>
+          <span className={styles['login-hint-key']}>↵</span>
           <span>Войти</span>
         </div>
       </div>
