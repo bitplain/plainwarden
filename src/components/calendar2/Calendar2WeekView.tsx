@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
@@ -12,7 +12,6 @@ interface Calendar2WeekViewProps {
   anchorDate: Date;
   eventsByDate: Record<string, CalendarEvent[]>;
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   glowingCellKey: string | null;
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
@@ -30,6 +29,7 @@ function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPrio
     ? "bg-[var(--cal2-accent-soft)] border-[rgba(94,106,210,0.4)] text-[#d6dbff]"
     : "bg-[rgba(255,255,255,0.06)] border-[var(--cal2-border)] text-[var(--cal2-text-primary)]";
 }
+const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
 /* ── Isolated week-day column ── */
 
@@ -38,7 +38,6 @@ interface WeekDayColumnProps {
   dateKey: string;
   dayEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   isSelected: boolean;
   isToday: boolean;
   isGlowing: boolean;
@@ -53,7 +52,6 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
   dateKey,
   dayEvents,
   eventPriorities,
-  bouncingEventId,
   isSelected,
   isToday,
   isGlowing,
@@ -62,19 +60,62 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
   onQuickAdd,
   onMoveEvent,
 }: WeekDayColumnProps) {
+  const columnRef = useRef<HTMLElement>(null);
+  const markDragOver = useCallback(() => {
+    const column = columnRef.current;
+    if (!column) {
+      return;
+    }
+
+    const activeTargets = document.querySelectorAll<HTMLElement>(
+      ".cal2-drop-target[data-drag-over]",
+    );
+    for (const target of activeTargets) {
+      if (target !== column) {
+        target.removeAttribute("data-drag-over");
+      }
+    }
+
+    column.setAttribute("data-drag-over", "true");
+  }, []);
+
+  const clearDragOver = useCallback(() => {
+    columnRef.current?.removeAttribute("data-drag-over");
+  }, []);
+
+  const handleDragEnter = useCallback((event: React.DragEvent<HTMLElement>) => {
+    event.preventDefault();
+    markDragOver();
+  }, [markDragOver]);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLElement>) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && columnRef.current?.contains(related)) {
+      return;
+    }
+    clearDragOver();
+  }, [clearDragOver]);
+
   return (
     <section
-      onDragOver={(e) => e.preventDefault()}
+      ref={columnRef}
+      onDragEnter={handleDragEnter}
+      onDragOver={(e) => {
+        e.preventDefault();
+        markDragOver();
+      }}
+      onDragLeave={handleDragLeave}
       onDrop={(e) => {
         e.preventDefault();
+        clearDragOver();
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });
         }
       }}
       className={[
-        "relative flex min-h-[520px] flex-col border-r border-[var(--cal2-border)] last:border-r-0",
-        isGlowing ? "cal2-cell-drop-trace" : "",
+        "cal2-drop-target relative flex min-h-[520px] flex-col border-r border-[var(--cal2-border)] last:border-r-0",
+        isGlowing ? "cal2-cell-drop-flash" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -118,7 +159,6 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
         )}
 
         {dayEvents.map((event) => {
-          const isBouncing = bouncingEventId === event.id;
           return (
             <button
               key={event.id}
@@ -129,9 +169,7 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
                 dragEvent.dataTransfer.setData("text/plain", event.id);
               }}
               onClick={() => onSelectEvent(event.id)}
-              className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " cal2-event-bouncing" : ""
-              }`}
+              className={`w-full rounded-[6px] border px-2.5 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}`}
             >
               <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "—"}</p>
               <p className="mt-0.5 text-[13px] font-medium leading-[1.2]">{event.title}</p>
@@ -155,7 +193,6 @@ export default function Calendar2WeekView({
   anchorDate,
   eventsByDate,
   eventPriorities,
-  bouncingEventId,
   glowingCellKey,
   onSelectDate,
   onSelectEvent,
@@ -167,11 +204,10 @@ export default function Calendar2WeekView({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
       <div className="overflow-x-auto">
-        <div className="cal2-gpu-grid grid min-w-[840px] grid-cols-7">
+        <div className="grid min-w-[840px] grid-cols-7">
           {weekDates.map((day) => {
             const dateKey = toDateKey(day);
-            const dayEvents = eventsByDate[dateKey] ?? [];
-            const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
+            const dayEvents = eventsByDate[dateKey] ?? EMPTY_DAY_EVENTS;
 
             return (
               <WeekDayColumn
@@ -180,7 +216,6 @@ export default function Calendar2WeekView({
                 dateKey={dateKey}
                 dayEvents={dayEvents}
                 eventPriorities={eventPriorities}
-                bouncingEventId={cellBouncingId}
                 isSelected={isSameDay(day, anchorDate)}
                 isToday={isSameDay(day, today)}
                 isGlowing={glowingCellKey != null && glowingCellKey.startsWith(dateKey)}

@@ -1,7 +1,7 @@
 "use client";
 
 import { startOfDay } from "date-fns";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildEventListQueryString } from "@/lib/event-filter-query";
 import { useNetdenStore } from "@/lib/store";
 import type {
@@ -40,6 +40,7 @@ import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerRe
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 
 type EventMovePayload = { date: string; time?: string };
+const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
 function buildCategories(events: CalendarEvent[]): SidebarCategory[] {
   return [
@@ -136,8 +137,8 @@ export default function Calendar2() {
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
-  const [bouncingEventId, setBouncingEventId] = useState<string | null>(null);
   const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
+  const dropFlashTimeoutRef = useRef<number | null>(null);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -221,6 +222,35 @@ export default function Calendar2() {
     return () => media.removeEventListener("change", apply);
   }, []);
 
+  useEffect(() => {
+    const clearDragOverTargets = () => {
+      const activeTargets = document.querySelectorAll<HTMLElement>(
+        ".cal2-drop-target[data-drag-over]",
+      );
+      for (const target of activeTargets) {
+        target.removeAttribute("data-drag-over");
+      }
+    };
+
+    window.addEventListener("dragend", clearDragOverTargets);
+    window.addEventListener("drop", clearDragOverTargets);
+    window.addEventListener("blur", clearDragOverTargets);
+
+    return () => {
+      window.removeEventListener("dragend", clearDragOverTargets);
+      window.removeEventListener("drop", clearDragOverTargets);
+      window.removeEventListener("blur", clearDragOverTargets);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (dropFlashTimeoutRef.current !== null) {
+        window.clearTimeout(dropFlashTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const handlePriorityChange = useCallback(
     (eventId: string, priority: TaskPriority) => {
       setEventPriorities((prev) => {
@@ -231,6 +261,17 @@ export default function Calendar2() {
     },
     [],
   );
+
+  const triggerDropFlash = useCallback((cellKey: string) => {
+    if (dropFlashTimeoutRef.current !== null) {
+      window.clearTimeout(dropFlashTimeoutRef.current);
+    }
+    setGlowingCellKey(cellKey);
+    dropFlashTimeoutRef.current = window.setTimeout(() => {
+      setGlowingCellKey(null);
+      dropFlashTimeoutRef.current = null;
+    }, 650);
+  }, []);
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedEventId) ?? null,
@@ -243,7 +284,7 @@ export default function Calendar2() {
   const monthGridDays = useMemo(() => getMonthGridDates(anchorDate), [anchorDate]);
   const weekDates = useMemo(() => getWeekDates(anchorDate), [anchorDate]);
   const dayEvents = useMemo(
-    () => eventsByDate[toDateKey(anchorDate)] ?? [],
+    () => eventsByDate[toDateKey(anchorDate)] ?? EMPTY_DAY_EVENTS,
     [eventsByDate, anchorDate],
   );
 
@@ -314,10 +355,6 @@ export default function Calendar2() {
     localStore.addAuditEntry({ action: "create", eventId: "", eventTitle: input.title });
     await fetchEvents(liveCalendarQueryFilters);
 
-    // Green border trace on the target cell
-    const cellKey = input.time ? `${input.date}T${input.time}` : input.date;
-    setGlowingCellKey(cellKey);
-    setTimeout(() => setGlowingCellKey(null), 1100);
   };
 
   const handleDeleteEvent = async (
@@ -411,27 +448,30 @@ export default function Calendar2() {
     });
   };
 
-  const handleMoveEvent = async (eventId: string, payload: EventMovePayload) => {
-    const sourceEvent = events.find((event) => event.id === eventId);
-    if (!sourceEvent) {
-      return;
-    }
+  const handleMoveEvent = useCallback(
+    async (eventId: string, payload: EventMovePayload) => {
+      const sourceEvent = events.find((event) => event.id === eventId);
+      if (!sourceEvent) {
+        return;
+      }
 
-    // If dropping on the same date with no time change, skip
-    if (
-      sourceEvent.date === payload.date &&
-      (payload.time === undefined || payload.time === sourceEvent.time)
-    ) {
-      return;
-    }
+      // If dropping on the same date with no time change, skip
+      if (
+        sourceEvent.date === payload.date &&
+        (payload.time === undefined || payload.time === sourceEvent.time)
+      ) {
+        return;
+      }
 
-    // Open time-picker dialog instead of immediate move
-    setMovePickerRequest({
-      event: sourceEvent,
-      targetDate: payload.date,
-      suggestedTime: payload.time,
-    });
-  };
+      // Open time-picker dialog instead of immediate move
+      setMovePickerRequest({
+        event: sourceEvent,
+        targetDate: payload.date,
+        suggestedTime: payload.time,
+      });
+    },
+    [events],
+  );
 
   const handleMoveConfirm = async (result: MoveTimePickerResult) => {
     setMovePickerRequest(null);
@@ -445,14 +485,9 @@ export default function Calendar2() {
     });
     await fetchEvents(liveCalendarQueryFilters);
 
-    // Trigger bounce animation on the moved event
-    setBouncingEventId(result.eventId);
-    setTimeout(() => setBouncingEventId(null), 700);
-
-    // Green border trace on the target cell
     const cellKey = result.time ? `${result.date}T${result.time}` : result.date;
-    setGlowingCellKey(cellKey);
-    setTimeout(() => setGlowingCellKey(null), 1100);
+    triggerDropFlash(cellKey);
+
   };
 
   const handleMoveCancel = () => {
@@ -492,23 +527,26 @@ export default function Calendar2() {
     );
   };
 
-  const handleSelectDate = (date: Date) => {
-    setUrlState(
-      (prev) => ({
-        ...prev,
-        date: toDateKey(normalizeToDay(date)),
-      }),
-      "push",
-    );
-    if (isMobileLayout) {
-      setIsSidebarVisible(false);
-    }
-  };
+  const handleSelectDate = useCallback(
+    (date: Date) => {
+      setUrlState(
+        (prev) => ({
+          ...prev,
+          date: toDateKey(normalizeToDay(date)),
+        }),
+        "push",
+      );
+      if (isMobileLayout) {
+        setIsSidebarVisible(false);
+      }
+    },
+    [isMobileLayout, setUrlState],
+  );
 
-  const handleQuickAdd = (date: Date) => {
+  const handleQuickAdd = useCallback((date: Date) => {
     setAddModalDate(toDateKey(date));
     setShowAddModal(true);
-  };
+  }, []);
 
   const handleFilterChange = (nextFilter: string) => {
     setUrlState(
@@ -553,7 +591,6 @@ export default function Calendar2() {
                 days={monthGridDays}
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
-                bouncingEventId={bouncingEventId}
                 glowingCellKey={glowingCellKey}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
@@ -567,7 +604,6 @@ export default function Calendar2() {
                 anchorDate={anchorDate}
                 eventsByDate={eventsByDate}
                 eventPriorities={resolvedPriorities}
-                bouncingEventId={bouncingEventId}
                 glowingCellKey={glowingCellKey}
                 onSelectDate={handleSelectDate}
                 onSelectEvent={setSelectedEventId}
@@ -580,7 +616,6 @@ export default function Calendar2() {
                 dayDate={anchorDate}
                 dayEvents={dayEvents}
                 eventPriorities={resolvedPriorities}
-                bouncingEventId={bouncingEventId}
                 glowingCellKey={glowingCellKey}
                 onSelectEvent={setSelectedEventId}
                 onMoveEvent={handleMoveEvent}
@@ -706,10 +741,10 @@ export default function Calendar2() {
           <main
             className={`${
               isSidebarVisible ? "hidden lg:flex" : "flex"
-            } min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
+            } relative min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
           >
             {(isAuthLoading || isEventsLoading) && (
-              <div className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-3 py-2 text-[11px] text-[var(--cal2-text-secondary)]">
+              <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-3 py-2 text-[11px] text-[var(--cal2-text-secondary)] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.8)]">
                 Синхронизация данных...
               </div>
             )}

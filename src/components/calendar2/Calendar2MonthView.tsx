@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
@@ -11,7 +11,6 @@ interface Calendar2MonthViewProps {
   days: Date[];
   eventsByDate: Record<string, CalendarEvent[]>;
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   glowingCellKey: string | null;
   onSelectDate: (date: Date) => void;
   onSelectEvent: (eventId: string) => void;
@@ -20,6 +19,7 @@ interface Calendar2MonthViewProps {
 }
 
 const MONTH_DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
 function getEventStyle(event: CalendarEvent, priorities: Record<string, TaskPriority>) {
   const priority = priorities[event.id];
@@ -39,7 +39,6 @@ interface MonthCellProps {
   dateKey: string;
   dayEvents: CalendarEvent[];
   eventPriorities: Record<string, TaskPriority>;
-  bouncingEventId: string | null;
   isCurrentMonth: boolean;
   isCurrentDay: boolean;
   isToday: boolean;
@@ -55,7 +54,6 @@ const MonthCell = React.memo(function MonthCell({
   dateKey,
   dayEvents,
   eventPriorities,
-  bouncingEventId,
   isCurrentMonth,
   isCurrentDay,
   isToday,
@@ -65,6 +63,7 @@ const MonthCell = React.memo(function MonthCell({
   onQuickAdd,
   onMoveEvent,
 }: MonthCellProps) {
+  const cellRef = useRef<HTMLDivElement>(null);
   const visibleEvents = dayEvents.slice(0, 3);
   const extraCount = dayEvents.length - visibleEvents.length;
 
@@ -74,33 +73,63 @@ const MonthCell = React.memo(function MonthCell({
       ? "bg-transparent hover:bg-[rgba(255,255,255,0.03)]"
       : "bg-[rgba(0,0,0,0.2)] hover:bg-[rgba(255,255,255,0.02)]";
 
-  const onDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    cellRef.current?.setAttribute("data-drag-over", "");
+  const markDragOver = useCallback(() => {
+    const cell = cellRef.current;
+    if (!cell) {
+      return;
+    }
+
+    const activeTargets = document.querySelectorAll<HTMLElement>(
+      ".cal2-drop-target[data-drag-over]",
+    );
+    for (const target of activeTargets) {
+      if (target !== cell) {
+        target.removeAttribute("data-drag-over");
+      }
+    }
+
+    cell.setAttribute("data-drag-over", "true");
   }, []);
 
-  const onDragLeave = useCallback((e: React.DragEvent) => {
-    const related = e.relatedTarget as Node | null;
-    if (related && cellRef.current?.contains(related)) return;
+  const clearDragOver = useCallback(() => {
     cellRef.current?.removeAttribute("data-drag-over");
   }, []);
+
+  const handleDragEnter = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    markDragOver();
+  }, [markDragOver]);
+
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    const related = event.relatedTarget as Node | null;
+    if (related && cellRef.current?.contains(related)) {
+      return;
+    }
+    clearDragOver();
+  }, [clearDragOver]);
 
   return (
     <div
       ref={cellRef}
       onClick={() => onQuickAdd(day)}
-      onDragOver={(e) => e.preventDefault()}
+      onDragEnter={handleDragEnter}
+      onDragOver={(e) => {
+        e.preventDefault();
+        markDragOver();
+      }}
+      onDragLeave={handleDragLeave}
       onDrop={(e) => {
         e.preventDefault();
+        clearDragOver();
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });
         }
       }}
       className={[
-        "group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left last:border-r-0",
+        "cal2-drop-target group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left last:border-r-0",
         bgClass,
-        isGlowing ? "cal2-cell-drop-trace" : "",
+        isGlowing ? "cal2-cell-drop-flash" : "",
       ]
         .filter(Boolean)
         .join(" ")}
@@ -130,7 +159,6 @@ const MonthCell = React.memo(function MonthCell({
 
       <div className="space-y-0.5">
         {visibleEvents.map((event) => {
-          const isBouncing = bouncingEventId === event.id;
           return (
             <button
               key={event.id}
@@ -145,9 +173,7 @@ const MonthCell = React.memo(function MonthCell({
                 e.stopPropagation();
                 onSelectEvent(event.id);
               }}
-              className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " cal2-event-bouncing" : ""
-              }`}
+              className={`w-full truncate rounded-[4px] border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:bg-[rgba(255,255,255,0.12)] ${getEventStyle(event, eventPriorities)}`}
             >
               {event.time && (
                 <span className="mr-1 text-[var(--cal2-text-secondary)]">{event.time}</span>
@@ -174,7 +200,6 @@ export default function Calendar2MonthView({
   days,
   eventsByDate,
   eventPriorities,
-  bouncingEventId,
   glowingCellKey,
   onSelectDate,
   onSelectEvent,
@@ -196,11 +221,10 @@ export default function Calendar2MonthView({
         ))}
       </div>
 
-      <div className="cal2-gpu-grid grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(100px,1fr))] md:grid-rows-[repeat(6,minmax(120px,1fr))]">
+      <div className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(100px,1fr))] md:grid-rows-[repeat(6,minmax(120px,1fr))]">
         {days.map((day) => {
           const dateKey = toDateKey(day);
-          const dayEvents = eventsByDate[dateKey] ?? [];
-          const cellBouncingId = bouncingEventId != null && dayEvents.some(e => e.id === bouncingEventId) ? bouncingEventId : null;
+          const dayEvents = eventsByDate[dateKey] ?? EMPTY_DAY_EVENTS;
 
           return (
             <MonthCell
@@ -209,7 +233,6 @@ export default function Calendar2MonthView({
               dateKey={dateKey}
               dayEvents={dayEvents}
               eventPriorities={eventPriorities}
-              bouncingEventId={cellBouncingId}
               isCurrentMonth={isSameMonth(day, anchorDate)}
               isCurrentDay={isSameDay(day, anchorDate)}
               isToday={isSameDay(day, today)}
