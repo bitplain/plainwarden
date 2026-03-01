@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser, sanitizeUser } from "@/lib/server/auth";
+import { sanitizeUser, getUserIdFromRequest } from "@/lib/server/auth";
+import { findUserById } from "@/lib/server/json-db";
 import { HttpError, handleRouteError } from "@/lib/server/validators";
 
 export async function GET(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
+    const user = await findUserById(userId);
     if (!user) {
       throw new HttpError(401, "Unauthorized");
     }

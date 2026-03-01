@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { disablePushSubscriptionForUser } from "@/lib/server/push-subscriptions-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 
@@ -9,10 +9,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -22,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     const removed = await disablePushSubscriptionForUser({
-      userId: user.id,
+      userId: userId,
       endpoint: body.endpoint,
     });
 

@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { AgentCore } from "@/agent/AgentCore";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
+import { findUserById } from "@/lib/server/json-db";
 import { getOpenRouterRuntimeConfig } from "@/lib/server/openrouter-settings";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { parseAgentTurnInput } from "@/utils/validators";
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
+    const user = await findUserById(userId);
     if (!user) {
       throw new HttpError(401, "Unauthorized");
     }

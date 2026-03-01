@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { OpenRouterApiError } from "@/lib/server/openrouter-client";
 import {
   clearOpenRouterKey,
@@ -16,17 +16,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function GET(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
-    const config = await getOpenRouterUserConfig(user.id);
+    const config = await getOpenRouterUserConfig(userId);
     const models =
       config.hasKey && config.status === "valid"
-        ? await listOpenRouterModelsForUser(user.id)
+        ? await listOpenRouterModelsForUser(userId)
         : [];
 
     return NextResponse.json({
@@ -61,10 +59,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -78,8 +74,8 @@ export async function POST(request: NextRequest) {
         throw new HttpError(400, "apiKey is required");
       }
 
-      const result = await saveOpenRouterKey(user.id, body.apiKey);
-      const models = result.valid ? await listOpenRouterModelsForUser(user.id) : [];
+      const result = await saveOpenRouterKey(userId, body.apiKey);
+      const models = result.valid ? await listOpenRouterModelsForUser(userId) : [];
 
       return NextResponse.json({
         ok: true,
@@ -92,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.action === "clear_key") {
-      const config = await clearOpenRouterKey(user.id);
+      const config = await clearOpenRouterKey(userId);
       return NextResponse.json({
         ok: true,
         config,
@@ -105,7 +101,7 @@ export async function POST(request: NextRequest) {
         throw new HttpError(400, "model is required");
       }
 
-      const config = await setOpenRouterModel(user.id, body.model);
+      const config = await setOpenRouterModel(userId, body.model);
       return NextResponse.json({
         ok: true,
         config,
@@ -113,7 +109,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.action === "refresh_models") {
-      const models = await listOpenRouterModelsForUser(user.id);
+      const models = await listOpenRouterModelsForUser(userId);
       return NextResponse.json({
         ok: true,
         models,

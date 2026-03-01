@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { KanbanNotFoundError, stopWorklogTimer } from "@/lib/server/kanban-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { ApiErrorResponse } from "@/lib/types";
@@ -10,9 +10,10 @@ interface Params {
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) throw new HttpError(401, "Unauthorized");
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
 
     const { id } = await params;
 
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       }
     }
 
-    const log = await stopWorklogTimer(user.id, id, note);
+    const log = await stopWorklogTimer(userId, id, note);
     if (!log) throw new HttpError(404, "Card not found");
     return NextResponse.json(log);
   } catch (error) {

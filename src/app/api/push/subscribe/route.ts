@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { upsertPushSubscriptionForUser, type PushSubscriptionPayload } from "@/lib/server/push-subscriptions-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 
@@ -36,10 +36,8 @@ function parseSubscription(value: unknown): PushSubscriptionPayload {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -51,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const subscription = parseSubscription(payload.subscription);
     const created = await upsertPushSubscriptionForUser({
-      userId: user.id,
+      userId: userId,
       subscription,
       userAgent: request.headers.get("user-agent") || undefined,
     });

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { createEventForUser, listEventsByUser } from "@/lib/server/json-db";
 import { parseEventListFilters } from "@/lib/server/event-filters";
 import {
@@ -17,15 +17,13 @@ const CREATE_EVENT_RATE_LIMIT = {
 
 export async function GET(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
     const filters = parseEventListFilters(request.nextUrl.searchParams);
-    const events = await listEventsByUser(user.id, filters);
+    const events = await listEventsByUser(userId, filters);
     return NextResponse.json(events);
   } catch (error) {
     return handleRouteError(error);
@@ -34,10 +32,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -47,7 +43,7 @@ export async function POST(request: NextRequest) {
     const body = await readJsonBody(request);
     const input = validateCreateEventInput(body);
 
-    const event = await createEventForUser(user.id, input);
+    const event = await createEventForUser(userId, input);
     return NextResponse.json(event, { status: 201 });
   } catch (error) {
     return handleRouteError(error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { deleteChecklistForUser, updateChecklistForUser } from "@/lib/server/kanban-db";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 import { validateUpdateChecklistInput } from "@/lib/server/kanban-validators";
@@ -10,14 +10,15 @@ interface Params {
 
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) throw new HttpError(401, "Unauthorized");
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
 
     const { id } = await params;
     const body = await readJsonBody(request);
     const input = validateUpdateChecklistInput(body);
-    const checklist = await updateChecklistForUser(user.id, id, input);
+    const checklist = await updateChecklistForUser(userId, id, input);
     if (!checklist) throw new HttpError(404, "Checklist not found");
     return NextResponse.json(checklist);
   } catch (error) {
@@ -27,12 +28,13 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) throw new HttpError(401, "Unauthorized");
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
+      throw new HttpError(401, "Unauthorized");
+    }
 
     const { id } = await params;
-    const deleted = await deleteChecklistForUser(user.id, id);
+    const deleted = await deleteChecklistForUser(userId, id);
     if (!deleted) throw new HttpError(404, "Checklist not found");
     return new NextResponse(null, { status: 204 });
   } catch (error) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { sendPushToUser } from "@/lib/server/push-delivery";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 
@@ -9,9 +9,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function POST(request: NextRequest) {
   try {
-    await bootstrapAuth();
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     const navigateTo = typeof body.navigateTo === "string" ? body.navigateTo : "/";
 
     const sent = await sendPushToUser({
-      userId: user.id,
+      userId: userId,
       payload: {
         title,
         body: message,

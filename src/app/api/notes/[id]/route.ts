@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { bootstrapAuth, getAuthenticatedUser } from "@/lib/server/auth";
+import { getUserIdFromRequest } from "@/lib/server/auth";
 import { deleteNoteForUser, getNoteForUser, updateNoteForUser } from "@/lib/server/notes-db";
 import { HttpError, handleRouteError, readJsonBody, validateUpdateNoteInput } from "@/lib/server/validators";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
     const { id } = await params;
-    const note = await getNoteForUser(user.id, id);
+    const note = await getNoteForUser(userId, id);
     if (!note) {
       throw new HttpError(404, "Note not found");
     }
@@ -26,10 +24,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
@@ -37,7 +33,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const body = await readJsonBody(request);
     const input = validateUpdateNoteInput(body);
 
-    const note = await updateNoteForUser(user.id, id, input);
+    const note = await updateNoteForUser(userId, id, input);
     if (!note) {
       throw new HttpError(404, "Note not found");
     }
@@ -50,15 +46,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await bootstrapAuth();
-
-    const user = await getAuthenticatedUser(request);
-    if (!user) {
+    const userId = getUserIdFromRequest(request);
+    if (!userId) {
       throw new HttpError(401, "Unauthorized");
     }
 
     const { id } = await params;
-    const deleted = await deleteNoteForUser(user.id, id);
+    const deleted = await deleteNoteForUser(userId, id);
     if (!deleted) {
       throw new HttpError(404, "Note not found");
     }
