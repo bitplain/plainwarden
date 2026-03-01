@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { ru } from "date-fns/locale";
-import { motion } from "motion/react";
 import type { CalendarEvent } from "@/lib/types";
 import {
   DAY_VIEW_END_HOUR,
@@ -11,7 +10,6 @@ import {
   getDaySlots,
 } from "@/components/calendar2/date-utils";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
-import { BOUNCE_SPRING } from "./bounce-spring";
 
 interface Calendar2DayViewProps {
   dayDate: Date;
@@ -66,29 +64,29 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
   onSelectEvent,
   onMoveEvent,
 }: DayTimeSlotProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCountRef = useRef(0);
+  const slotRef = useRef<HTMLDivElement>(null);
   const timeStr = format(slot, "HH:mm");
+
+  const onDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    slotRef.current?.setAttribute("data-drag-over", "");
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent) => {
+    const related = e.relatedTarget as Node | null;
+    if (related && slotRef.current?.contains(related)) return;
+    slotRef.current?.removeAttribute("data-drag-over");
+  }, []);
 
   return (
     <div
-      onDragEnter={(e) => {
-        e.preventDefault();
-        dragCountRef.current++;
-        if (!isDragOver) setIsDragOver(true);
-      }}
+      ref={slotRef}
+      onDragEnter={onDragEnter}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={() => {
-        dragCountRef.current--;
-        if (dragCountRef.current <= 0) {
-          dragCountRef.current = 0;
-          setIsDragOver(false);
-        }
-      }}
+      onDragLeave={onDragLeave}
       onDrop={(e) => {
         e.preventDefault();
-        dragCountRef.current = 0;
-        setIsDragOver(false);
+        slotRef.current?.removeAttribute("data-drag-over");
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, {
@@ -99,7 +97,6 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
       }}
       className={[
         "relative grid grid-cols-[60px_1fr] items-start gap-3 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2 py-2 sm:px-3",
-        isDragOver ? "cal2-cell-drag-over" : "",
         isGlowing ? "cal2-cell-drop-trace" : "",
       ]
         .filter(Boolean)
@@ -119,30 +116,22 @@ const DayTimeSlot = React.memo(function DayTimeSlot({
         {slotEvents.map((event) => {
           const isBouncing = bouncingEventId === event.id;
           return (
-            <motion.button
+            <button
               key={event.id}
               type="button"
               draggable
-              animate={
-                isBouncing
-                  ? { y: [0, -6, 0], scale: [1, 1.04, 1] }
-                  : undefined
-              }
-              transition={isBouncing ? BOUNCE_SPRING : undefined}
-              {...({
-                onDragStartCapture: (dragEvent: React.DragEvent) => {
-                  dragEvent.dataTransfer.effectAllowed = "move";
-                  dragEvent.dataTransfer.setData("text/plain", event.id);
-                },
-              } as Record<string, unknown>)}
+              onDragStartCapture={(dragEvent) => {
+                dragEvent.dataTransfer.effectAllowed = "move";
+                dragEvent.dataTransfer.setData("text/plain", event.id);
+              }}
               onClick={() => onSelectEvent(event.id)}
               className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-                isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+                isBouncing ? " cal2-event-bouncing" : ""
               }`}
             >
               <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
               <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
-            </motion.button>
+            </button>
           );
         })}
       </div>
@@ -168,32 +157,23 @@ const DayEventCard = React.memo(function DayEventCard({
   onSelectEvent,
 }: DayEventCardProps) {
   return (
-    <motion.button
-      key={event.id}
+    <button
       type="button"
       draggable
-      animate={
-        isBouncing
-          ? { y: [0, -6, 0], scale: [1, 1.04, 1] }
-          : undefined
-      }
-      transition={isBouncing ? BOUNCE_SPRING : undefined}
-      {...({
-        onDragStartCapture: (dragEvent: React.DragEvent) => {
-          dragEvent.dataTransfer.effectAllowed = "move";
-          dragEvent.dataTransfer.setData("text/plain", event.id);
-        },
-      } as Record<string, unknown>)}
+      onDragStartCapture={(dragEvent) => {
+        dragEvent.dataTransfer.effectAllowed = "move";
+        dragEvent.dataTransfer.setData("text/plain", event.id);
+      }}
       onClick={() => onSelectEvent(event.id)}
       className={`w-full rounded-[6px] border px-3 py-2 text-left transition-colors hover:bg-[rgba(255,255,255,0.1)] ${getEventStyle(event, eventPriorities)}${
-        isBouncing ? " ring-1 ring-[var(--cal2-accent)] shadow-[0_0_12px_rgba(94,106,210,0.35)]" : ""
+        isBouncing ? " cal2-event-bouncing" : ""
       }`}
     >
       {showTime && (
         <p className="text-[10px] text-[var(--cal2-text-secondary)]">{event.time ?? "--:--"}</p>
       )}
       <p className="text-[13px] font-medium leading-[1.2]">{event.title}</p>
-    </motion.button>
+    </button>
   );
 });
 
@@ -283,7 +263,7 @@ export default function Calendar2DayView({
           </section>
         )}
 
-        <section className="space-y-1.5">
+        <section className="cal2-gpu-grid space-y-1.5">
           {slots.map((slot) => {
             const hour = Number(format(slot, "H"));
             const slotEvents = slottedEvents.get(hour) ?? [];
