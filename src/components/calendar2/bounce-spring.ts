@@ -6,8 +6,8 @@
  */
 export const BOUNCE_SPRING = {
   type: "spring" as const,
-  stiffness: 500,
-  damping: 15,
-  mass: 0.8,
+  stiffness: 340,
+  damping: 20,
+  mass: 0.6,
   restDelta: 0.5,
 } as const;
