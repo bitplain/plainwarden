@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React from "react";
 import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
@@ -62,28 +62,11 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
   onQuickAdd,
   onMoveEvent,
 }: WeekDayColumnProps) {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const dragCountRef = useRef(0);
-
   return (
     <section
-      onDragEnter={(e) => {
-        e.preventDefault();
-        dragCountRef.current++;
-        if (!isDragOver) setIsDragOver(true);
-      }}
       onDragOver={(e) => e.preventDefault()}
-      onDragLeave={() => {
-        dragCountRef.current--;
-        if (dragCountRef.current <= 0) {
-          dragCountRef.current = 0;
-          setIsDragOver(false);
-        }
-      }}
       onDrop={(e) => {
         e.preventDefault();
-        dragCountRef.current = 0;
-        setIsDragOver(false);
         const draggedEventId = e.dataTransfer.getData("text/plain");
         if (draggedEventId) {
           void onMoveEvent(draggedEventId, { date: dateKey });
@@ -91,7 +74,6 @@ const WeekDayColumn = React.memo(function WeekDayColumn({
       }}
       className={[
         "relative flex min-h-[520px] flex-col border-r border-[var(--cal2-border)] last:border-r-0",
-        isDragOver ? "cal2-cell-drag-over" : "",
         isGlowing ? "cal2-cell-drop-trace" : "",
       ]
         .filter(Boolean)
@@ -185,7 +167,7 @@ export default function Calendar2WeekView({
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
       <div className="overflow-x-auto">
-        <div className="grid min-w-[840px] grid-cols-7">
+        <div className="cal2-gpu-grid grid min-w-[840px] grid-cols-7">
           {weekDates.map((day) => {
             const dateKey = toDateKey(day);
             const dayEvents = eventsByDate[dateKey] ?? [];
