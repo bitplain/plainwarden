@@ -1,7 +1,85 @@
+import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { hasUsers } from "@/lib/server/json-db";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/server/session";
+import {
+  SESSION_COOKIE_NAME,
+  hashSessionToken,
+  isSessionActive,
+  verifySessionToken,
+} from "@/lib/server/session";
 import { isDatabaseConfigured } from "@/lib/server/setup";
+
+// Note: proxy always runs on Node.js runtime — no need to declare it explicitly
+
+// ─── API route protection ────────────────────────────────────────────────────
+
+/**
+ * Routes that don't require session authentication.
+ * All other /api/* routes are protected.
+ */
+const PUBLIC_API_ROUTES = new Set([
+  "/api/auth/login",
+  "/api/auth/logout", // must be accessible even when session is revoked
+  "/api/auth/register",
+  "/api/health",
+  "/api/setup/run",
+  "/api/setup/recover",
+  "/api/setup/state",
+  "/api/cron/reminders", // protected by NETDEN_CRON_SECRET, not session
+]);
+
+/** HTTP methods that mutate state — checked for CSRF */
+const MUTATION_METHODS = new Set(["POST", "PATCH", "DELETE", "PUT"]);
+
+async function handleApiRoute(request: NextRequest): Promise<NextResponse> {
+  const { pathname } = request.nextUrl;
+
+  if (PUBLIC_API_ROUTES.has(pathname)) {
+    return NextResponse.next();
+  }
+
+  // CSRF protection for mutating requests:
+  // If Sec-Fetch-Site header is present and equals "cross-site", reject.
+  if (MUTATION_METHODS.has(request.method)) {
+    const secFetchSite = request.headers.get("sec-fetch-site");
+    if (secFetchSite === "cross-site") {
+      return NextResponse.json(
+        { message: "Cross-origin requests are not allowed" },
+        { status: 403 },
+      );
+    }
+  }
+
+  // Session validation (HMAC signature + expiry)
+  const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
+  const session = verifySessionToken(token);
+
+  if (!session) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Whitelist check — ensures revoked sessions are rejected
+  const tokenHash = hashSessionToken(token!);
+  const active = await isSessionActive(tokenHash);
+  if (!active) {
+    return NextResponse.json({ message: "Session revoked" }, { status: 401 });
+  }
+
+  // Inject validated user info into request headers for downstream handlers.
+  const requestId = crypto.randomUUID();
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-user-id", session.userId);
+  requestHeaders.set("x-user-email", session.email);
+  requestHeaders.set("x-request-id", requestId);
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  response.headers.set("x-request-id", requestId);
+  return response;
+}
+
+// ─── Page routing ─────────────────────────────────────────────────────────────
 
 const loginRoute = "/login";
 const registerRoute = "/register";
@@ -12,7 +90,7 @@ function matchesRoute(pathname: string, route: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-export async function proxy(request: NextRequest) {
+async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
   const pathname = request.nextUrl.pathname;
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = verifySessionToken(token);
@@ -23,7 +101,6 @@ export async function proxy(request: NextRequest) {
   const hasDatabase = isDatabaseConfigured();
 
   if (!hasDatabase) {
-    // First run: open the terminal workspace and let user trigger /setup explicitly.
     if (isHomeRoute || isSetupRoute) {
       return NextResponse.next();
     }
@@ -36,7 +113,6 @@ export async function proxy(request: NextRequest) {
     if (!initialized) {
       return NextResponse.redirect(new URL(registerRoute, request.url));
     }
-    // Setup is no longer available once initialization is complete.
     return NextResponse.redirect(new URL(homeRoute, request.url));
   }
 
@@ -55,7 +131,6 @@ export async function proxy(request: NextRequest) {
     if (isHomeRoute || isLoginRoute) {
       return NextResponse.next();
     }
-
     const loginUrl = new URL(loginRoute, request.url);
     loginUrl.searchParams.set("from", pathname);
     return NextResponse.redirect(loginUrl);
@@ -64,8 +139,17 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
+// ─── Entry point ─────────────────────────────────────────────────────────────
+
+export async function proxy(request: NextRequest): Promise<NextResponse> {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return handleApiRoute(request);
+  }
+  return handlePageRoute(request);
+}
+
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };
