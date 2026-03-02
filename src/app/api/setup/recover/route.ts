@@ -4,18 +4,14 @@ import { writeInstallState } from "@/modules/setup/install-state";
 import {
   buildSetupSummary,
   handleSetupError,
-  isDatabaseConfigured,
   provisionDatabase,
+  resetUserPasswordInDatabase,
   validateSetupRecoverInput,
 } from "@/lib/server/setup";
 import { SetupRecoverResponse } from "@/lib/types";
 
 export async function POST(request: Request) {
   try {
-    if (isDatabaseConfigured()) {
-      throw new HttpError(409, "Recovery is disabled because DATABASE_URL is already configured");
-    }
-
     const body = await readJsonBody(request, { maxSizeKB: 32 });
 
     const input = validateSetupRecoverInput(body);
@@ -28,18 +24,29 @@ export async function POST(request: Request) {
       );
     }
 
+    let recoveredUserEmail: string | undefined;
+    if (input.accountRecovery) {
+      const recoveredUser = await resetUserPasswordInDatabase(
+        provisioned.databaseUrl,
+        input.accountRecovery,
+      );
+      recoveredUserEmail = recoveredUser.email;
+    }
+
     const response: SetupRecoverResponse = {
       ok: true,
       recovered: buildSetupSummary({
         databaseUrl: provisioned.databaseUrl,
         appRole: provisioned.appRole,
         appPassword: provisioned.appPassword,
+        initialUserEmail: recoveredUserEmail,
       }),
     };
 
     try {
       await writeInstallState({
         mode: "recovery",
+        initialUserEmail: recoveredUserEmail,
       });
     } catch (stateError) {
       console.warn("Failed to persist install-state:", stateError);

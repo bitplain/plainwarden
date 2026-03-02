@@ -112,9 +112,9 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className={homeStyles['notes-input']}
-                placeholder="Минимум 8 символов"
+                placeholder="Минимум 12 символов"
                 autoComplete="new-password"
-                minLength={8}
+                minLength={12}
                 required
               />
             </label>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
                 className={homeStyles['notes-input']}
                 placeholder="Повторите пароль"
                 autoComplete="new-password"
-                minLength={8}
+                minLength={12}
                 required
               />
             </label>

@@ -128,6 +128,9 @@ export function SetupWizard() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState("");
+  const [recoveryEmail, setRecoveryEmail] = useState("");
+  const [recoveryPassword, setRecoveryPassword] = useState("");
+  const [recoveryPasswordConfirm, setRecoveryPasswordConfirm] = useState("");
 
   const [done, setDone] = useState(false);
   const [needsRecovery, setNeedsRecovery] = useState(false);
@@ -168,7 +171,7 @@ export function SetupWizard() {
       return Boolean(
         adminName.trim() &&
         adminEmail.trim().includes("@") &&
-        adminPassword.trim().length >= 8 &&
+        adminPassword.trim().length >= 12 &&
         adminPassword === adminPasswordConfirm,
       );
     }
@@ -250,10 +253,35 @@ export function SetupWizard() {
     setError(null);
 
     try {
+      const wantsPasswordReset = Boolean(
+        recoveryEmail.trim() || recoveryPassword.trim() || recoveryPasswordConfirm.trim(),
+      );
+      if (wantsPasswordReset) {
+        if (!recoveryEmail.trim().includes("@")) {
+          throw new Error("Укажите корректный email для восстановления доступа");
+        }
+        if (recoveryPassword.trim().length < 12) {
+          throw new Error("Новый пароль должен быть не короче 12 символов");
+        }
+        if (recoveryPassword !== recoveryPasswordConfirm) {
+          throw new Error("Пароли восстановления не совпадают");
+        }
+      }
+
+      const recoveryPayload = wantsPasswordReset
+        ? {
+            ...payload,
+            accountRecovery: {
+              email: recoveryEmail.trim(),
+              password: recoveryPassword,
+            },
+          }
+        : payload;
+
       const response = await fetch(recoveryEndpoint, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(recoveryPayload),
       });
 
       const data: unknown = await response.json().catch(() => null);
@@ -434,7 +462,7 @@ export function SetupWizard() {
                   onChange={(e) => setAdminPassword(e.target.value)}
                   type="password"
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={12}
                 />
               </Field>
               <Field label="Повторите пароль">
@@ -443,7 +471,7 @@ export function SetupWizard() {
                   onChange={(e) => setAdminPasswordConfirm(e.target.value)}
                   type="password"
                   autoComplete="new-password"
-                  minLength={8}
+                  minLength={12}
                 />
               </Field>
             </div>
@@ -490,6 +518,35 @@ export function SetupWizard() {
                     Найдены существующие пользователи в БД. Можно восстановить setup-состояние без
                     удаления данных.
                   </p>
+                  <div className={settingsStyles['settings-grid']}>
+                    <Field label="Email пользователя для сброса пароля (опционально)">
+                      <Input
+                        value={recoveryEmail}
+                        onChange={(e) => setRecoveryEmail(e.target.value)}
+                        type="email"
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                      />
+                    </Field>
+                    <Field label="Новый пароль (опционально)" hint="минимум 12 символов">
+                      <Input
+                        value={recoveryPassword}
+                        onChange={(e) => setRecoveryPassword(e.target.value)}
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={12}
+                      />
+                    </Field>
+                    <Field label="Повторите новый пароль">
+                      <Input
+                        value={recoveryPasswordConfirm}
+                        onChange={(e) => setRecoveryPasswordConfirm(e.target.value)}
+                        type="password"
+                        autoComplete="new-password"
+                        minLength={12}
+                      />
+                    </Field>
+                  </div>
                   <div>
                     <Button
                       type="button"
