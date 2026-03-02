@@ -59,9 +59,32 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           set -euo pipefail
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@${SSH_HOST}" << 'EOF'
+          ssh -T -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@${SSH_HOST}" << 'EOF'
           set -euo pipefail
-          cd /opt/web_cal/plainwarden
+          REPO_DIR="/opt/web_cal/plainwarden"
+          REPO_URL="https://github.com/bitplain/plainwarden.git"
+          REPO_BRANCH="main"
+
+          mkdir -p /opt/web_cal
+          if [ ! -d "${REPO_DIR}/.git" ]; then
+            rm -rf "${REPO_DIR}"
+            git clone --depth 1 --branch "${REPO_BRANCH}" "${REPO_URL}" "${REPO_DIR}"
+          fi
+
+          cd "${REPO_DIR}"
+          git fetch origin "${REPO_BRANCH}"
+          git checkout "${REPO_BRANCH}"
+          git pull --ff-only origin "${REPO_BRANCH}"
+
+          if [ ! -f docker-compose.prod.yml ]; then
+            cat > docker-compose.prod.yml << 'YAML'
+          services:
+            app:
+              image: ${APP_IMAGE:-kaiots/web_cal:latest}
+              pull_policy: always
+          YAML
+          fi
+
           export APP_IMAGE=kaiots/web_cal:latest
           docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app
           docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --no-build
