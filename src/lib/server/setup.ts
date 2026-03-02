@@ -142,6 +142,23 @@ export function validateSetupRecoverInput(payload: unknown): SetupRecoverInput {
   assertRecord(payload);
   assertRecord(payload.provision, "provision must be an object");
 
+  let accountRecovery: SetupRecoverInput["accountRecovery"];
+  if (payload.accountRecovery !== undefined && payload.accountRecovery !== null) {
+    assertRecord(payload.accountRecovery, "accountRecovery must be an object");
+    const email = readEmail(payload.accountRecovery.email, "accountRecovery.email");
+    const password = readRequiredString(
+      payload.accountRecovery.password,
+      "accountRecovery.password",
+      256,
+    );
+
+    if (password.length < 12) {
+      throw new HttpError(400, "accountRecovery.password must be at least 12 characters");
+    }
+
+    accountRecovery = { email, password };
+  }
+
   const appPassword = readOptionalString(payload.provision.appPassword, "provision.appPassword", 128);
   if (appPassword && appPassword.length < 12) {
     throw new HttpError(400, "provision.appPassword must be at least 12 characters");
@@ -154,6 +171,7 @@ export function validateSetupRecoverInput(payload: unknown): SetupRecoverInput {
       appRole: readIdentifier(payload.provision.appRole, "provision.appRole"),
       appPassword,
     },
+    accountRecovery,
   };
 }
 
@@ -415,6 +433,42 @@ export async function createInitialUserInDatabase(
     });
 
     return { email: createdUser.email };
+  } finally {
+    await prisma.$disconnect().catch(() => undefined);
+  }
+}
+
+export async function resetUserPasswordInDatabase(
+  databaseUrl: string,
+  accountRecovery: NonNullable<SetupRecoverInput["accountRecovery"]>,
+): Promise<{ email: string }> {
+  const adapter = new PrismaPg({ connectionString: databaseUrl });
+  const prisma = new PrismaClient({ adapter });
+
+  try {
+    const targetEmail = accountRecovery.email.toLowerCase();
+    const user = await prisma.user.findUnique({
+      where: { email: targetEmail },
+      select: { id: true, email: true },
+    });
+
+    if (!user) {
+      throw new HttpError(404, `User with email \"${targetEmail}\" was not found`);
+    }
+
+    const passwordHash = await hashPassword(accountRecovery.password);
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash },
+      }),
+      prisma.session.deleteMany({
+        where: { userId: user.id },
+      }),
+    ]);
+
+    return { email: user.email };
   } finally {
     await prisma.$disconnect().catch(() => undefined);
   }

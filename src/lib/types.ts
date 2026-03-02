@@ -347,6 +347,10 @@ export interface SetupRunInput {
 export interface SetupRecoverInput {
   pgAdmin: SetupPgAdminInput;
   provision: SetupProvisionInput;
+  accountRecovery?: {
+    email: string;
+    password: string;
+  };
 }
 
 export interface SetupSummary {
