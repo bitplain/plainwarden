@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { AgentActionProposal, AgentMemoryItem, AgentMessage, AgentSettings } from "@/agent/types";
+import { createRandomId } from "@/lib/random-id";
 
 export interface AgentUIMessage {
   id: string;
@@ -107,7 +108,7 @@ export function useAgent(options: UseAgentOptions = {}) {
     const key = "netden:agent:session";
     const existing = window.localStorage.getItem(key);
     if (existing) return existing;
-    const next = crypto.randomUUID();
+    const next = createRandomId();
     window.localStorage.setItem(key, next);
     return next;
   }, []);
@@ -121,7 +122,7 @@ export function useAgent(options: UseAgentOptions = {}) {
     setMessages((prev) => [
       ...prev,
       {
-        id: crypto.randomUUID(),
+        id: createRandomId(),
         role: "user",
         text,
       },
@@ -129,7 +130,7 @@ export function useAgent(options: UseAgentOptions = {}) {
   }, []);
 
   const pushAssistantMessage = useCallback(() => {
-    const id = crypto.randomUUID();
+    const id = createRandomId();
     setMessages((prev) => [
       ...prev,
       {
@@ -265,7 +266,7 @@ export function useAgent(options: UseAgentOptions = {}) {
       const history = toAgentHistory([
         ...messages,
         {
-          id: crypto.randomUUID(),
+          id: createRandomId(),
           role: "user",
           text,
         },

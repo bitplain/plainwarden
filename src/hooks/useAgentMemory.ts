@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import type { AgentMemoryItem } from "@/agent/types";
+import { createRandomId } from "@/lib/random-id";
 
 const MEMORY_STORAGE_KEY = "netden:agent:memory";
 
@@ -48,7 +49,7 @@ export function useAgentMemory() {
     setItems((prev) => {
       const next: AgentMemoryItem[] = [
         {
-          id: crypto.randomUUID(),
+          id: createRandomId(),
           value: trimmed,
           pinned,
           updatedAt: new Date().toISOString(),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useSyncExternalStore } from "react";
+import { createRandomId } from "@/lib/random-id";
 import type { CalendarEvent } from "@/lib/types";
 import type {
   AuditEntry,
@@ -23,10 +24,7 @@ interface Calendar2LocalState {
 const STORAGE_KEY = "calendar2-local-state";
 
 function generateId(): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+  return createRandomId();
 }
 
 function nowISO(): string {
