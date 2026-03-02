@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   SetupErrorResponse,
   SetupRecoverResponse,
@@ -113,6 +113,7 @@ export function SetupWizard() {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [alreadyInitialized, setAlreadyInitialized] = useState(false);
 
   const [pgHost, setPgHost] = useState("");
   const [pgPort, setPgPort] = useState(5432);
@@ -126,11 +127,25 @@ export function SetupWizard() {
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
+  const [adminPasswordConfirm, setAdminPasswordConfirm] = useState("");
 
   const [done, setDone] = useState(false);
   const [needsRecovery, setNeedsRecovery] = useState(false);
   const [recoveryEndpoint, setRecoveryEndpoint] = useState("/api/setup/recover");
   const [summary, setSummary] = useState<SetupSummary | null>(null);
+
+  useEffect(() => {
+    fetch("/api/setup/state")
+      .then((r) => r.json() as Promise<{ initialized?: boolean }>)
+      .then((data) => {
+        if (data.initialized) {
+          setAlreadyInitialized(true);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not determine setup state:", err);
+      });
+  }, []);
 
   const canProceed = useMemo(() => {
     if (busy || done) {
@@ -153,7 +168,8 @@ export function SetupWizard() {
       return Boolean(
         adminName.trim() &&
         adminEmail.trim().includes("@") &&
-        adminPassword.trim().length >= 8,
+        adminPassword.trim().length >= 8 &&
+        adminPassword === adminPasswordConfirm,
       );
     }
 
@@ -162,6 +178,7 @@ export function SetupWizard() {
     adminEmail,
     adminName,
     adminPassword,
+    adminPasswordConfirm,
     appRole,
     busy,
     dbName,
@@ -306,6 +323,15 @@ export function SetupWizard() {
         <section className={homeStyles['home-card']}>
           {step === 0 ? (
             <div className={settingsStyles['settings-grid']}>
+              {alreadyInitialized ? (
+                <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                  <p className={homeStyles['home-inline-title']}>⚠ Настройка уже выполнена</p>
+                  <p className={homeStyles['home-muted']}>
+                    Настройка была ранее завершена. Если вы забыли пароль, нажмите «Начать» и пройдите
+                    мастер заново — в конце будет предложена функция восстановления.
+                  </p>
+                </div>
+              ) : null}
               <div className={settingsStyles['acme-note']}>
                 <p className={homeStyles['home-inline-title']}>Что будет сделано</p>
                 <ul className={`${settingsStyles['setup-list']} ${settingsStyles['setup-list-disc']}`}>
@@ -406,6 +432,15 @@ export function SetupWizard() {
                 <Input
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
+                  type="password"
+                  autoComplete="new-password"
+                  minLength={8}
+                />
+              </Field>
+              <Field label="Повторите пароль">
+                <Input
+                  value={adminPasswordConfirm}
+                  onChange={(e) => setAdminPasswordConfirm(e.target.value)}
                   type="password"
                   autoComplete="new-password"
                   minLength={8}

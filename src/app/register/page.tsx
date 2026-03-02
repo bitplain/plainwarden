@@ -12,6 +12,7 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
   const router = useRouter();
@@ -34,6 +35,11 @@ export default function RegisterPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError(null);
+
+    if (password !== confirmPassword) {
+      setFormError("Пароли не совпадают");
+      return;
+    }
 
     try {
       await register({ name, email, password });
@@ -107,6 +113,20 @@ export default function RegisterPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className={homeStyles['notes-input']}
                 placeholder="Минимум 8 символов"
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </label>
+
+            <label className={settingsStyles['settings-field']}>
+              <span>Повторите пароль</span>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className={homeStyles['notes-input']}
+                placeholder="Повторите пароль"
                 autoComplete="new-password"
                 minLength={8}
                 required

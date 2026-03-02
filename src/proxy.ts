@@ -113,7 +113,12 @@ async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
     if (!initialized) {
       return NextResponse.redirect(new URL(registerRoute, request.url));
     }
-    return NextResponse.redirect(new URL(homeRoute, request.url));
+    // Allow unauthenticated access to setup for recovery (forgot password).
+    // Redirect to home only if the user already has an active session (normal mode).
+    if (session) {
+      return NextResponse.redirect(new URL(homeRoute, request.url));
+    }
+    return NextResponse.next();
   }
 
   if (!initialized) {
