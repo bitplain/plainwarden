@@ -106,8 +106,10 @@ npm run docker:down:volumes
 Что делает workflow:
 
 1. Собирает Docker-образ и пушит `kaiots/web_cal:latest` в Docker Hub.
-2. Подключается по SSH к серверу и выполняет:
-   - `cd /opt/web_cal/plainwarden`
+2. Подключается по SSH к серверу и синхронизирует репозиторий в `/opt/web_cal/plainwarden`:
+   - если каталога нет: `git clone --depth 1 --branch main https://github.com/bitplain/plainwarden.git /opt/web_cal/plainwarden`
+   - если каталог есть: `git fetch` + `git checkout main` + `git pull --ff-only`
+3. После синхронизации выполняет deploy:
    - `export APP_IMAGE=kaiots/web_cal:latest`
    - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app`
    - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --no-build`
