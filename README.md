@@ -102,7 +102,6 @@ npm run docker:down:volumes
 - `SSH_PRIVATE_KEY` — приватный ключ для подключения к серверу
 - `SSH_HOST` — адрес сервера
 - `SSH_USER` — пользователь SSH
-- `SSH_KNOWN_HOSTS` — pinned host key (строка из `known_hosts`)
 
 Что делает workflow:
 
