@@ -91,3 +91,27 @@ npm run docker:down
 # полный сброс volume
 npm run docker:down:volumes
 ```
+
+## Production deploy via GitHub Actions
+
+Ручной деплой выполняется через GitHub Actions workflow `.github/workflows/docker-build-deploy.yml` (триггер `workflow_dispatch`).
+
+Перед запуском workflow добавьте GitHub Secrets:
+
+- `DOCKERHUB_TOKEN` — Docker Hub Access Token для пользователя `kaiots`
+- `SSH_PRIVATE_KEY` — приватный ключ для подключения к серверу
+- `SSH_HOST` — адрес сервера
+- `SSH_USER` — пользователь SSH
+- `SSH_KNOWN_HOSTS` — pinned host key (строка из `known_hosts`)
+
+Что делает workflow:
+
+1. Собирает Docker-образ и пушит `kaiots/web_cal:latest` в Docker Hub.
+2. Подключается по SSH к серверу и выполняет:
+   - `cd /opt/web_cal/plainwarden`
+   - `export APP_IMAGE=kaiots/web_cal:latest`
+   - `docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app`
+   - `docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --no-build`
+   - `curl -fsS http://localhost:${PROXY_PORT:-8080}/api/health >/dev/null`
+
+`docker-compose.prod.yml` переопределяет `app` на prebuilt image и исключает сборку приложения на сервере.
