@@ -21,6 +21,7 @@ import settingsStyles from "@/styles/settings.module.css";
 const RUN_STEP = 5;
 const SUMMARY_STEP = 6;
 const PRESET_TIMEOUT_MS = 4_000;
+const FACTORY_RESET_CONFIRM_TEXT = "RESET ALL DATA";
 
 function Field({
   label,
@@ -200,6 +201,17 @@ function readEmergencyReset(data: unknown): SetupEmergencyResetResponse | null {
   };
 }
 
+function readFactoryResetResult(data: unknown): { ok: true; next: "/register" } | null {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+  const candidate = data as Record<string, unknown>;
+  if (candidate.ok !== true || candidate.next !== "/register") {
+    return null;
+  }
+  return { ok: true, next: "/register" };
+}
+
 function getManualPreset(mode: SetupConnectionMode): SetupPresetResponse {
   if (mode === "remote") {
     return {
@@ -301,6 +313,7 @@ export function SetupWizard() {
   const [selectedEmergencyUserId, setSelectedEmergencyUserId] = useState("");
   const [emergencyNewPassword, setEmergencyNewPassword] = useState("");
   const [emergencyNewPasswordConfirm, setEmergencyNewPasswordConfirm] = useState("");
+  const [factoryResetConfirmText, setFactoryResetConfirmText] = useState("");
   const [emergencyRecoveredEmail, setEmergencyRecoveredEmail] = useState<string | null>(null);
   const [legacyRecoveryEndpoint, setLegacyRecoveryEndpoint] = useState("/api/setup/recover");
 
@@ -676,6 +689,41 @@ export function SetupWizard() {
     }
   }
 
+  async function runFactoryReset() {
+    setBusy(true);
+    setError(null);
+
+    try {
+      if (factoryResetConfirmText.trim() !== FACTORY_RESET_CONFIRM_TEXT) {
+        throw new Error(`Введите точную фразу подтверждения: ${FACTORY_RESET_CONFIRM_TEXT}`);
+      }
+
+      const response = await fetch("/api/setup/emergency/factory-reset", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          confirmText: factoryResetConfirmText.trim(),
+        }),
+      });
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        const setupError = readSetupError(data);
+        throw new Error(setupError?.error || `Ошибка factory reset (HTTP ${response.status})`);
+      }
+
+      const success = readFactoryResetResult(data);
+      if (!success) {
+        throw new Error("Некорректный ответ /api/setup/emergency/factory-reset");
+      }
+
+      window.location.href = success.next;
+    } catch (factoryError: unknown) {
+      setError(factoryError instanceof Error ? factoryError.message : "Ошибка factory reset");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function nextStep() {
     if (step === RUN_STEP) {
       if (isRecoveryFlow) {
@@ -1019,6 +1067,34 @@ export function SetupWizard() {
                           </Field>
                         </>
                       ) : null}
+
+                      <div className={settingsStyles["acme-note"]}>
+                        <p className={homeStyles["home-inline-title"]}>Полный сброс и старт заново</p>
+                        <p className={homeStyles["home-muted"]}>
+                          Удалит всех пользователей и пользовательские данные. После сброса откроется
+                          страница <code>/register</code> для нового старта.
+                        </p>
+                        <Field
+                          label="Подтверждение"
+                          hint={`введите ${FACTORY_RESET_CONFIRM_TEXT}`}
+                        >
+                          <Input
+                            value={factoryResetConfirmText}
+                            onChange={(e) => setFactoryResetConfirmText(e.target.value)}
+                            placeholder={FACTORY_RESET_CONFIRM_TEXT}
+                          />
+                        </Field>
+                        <Button
+                          type="button"
+                          kind="ghost"
+                          disabled={busy}
+                          onClick={() => {
+                            void runFactoryReset();
+                          }}
+                        >
+                          {busy ? "Сбрасываем..." : "Полный сброс и начать заново"}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <div className={settingsStyles["settings-grid"]}>
