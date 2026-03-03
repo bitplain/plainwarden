@@ -71,6 +71,39 @@ describe("POST /api/setup/emergency/factory-reset", () => {
     expect(prisma.rateLimitBucket.deleteMany).toHaveBeenCalledOnce();
   });
 
+  it("is idempotent when data was already deleted", async () => {
+    process.env.DATABASE_URL = "postgresql://configured";
+
+    const { checkRateLimitAsync } = await import("@/lib/server/rate-limit");
+    const { default: prisma } = await import("@/lib/server/prisma");
+    const { POST } = await import("@/app/api/setup/emergency/factory-reset/route");
+
+    vi.mocked(checkRateLimitAsync).mockResolvedValue({
+      allowed: true,
+      remaining: 8,
+      retryAfterSeconds: 300,
+    });
+    vi.mocked(prisma.user.deleteMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prisma.itemLink.deleteMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prisma.aiActionLog.deleteMany).mockResolvedValue({ count: 0 } as never);
+    vi.mocked(prisma.rateLimitBucket.deleteMany).mockResolvedValue({ count: 0 } as never);
+
+    const response = await POST(
+      new Request("http://localhost/api/setup/emergency/factory-reset", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirmText: "RESET ALL DATA" }),
+      }) as never,
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({
+      ok: true,
+      next: "/register",
+    });
+  });
+
   it("does not fail when optional legacy table is missing", async () => {
     process.env.DATABASE_URL = "postgresql://configured";
 

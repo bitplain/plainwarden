@@ -5,11 +5,20 @@ import { AuthUser } from "@/lib/types";
 export const SESSION_COOKIE_NAME = "netden_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
+type SessionSecretMode =
+  | "configured"
+  | "derived-short"
+  | "derived-from-database-url"
+  | "derived-insecure-default";
+
+let warnedSessionMode: SessionSecretMode | null = null;
+
 export interface SessionPayload {
   userId: string;
   email: string;
   iat: number;
   exp: number;
+  jti?: string;
 }
 
 function base64UrlEncode(value: string): string {
@@ -20,15 +29,89 @@ function base64UrlDecode(value: string): string {
   return Buffer.from(value, "base64url").toString("utf8");
 }
 
+function deriveStableSecret(seed: string): string {
+  return crypto.createHash("sha256").update(seed).digest("hex");
+}
+
+function resolveSessionSecret(): {
+  secret: string;
+  mode: SessionSecretMode;
+  configured: boolean;
+  strong: boolean;
+  length: number;
+} {
+  const raw = process.env.NETDEN_SESSION_SECRET?.trim() ?? "";
+  if (raw.length >= 32) {
+    return {
+      secret: raw,
+      mode: "configured",
+      configured: true,
+      strong: true,
+      length: raw.length,
+    };
+  }
+
+  if (raw.length > 0) {
+    return {
+      secret: deriveStableSecret(`netden:short:${raw}`),
+      mode: "derived-short",
+      configured: true,
+      strong: false,
+      length: raw.length,
+    };
+  }
+
+  const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
+  if (databaseUrl) {
+    return {
+      secret: deriveStableSecret(`netden:database:${databaseUrl}`),
+      mode: "derived-from-database-url",
+      configured: false,
+      strong: false,
+      length: 0,
+    };
+  }
+
+  return {
+    secret: deriveStableSecret("netden:insecure-default-session-secret"),
+    mode: "derived-insecure-default",
+    configured: false,
+    strong: false,
+    length: 0,
+  };
+}
+
 function getSessionSecret(): string {
-  const secret = process.env.NETDEN_SESSION_SECRET;
-  if (!secret) {
-    throw new Error("NETDEN_SESSION_SECRET is required");
+  const resolved = resolveSessionSecret();
+
+  if (resolved.mode !== "configured" && warnedSessionMode !== resolved.mode) {
+    warnedSessionMode = resolved.mode;
+    if (resolved.mode === "derived-short") {
+      console.warn(
+        "NETDEN_SESSION_SECRET is shorter than 32 characters. Using SHA-256 derived secret.",
+      );
+    } else if (resolved.mode === "derived-from-database-url") {
+      console.warn(
+        "NETDEN_SESSION_SECRET is missing. Using secret derived from DATABASE_URL.",
+      );
+    } else {
+      console.warn(
+        "NETDEN_SESSION_SECRET and DATABASE_URL are missing. Using insecure fallback secret.",
+      );
+    }
   }
-  if (secret.length < 32) {
-    throw new Error("NETDEN_SESSION_SECRET must be at least 32 characters");
-  }
-  return secret;
+
+  return resolved.secret;
+}
+
+export function getSessionSecretHealth() {
+  const resolved = resolveSessionSecret();
+  return {
+    configured: resolved.configured,
+    strong: resolved.strong,
+    length: resolved.length,
+    mode: resolved.mode,
+  };
 }
 
 function sign(value: string, secret: string): string {
@@ -47,6 +130,7 @@ export function createSessionToken(user: Pick<AuthUser, "id" | "email">): string
     email: user.email,
     iat: now,
     exp: now + SESSION_MAX_AGE_SECONDS,
+    jti: crypto.randomUUID(),
   };
 
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));

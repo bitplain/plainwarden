@@ -11,6 +11,7 @@ describe("GET /api/setup/emergency/state", () => {
     expect(payload).toEqual({
       error: "Emergency account recovery is disabled. Use /api/setup/emergency/factory-reset",
       canFactoryReset: true,
+      reasonCode: "legacy_endpoint_disabled",
     });
   });
 });

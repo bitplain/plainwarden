@@ -8,6 +8,7 @@ import {
   SetupPresetResponse,
   SetupRunInput,
   SetupRunResponse,
+  SetupStateResponse,
   SetupSummary,
   SslMode,
 } from "@/lib/types";
@@ -76,6 +77,18 @@ function isConnectionMode(value: unknown): value is SetupConnectionMode {
   return value === "docker" || value === "remote";
 }
 
+function isSetupErrorReasonCode(value: unknown): value is NonNullable<SetupErrorResponse["reasonCode"]> {
+  return (
+    value === "database_url_configured" ||
+    value === "users_already_exist" ||
+    value === "database_not_configured" ||
+    value === "db_unreachable" ||
+    value === "schema_not_ready" ||
+    value === "legacy_endpoint_disabled" ||
+    value === "internal_server_error"
+  );
+}
+
 function readSetupError(data: unknown): SetupErrorResponse | null {
   if (!data || typeof data !== "object") {
     return null;
@@ -93,6 +106,7 @@ function readSetupError(data: unknown): SetupErrorResponse | null {
       typeof candidate.recoveryEndpoint === "string" ? candidate.recoveryEndpoint : undefined,
     canFactoryReset: candidate.canFactoryReset === true,
     canUseEmergencyRecovery: candidate.canUseEmergencyRecovery === true,
+    reasonCode: isSetupErrorReasonCode(candidate.reasonCode) ? candidate.reasonCode : undefined,
   };
 }
 
@@ -158,6 +172,24 @@ function readFactoryResetResult(data: unknown): { ok: true; next: "/register" } 
     return null;
   }
   return { ok: true, next: "/register" };
+}
+
+function getSetupErrorMessage(
+  setupError: SetupErrorResponse | null,
+  fallback: string,
+): string {
+  if (!setupError) {
+    return fallback;
+  }
+
+  if (setupError.reasonCode === "db_unreachable") {
+    return "База данных недоступна. Нужен доступ к инфраструктуре или восстановление сети.";
+  }
+  if (setupError.reasonCode === "schema_not_ready") {
+    return "Схема БД не готова. Нужен доступ к инфраструктуре для миграций.";
+  }
+
+  return setupError.error || fallback;
 }
 
 function getManualPreset(mode: SetupConnectionMode): SetupPresetResponse {
@@ -230,6 +262,7 @@ export function SetupWizard() {
   const [presetLoading, setPresetLoading] = useState(false);
   const [presetWarning, setPresetWarning] = useState<string | null>(null);
   const [presetReloadToken, setPresetReloadToken] = useState(0);
+  const [setupStateLoaded, setSetupStateLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [alreadyInitialized, setAlreadyInitialized] = useState(false);
   const [recoveryOnly, setRecoveryOnly] = useState(false);
@@ -268,28 +301,53 @@ export function SetupWizard() {
   }
 
   useEffect(() => {
-    fetch("/api/setup/state")
-      .then(
-        (r) =>
-          r.json() as Promise<{ initialized?: boolean; databaseConfigured?: boolean }>,
-      )
-      .then((data) => {
-        if (data.initialized) {
-          setAlreadyInitialized(true);
+    fetch("/api/setup/state", { cache: "no-store" })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(`setup state request failed (HTTP ${response.status})`);
         }
-
-        if (data.initialized && data.databaseConfigured) {
+        return (response.json() as Promise<SetupStateResponse>);
+      })
+      .then((data) => {
+        if (data.databaseConfigured && (data.initialized || data.degraded)) {
+          setAlreadyInitialized(true);
           setRecoveryOnly(true);
           setNeedsRecovery(true);
           setStep(RUN_STEP);
+          if (data.reason === "db_unreachable") {
+            setError(
+              "База данных временно недоступна. Попробуйте снова позже или проверьте инфраструктуру.",
+            );
+          } else if (data.reason === "schema_not_ready") {
+            setError("Схема базы данных не готова. Нужен инфраструктурный доступ для миграций.");
+          }
+          return;
+        }
+
+        if (data.initialized) {
+          setAlreadyInitialized(true);
         }
       })
       .catch((stateError) => {
         console.warn("Could not determine setup state:", stateError);
+        setError("Не удалось определить состояние setup. Обновите страницу и попробуйте снова.");
+      })
+      .finally(() => {
+        setSetupStateLoaded(true);
       });
   }, []);
 
   useEffect(() => {
+    if (!setupStateLoaded) {
+      return;
+    }
+
+    if (isRecoveryFlow) {
+      setPresetLoading(false);
+      setPresetWarning(null);
+      return;
+    }
+
     let cancelled = false;
     const abort = new AbortController();
     const timeoutId = setTimeout(() => abort.abort(), PRESET_TIMEOUT_MS);
@@ -340,10 +398,10 @@ export function SetupWizard() {
       clearTimeout(timeoutId);
       abort.abort();
     };
-  }, [connectionMode, presetReloadToken]);
+  }, [connectionMode, isRecoveryFlow, presetReloadToken, setupStateLoaded]);
 
   const canProceed = useMemo(() => {
-    if (busy || done) {
+    if (!setupStateLoaded || busy || done) {
       return false;
     }
 
@@ -394,6 +452,7 @@ export function SetupWizard() {
     pgPassword,
     pgPort,
     pgUser,
+    setupStateLoaded,
     step,
   ]);
 
@@ -435,8 +494,10 @@ export function SetupWizard() {
         if (response.status === 409 && setupError?.needsRecovery) {
           if (!setupError.canFactoryReset) {
             throw new Error(
-              setupError.error ||
+              getSetupErrorMessage(
+                setupError,
                 "Recovery недоступен автоматически. Нужен доступ к инфраструктуре.",
+              ),
             );
           }
           setNeedsRecovery(true);
@@ -445,7 +506,9 @@ export function SetupWizard() {
           setStep(RUN_STEP);
           return;
         }
-        throw new Error(setupError?.error || `Ошибка setup (HTTP ${response.status})`);
+        throw new Error(
+          getSetupErrorMessage(setupError, `Ошибка setup (HTTP ${response.status})`),
+        );
       }
 
       const success = data as SetupRunResponse;
@@ -478,7 +541,9 @@ export function SetupWizard() {
       const data: unknown = await response.json().catch(() => null);
       if (!response.ok) {
         const setupError = readSetupError(data);
-        throw new Error(setupError?.error || `Ошибка factory reset (HTTP ${response.status})`);
+        throw new Error(
+          getSetupErrorMessage(setupError, `Ошибка factory reset (HTTP ${response.status})`),
+        );
       }
 
       const success = readFactoryResetResult(data);
@@ -486,7 +551,7 @@ export function SetupWizard() {
         throw new Error("Некорректный ответ /api/setup/emergency/factory-reset");
       }
 
-      window.location.href = success.next;
+      window.location.assign(success.next);
     } catch (factoryError: unknown) {
       setError(factoryError instanceof Error ? factoryError.message : "Ошибка factory reset");
     } finally {
@@ -568,6 +633,10 @@ export function SetupWizard() {
         </div>
 
         <section className={homeStyles["home-card"]}>
+          {!setupStateLoaded ? (
+            <p className={homeStyles["home-muted"]}>Проверяем состояние системы...</p>
+          ) : null}
+
           {step === 0 ? (
             <div className={settingsStyles["settings-grid"]}>
               <div className={settingsStyles["acme-note"]}>

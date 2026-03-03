@@ -6,7 +6,7 @@ import {
   runEmergencyFactoryReset,
   validateSetupEmergencyFactoryResetInput,
 } from "@/lib/server/setup";
-import { HttpError, readJsonBody } from "@/lib/server/validators";
+import { readJsonBody } from "@/lib/server/validators";
 import { SetupEmergencyFactoryResetResponse } from "@/lib/types";
 
 const FACTORY_RESET_RATE_LIMIT = {
@@ -17,9 +17,12 @@ const FACTORY_RESET_RATE_LIMIT = {
 export async function POST(request: NextRequest) {
   try {
     if (!isDatabaseConfigured()) {
-      throw new HttpError(
-        503,
-        "Emergency recovery is unavailable because DATABASE_URL is not configured",
+      return NextResponse.json(
+        {
+          error: "Emergency recovery is unavailable because DATABASE_URL is not configured",
+          reasonCode: "database_not_configured",
+        },
+        { status: 503 },
       );
     }
 

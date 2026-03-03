@@ -20,6 +20,7 @@ export async function POST(request: Request) {
           needsRecovery: true,
           recoveryEndpoint: "/api/setup/recover",
           canFactoryReset: true,
+          reasonCode: "database_url_configured",
         },
         { status: 409 },
       );
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
           needsRecovery: true,
           recoveryEndpoint: "/api/setup/recover",
           canFactoryReset: true,
+          reasonCode: "users_already_exist",
         },
         { status: 409 },
       );

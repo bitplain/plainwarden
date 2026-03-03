@@ -62,9 +62,11 @@ class ApiClient {
       let message = `HTTP ${response.status}`;
 
       try {
-        const body = (await response.json()) as { message?: string };
+        const body = (await response.json()) as { message?: string; error?: string };
         if (body.message) {
           message = body.message;
+        } else if (body.error) {
+          message = body.error;
         }
       } catch {
         // Keep default message for non-json errors.
