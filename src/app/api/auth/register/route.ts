@@ -8,8 +8,8 @@ import {
 import {
   SESSION_COOKIE_NAME,
   createSessionToken,
+  getSessionCookieOptions,
   persistSessionToken,
-  sessionCookieOptions,
 } from "@/lib/server/session";
 import {
   HttpError,
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const sessionToken = createSessionToken(user);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     await persistSessionToken(sessionToken, user.id, expiresAt);
-    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE_NAME, sessionToken, getSessionCookieOptions(request));
 
     return response;
   } catch (error) {

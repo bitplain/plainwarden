@@ -3,8 +3,8 @@ import { authenticateUser, bootstrapAuth, sanitizeUser } from "@/lib/server/auth
 import {
   SESSION_COOKIE_NAME,
   createSessionToken,
+  getSessionCookieOptions,
   persistSessionToken,
-  sessionCookieOptions,
 } from "@/lib/server/session";
 import {
   HttpError,
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     await persistSessionToken(token, user.id, expiresAt);
 
     const response = NextResponse.json({ user: sanitizeUser(user) });
-    response.cookies.set(SESSION_COOKIE_NAME, token, sessionCookieOptions);
+    response.cookies.set(SESSION_COOKIE_NAME, token, getSessionCookieOptions(request));
 
     return response;
   } catch (error) {

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, revokeSessionToken } from "@/lib/server/session";
+import {
+  SESSION_COOKIE_NAME,
+  getSessionCookieOptions,
+  revokeSessionToken,
+} from "@/lib/server/session";
 import { handleRouteError } from "@/lib/server/validators";
 
 export async function POST(request: NextRequest) {
@@ -11,10 +15,7 @@ export async function POST(request: NextRequest) {
 
     const response = NextResponse.json({ success: true });
     response.cookies.set(SESSION_COOKIE_NAME, "", {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
+      ...getSessionCookieOptions(request),
       maxAge: 0,
     });
     return response;
