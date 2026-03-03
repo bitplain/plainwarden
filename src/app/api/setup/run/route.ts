@@ -19,6 +19,7 @@ export async function POST(request: Request) {
           error: "Setup is disabled because DATABASE_URL is already configured",
           needsRecovery: true,
           recoveryEndpoint: "/api/setup/recover",
+          canFactoryReset: true,
         },
         { status: 409 },
       );
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
           error: "Users already exist in the selected database",
           needsRecovery: true,
           recoveryEndpoint: "/api/setup/recover",
+          canFactoryReset: true,
         },
         { status: 409 },
       );

@@ -37,8 +37,8 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `POST /api/setup/run`
 - `POST /api/setup/recover`
 - `GET /api/setup/preset?mode=docker|remote`
-- `GET /api/setup/emergency/state`
-- `POST /api/setup/emergency/reset`
+- `GET /api/setup/emergency/state` (legacy, `410 Gone`)
+- `POST /api/setup/emergency/reset` (legacy, `410 Gone`)
 - `POST /api/setup/emergency/factory-reset`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
@@ -46,11 +46,14 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 
 ## Emergency Recovery Security Warning
 
-`/api/setup/emergency/*` — это аварийный путь восстановления доступа без DB-учётки.
-Используйте только в доверенной self-hosted среде. На публично доступных инсталляциях
-этот режим повышает риск несанкционированного захвата аккаунта.
-`/api/setup/emergency/factory-reset` полностью удаляет пользовательские данные
-и возвращает систему к старту через `/register`.
+Основной аварийный сценарий: `POST /api/setup/emergency/factory-reset`.
+Он полностью удаляет пользовательские данные и возвращает систему к старту через `/register`.
+
+`GET /api/setup/emergency/state` и `POST /api/setup/emergency/reset` сохранены только как
+legacy-контракты и отвечают `410 Gone` с указанием перейти на `factory-reset`.
+
+Используйте аварийный reset только в доверенной self-hosted среде. На публично доступных
+инсталляциях этот режим повышает риск несанкционированного захвата.
 
 ## Legacy (possibly-unused)
 

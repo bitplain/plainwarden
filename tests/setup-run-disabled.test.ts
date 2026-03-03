@@ -42,6 +42,7 @@ describe("POST /api/setup/run", () => {
       error: "Setup is disabled because DATABASE_URL is already configured",
       needsRecovery: true,
       recoveryEndpoint: "/api/setup/recover",
+      canFactoryReset: true,
     });
   });
 

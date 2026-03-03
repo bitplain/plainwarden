@@ -376,6 +376,7 @@ export interface SetupErrorResponse {
   error: string;
   needsRecovery?: boolean;
   recoveryEndpoint?: string;
+  canFactoryReset?: boolean;
   canUseEmergencyRecovery?: boolean;
 }
 
