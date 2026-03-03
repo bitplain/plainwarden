@@ -36,6 +36,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `PATCH|DELETE /api/events/:id`
 - `POST /api/setup/run`
 - `POST /api/setup/recover`
+- `GET /api/setup/preset?mode=docker|remote`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`

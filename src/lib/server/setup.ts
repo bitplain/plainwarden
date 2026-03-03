@@ -8,8 +8,10 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { NextResponse } from "next/server";
 import { mockEvents } from "@/lib/mock-data";
 import {
+  SetupConnectionMode,
   SetupErrorResponse,
   SetupPgAdminInput,
+  SetupPresetResponse,
   SetupRecoverInput,
   SetupRunInput,
   SetupSiteAdminInput,
@@ -28,6 +30,25 @@ function normalize(value: unknown): string {
     return "";
   }
   return value.trim();
+}
+
+function readEnv(name: string): string | undefined {
+  const value = normalize(process.env[name]);
+  return value || undefined;
+}
+
+function readEnvPort(name: string, fallback: number): number {
+  const raw = readEnv(name);
+  if (!raw) {
+    return fallback;
+  }
+
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 65535) {
+    return fallback;
+  }
+
+  return parsed;
 }
 
 function assertRecord(value: unknown, message = "Invalid payload"): asserts value is Record<string, unknown> {
@@ -224,6 +245,42 @@ export function generateAppPassword(): string {
 
 export function generateSessionSecret(): string {
   return crypto.randomBytes(32).toString("base64url");
+}
+
+export function getSetupPreset(mode: SetupConnectionMode): SetupPresetResponse {
+  if (mode === "remote") {
+    return {
+      mode,
+      pgAdmin: {
+        host: "",
+        port: 5432,
+        user: "",
+        password: "",
+        sslMode: "require",
+      },
+      provision: {
+        dbName: "",
+        appRole: "",
+        appPassword: undefined,
+      },
+    };
+  }
+
+  return {
+    mode,
+    pgAdmin: {
+      host: readEnv("POSTGRES_HOST") ?? "postgres",
+      port: readEnvPort("POSTGRES_PORT", 5432),
+      user: readEnv("POSTGRES_USER") ?? "netden",
+      password: readEnv("POSTGRES_PASSWORD") ?? "netdenpass",
+      sslMode: "disable",
+    },
+    provision: {
+      dbName: readEnv("POSTGRES_DB") ?? "netden",
+      appRole: "netden_app",
+      appPassword: generateAppPassword(),
+    },
+  };
 }
 
 export function isDatabaseConfigured(): boolean {

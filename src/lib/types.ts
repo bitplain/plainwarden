@@ -317,6 +317,7 @@ export interface AddKanbanDependencyInput {
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
 export type SslMode = "disable" | "require";
+export type SetupConnectionMode = "docker" | "remote";
 
 export interface SetupPgAdminInput {
   host: string;
@@ -375,4 +376,10 @@ export interface SetupErrorResponse {
   error: string;
   needsRecovery?: boolean;
   recoveryEndpoint?: string;
+}
+
+export interface SetupPresetResponse {
+  mode: SetupConnectionMode;
+  pgAdmin: SetupPgAdminInput;
+  provision: SetupProvisionInput;
 }
