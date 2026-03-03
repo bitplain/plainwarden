@@ -393,14 +393,39 @@ export async function resetEmergencyPasswordByUserId(input: SetupEmergencyResetI
   return { email: user.email };
 }
 
+function isMissingTableError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2021"
+  );
+}
+
+async function cleanupOptionalTable(
+  label: string,
+  operation: () => Promise<unknown>,
+): Promise<void> {
+  try {
+    await operation();
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(`Emergency factory reset: skip missing table ${label}`);
+      return;
+    }
+    throw error;
+  }
+}
+
 export async function runEmergencyFactoryReset(): Promise<void> {
   const { default: prisma } = await import("@/lib/server/prisma");
-  await prisma.$transaction([
-    prisma.itemLink.deleteMany(),
-    prisma.aiActionLog.deleteMany(),
-    prisma.rateLimitBucket.deleteMany(),
-    prisma.user.deleteMany(),
-  ]);
+  await prisma.user.deleteMany();
+
+  // Optional tables may be absent in legacy databases. Missing table should not
+  // block reset-to-register flow.
+  await cleanupOptionalTable("ItemLink", () => prisma.itemLink.deleteMany());
+  await cleanupOptionalTable("AiActionLog", () => prisma.aiActionLog.deleteMany());
+  await cleanupOptionalTable("RateLimitBucket", () => prisma.rateLimitBucket.deleteMany());
 }
 
 export function isDatabaseConfigured(): boolean {
