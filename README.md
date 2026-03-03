@@ -37,9 +37,17 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `POST /api/setup/run`
 - `POST /api/setup/recover`
 - `GET /api/setup/preset?mode=docker|remote`
+- `GET /api/setup/emergency/state`
+- `POST /api/setup/emergency/reset`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/auth/me`
+
+## Emergency Recovery Security Warning
+
+`/api/setup/emergency/*` — это аварийный путь восстановления доступа без DB-учётки.
+Используйте только в доверенной self-hosted среде. На публично доступных инсталляциях
+этот режим повышает риск несанкционированного захвата аккаунта.
 
 ## Legacy (possibly-unused)
 
