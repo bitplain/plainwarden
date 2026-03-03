@@ -130,6 +130,15 @@ function readPgAdmin(value: unknown): SetupPgAdminInput {
   };
 }
 
+export function validateSetupEmergencyFactoryResetInput(payload: unknown): void {
+  assertRecord(payload);
+
+  const confirmText = readRequiredString(payload.confirmText, "confirmText", 64);
+  if (confirmText !== "RESET ALL DATA") {
+    throw new HttpError(400, "confirmText must be exactly 'RESET ALL DATA'");
+  }
+}
+
 export function validateSetupRunInput(payload: unknown): SetupRunInput {
   assertRecord(payload);
   assertRecord(payload.provision, "provision must be an object");
@@ -382,6 +391,16 @@ export async function resetEmergencyPasswordByUserId(input: SetupEmergencyResetI
   ]);
 
   return { email: user.email };
+}
+
+export async function runEmergencyFactoryReset(): Promise<void> {
+  const { default: prisma } = await import("@/lib/server/prisma");
+  await prisma.$transaction([
+    prisma.itemLink.deleteMany(),
+    prisma.aiActionLog.deleteMany(),
+    prisma.rateLimitBucket.deleteMany(),
+    prisma.user.deleteMany(),
+  ]);
 }
 
 export function isDatabaseConfigured(): boolean {

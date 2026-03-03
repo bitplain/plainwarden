@@ -1,0 +1,50 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
+import { proxy } from "@/proxy";
+
+vi.mock("@/lib/server/json-db", () => ({
+  hasUsers: vi.fn(),
+}));
+
+vi.mock("@/lib/server/setup", () => ({
+  isDatabaseConfigured: vi.fn(),
+}));
+
+vi.mock("@/lib/server/session", () => ({
+  SESSION_COOKIE_NAME: "netden_session",
+  hashSessionToken: vi.fn(() => "hash"),
+  isSessionActive: vi.fn(async () => false),
+  verifySessionToken: vi.fn(() => null),
+}));
+
+describe("proxy page routing", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("redirects /setup to /register when database exists but no users remain", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockResolvedValue(false);
+
+    const response = await proxy(new NextRequest("http://localhost/setup"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/register");
+  });
+
+  it("redirects /login to /register while system is uninitialized", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockResolvedValue(false);
+
+    const response = await proxy(new NextRequest("http://localhost/login"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/register");
+  });
+});

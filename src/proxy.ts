@@ -28,6 +28,7 @@ const PUBLIC_API_ROUTES = new Set([
   "/api/setup/preset",
   "/api/setup/emergency/state",
   "/api/setup/emergency/reset",
+  "/api/setup/emergency/factory-reset",
   "/api/cron/reminders", // protected by NETDEN_CRON_SECRET, not session
 ]);
 

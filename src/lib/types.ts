@@ -376,6 +376,7 @@ export interface SetupErrorResponse {
   error: string;
   needsRecovery?: boolean;
   recoveryEndpoint?: string;
+  canFactoryReset?: boolean;
   canUseEmergencyRecovery?: boolean;
 }
 
@@ -405,4 +406,9 @@ export interface SetupEmergencyResetInput {
 export interface SetupEmergencyResetResponse {
   ok: true;
   loginEmail: string;
+}
+
+export interface SetupEmergencyFactoryResetResponse {
+  ok: true;
+  next: "/register";
 }
