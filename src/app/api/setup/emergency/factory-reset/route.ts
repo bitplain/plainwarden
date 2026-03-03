@@ -10,8 +10,8 @@ import { HttpError, readJsonBody } from "@/lib/server/validators";
 import { SetupEmergencyFactoryResetResponse } from "@/lib/types";
 
 const FACTORY_RESET_RATE_LIMIT = {
-  maxRequests: 2,
-  windowMs: 60 * 60 * 1000,
+  maxRequests: 10,
+  windowMs: 15 * 60 * 1000,
 };
 
 export async function POST(request: NextRequest) {

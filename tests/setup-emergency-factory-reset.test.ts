@@ -11,7 +11,6 @@ vi.mock("@/lib/server/prisma", () => ({
     itemLink: { deleteMany: vi.fn() },
     aiActionLog: { deleteMany: vi.fn() },
     rateLimitBucket: { deleteMany: vi.fn() },
-    $transaction: vi.fn(),
   },
 }));
 
@@ -51,7 +50,6 @@ describe("POST /api/setup/emergency/factory-reset", () => {
     vi.mocked(prisma.itemLink.deleteMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(prisma.aiActionLog.deleteMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(prisma.rateLimitBucket.deleteMany).mockResolvedValue({ count: 1 } as never);
-    vi.mocked(prisma.$transaction).mockResolvedValue([{}, {}, {}, {}] as never);
 
     const response = await POST(
       new Request("http://localhost/api/setup/emergency/factory-reset", {
@@ -67,7 +65,43 @@ describe("POST /api/setup/emergency/factory-reset", () => {
       ok: true,
       next: "/register",
     });
-    expect(prisma.$transaction).toHaveBeenCalledOnce();
+    expect(prisma.user.deleteMany).toHaveBeenCalledOnce();
+    expect(prisma.itemLink.deleteMany).toHaveBeenCalledOnce();
+    expect(prisma.aiActionLog.deleteMany).toHaveBeenCalledOnce();
+    expect(prisma.rateLimitBucket.deleteMany).toHaveBeenCalledOnce();
+  });
+
+  it("does not fail when optional legacy table is missing", async () => {
+    process.env.DATABASE_URL = "postgresql://configured";
+
+    const { checkRateLimitAsync } = await import("@/lib/server/rate-limit");
+    const { default: prisma } = await import("@/lib/server/prisma");
+    const { POST } = await import("@/app/api/setup/emergency/factory-reset/route");
+
+    vi.mocked(checkRateLimitAsync).mockResolvedValue({
+      allowed: true,
+      remaining: 9,
+      retryAfterSeconds: 900,
+    });
+    vi.mocked(prisma.user.deleteMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.itemLink.deleteMany).mockRejectedValue({ code: "P2021" } as never);
+    vi.mocked(prisma.aiActionLog.deleteMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.rateLimitBucket.deleteMany).mockResolvedValue({ count: 1 } as never);
+
+    const response = await POST(
+      new Request("http://localhost/api/setup/emergency/factory-reset", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ confirmText: "RESET ALL DATA" }),
+      }) as never,
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(payload).toEqual({
+      ok: true,
+      next: "/register",
+    });
   });
 
   it("returns 400 for invalid confirmation phrase", async () => {
