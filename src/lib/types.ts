@@ -406,3 +406,8 @@ export interface SetupEmergencyResetResponse {
   ok: true;
   loginEmail: string;
 }
+
+export interface SetupEmergencyFactoryResetResponse {
+  ok: true;
+  next: "/register";
+}
