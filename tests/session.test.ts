@@ -1,5 +1,9 @@
 import { describe, expect, it, afterEach, beforeEach } from "vitest";
-import { createSessionToken, verifySessionToken } from "@/lib/server/session";
+import {
+  createSessionToken,
+  getSessionCookieOptions,
+  verifySessionToken,
+} from "@/lib/server/session";
 
 const VALID_SECRET = "a".repeat(32);
 
@@ -67,5 +71,26 @@ describe("session token", () => {
 
     expect(payload?.userId).toBe("u");
     expect(payload?.email).toBe("u@e.com");
+  });
+
+  it("returns non-secure cookie options for plain HTTP requests", () => {
+    const options = getSessionCookieOptions(new Request("http://localhost/login"));
+    expect(options.secure).toBe(false);
+  });
+
+  it("returns secure cookie options when x-forwarded-proto is https", () => {
+    const options = getSessionCookieOptions(
+      new Request("http://localhost/login", {
+        headers: {
+          "x-forwarded-proto": "https",
+        },
+      }),
+    );
+    expect(options.secure).toBe(true);
+  });
+
+  it("returns secure cookie options for https URL", () => {
+    const options = getSessionCookieOptions(new Request("https://example.com/login"));
+    expect(options.secure).toBe(true);
   });
 });

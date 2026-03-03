@@ -196,6 +196,45 @@ export const sessionCookieOptions = {
   maxAge: SESSION_MAX_AGE_SECONDS,
 };
 
+function isRequestSecure(request: Request): boolean {
+  const forwardedProto = request.headers
+    .get("x-forwarded-proto")
+    ?.split(",")[0]
+    ?.trim()
+    ?.toLowerCase();
+
+  if (forwardedProto === "https") {
+    return true;
+  }
+  if (forwardedProto === "http") {
+    return false;
+  }
+
+  try {
+    return new URL(request.url).protocol === "https:";
+  } catch {
+    return process.env.NODE_ENV === "production";
+  }
+}
+
+export function getSessionCookieOptions(
+  request?: Request,
+): {
+  httpOnly: true;
+  sameSite: "lax";
+  secure: boolean;
+  path: "/";
+  maxAge: number;
+} {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: request ? isRequestSecure(request) : process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // DB persistence helpers (session whitelist)
 // ---------------------------------------------------------------------------
