@@ -9,6 +9,8 @@ import { NextResponse } from "next/server";
 import { mockEvents } from "@/lib/mock-data";
 import {
   SetupConnectionMode,
+  SetupEmergencyAccountOption,
+  SetupEmergencyResetInput,
   SetupErrorResponse,
   SetupPgAdminInput,
   SetupPresetResponse,
@@ -247,7 +249,7 @@ export function generateSessionSecret(): string {
   return crypto.randomBytes(32).toString("base64url");
 }
 
-export function getSetupPreset(mode: SetupConnectionMode): SetupPresetResponse {
+export function getManualSetupPreset(mode: SetupConnectionMode): SetupPresetResponse {
   if (mode === "remote") {
     return {
       mode,
@@ -269,18 +271,117 @@ export function getSetupPreset(mode: SetupConnectionMode): SetupPresetResponse {
   return {
     mode,
     pgAdmin: {
-      host: readEnv("POSTGRES_HOST") ?? "postgres",
-      port: readEnvPort("POSTGRES_PORT", 5432),
-      user: readEnv("POSTGRES_USER") ?? "netden",
-      password: readEnv("POSTGRES_PASSWORD") ?? "netdenpass",
+      host: "postgres",
+      port: 5432,
+      user: "netden",
+      password: "netdenpass",
       sslMode: "disable",
     },
     provision: {
-      dbName: readEnv("POSTGRES_DB") ?? "netden",
+      dbName: "netden",
       appRole: "netden_app",
+      appPassword: undefined,
+    },
+  };
+}
+
+export function getSetupPreset(mode: SetupConnectionMode): SetupPresetResponse {
+  if (mode === "remote") {
+    return getManualSetupPreset(mode);
+  }
+
+  const manual = getManualSetupPreset("docker");
+
+  return {
+    mode,
+    pgAdmin: {
+      host: readEnv("POSTGRES_HOST") ?? manual.pgAdmin.host,
+      port: readEnvPort("POSTGRES_PORT", manual.pgAdmin.port),
+      user: readEnv("POSTGRES_USER") ?? manual.pgAdmin.user,
+      password: readEnv("POSTGRES_PASSWORD") ?? manual.pgAdmin.password,
+      sslMode: manual.pgAdmin.sslMode,
+    },
+    provision: {
+      dbName: readEnv("POSTGRES_DB") ?? manual.provision.dbName,
+      appRole: manual.provision.appRole,
       appPassword: generateAppPassword(),
     },
   };
+}
+
+export function maskEmailForRecovery(email: string): string {
+  const normalized = email.trim().toLowerCase();
+  const [localRaw, domainRaw] = normalized.split("@");
+  if (!localRaw || !domainRaw) {
+    return "***";
+  }
+
+  const domainParts = domainRaw.split(".");
+  const host = domainParts.shift() ?? "";
+  const suffix = domainParts.length > 0 ? `.${domainParts.join(".")}` : "";
+
+  const maskedLocal = `${localRaw[0] ?? "*"}***`;
+  const maskedHost = `${host[0] ?? "*"}***`;
+  return `${maskedLocal}@${maskedHost}${suffix}`;
+}
+
+export function validateSetupEmergencyResetInput(payload: unknown): SetupEmergencyResetInput {
+  assertRecord(payload);
+
+  const userId = readRequiredString(payload.userId, "userId", 255);
+  const newPassword = readRequiredString(payload.newPassword, "newPassword", 256);
+  if (newPassword.length < 12) {
+    throw new HttpError(400, "newPassword must be at least 12 characters");
+  }
+
+  return {
+    userId,
+    newPassword,
+  };
+}
+
+export async function listEmergencyRecoveryAccounts(): Promise<SetupEmergencyAccountOption[]> {
+  const { default: prisma } = await import("@/lib/server/prisma");
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      email: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  return users.map((user) => ({
+    userId: user.id,
+    maskedEmail: maskEmailForRecovery(user.email),
+  }));
+}
+
+export async function resetEmergencyPasswordByUserId(input: SetupEmergencyResetInput): Promise<{ email: string }> {
+  const { default: prisma } = await import("@/lib/server/prisma");
+  const user = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true, email: true },
+  });
+
+  if (!user) {
+    throw new HttpError(404, "User not found");
+  }
+
+  const passwordHash = await hashPassword(input.newPassword);
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    }),
+    prisma.session.deleteMany({
+      where: { userId: user.id },
+    }),
+  ]);
+
+  return { email: user.email };
 }
 
 export function isDatabaseConfigured(): boolean {

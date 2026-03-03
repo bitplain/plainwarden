@@ -376,10 +376,33 @@ export interface SetupErrorResponse {
   error: string;
   needsRecovery?: boolean;
   recoveryEndpoint?: string;
+  canUseEmergencyRecovery?: boolean;
 }
 
 export interface SetupPresetResponse {
   mode: SetupConnectionMode;
   pgAdmin: SetupPgAdminInput;
   provision: SetupProvisionInput;
+}
+
+export interface SetupEmergencyAccountOption {
+  userId: string;
+  maskedEmail: string;
+}
+
+export interface SetupEmergencyStateResponse {
+  ok: true;
+  accounts: SetupEmergencyAccountOption[];
+  legacyRecoveryEndpoint: string;
+  warning: string;
+}
+
+export interface SetupEmergencyResetInput {
+  userId: string;
+  newPassword: string;
+}
+
+export interface SetupEmergencyResetResponse {
+  ok: true;
+  loginEmail: string;
 }

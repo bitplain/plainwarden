@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { getSetupPreset } from "@/lib/server/setup";
+import { getManualSetupPreset, getSetupPreset } from "@/lib/server/setup";
 
 describe("getSetupPreset", () => {
   const snapshot: Record<string, string | undefined> = {};
@@ -75,6 +75,26 @@ describe("getSetupPreset", () => {
       dbName: "",
       appRole: "",
       appPassword: undefined,
+    });
+  });
+
+  it("returns docker fallback preset for manual mode", () => {
+    const preset = getManualSetupPreset("docker");
+
+    expect(preset).toEqual({
+      mode: "docker",
+      pgAdmin: {
+        host: "postgres",
+        port: 5432,
+        user: "netden",
+        password: "netdenpass",
+        sslMode: "disable",
+      },
+      provision: {
+        dbName: "netden",
+        appRole: "netden_app",
+        appPassword: undefined,
+      },
     });
   });
 });

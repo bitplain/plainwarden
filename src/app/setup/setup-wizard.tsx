@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   SetupConnectionMode,
+  SetupEmergencyAccountOption,
+  SetupEmergencyResetResponse,
+  SetupEmergencyStateResponse,
   SetupErrorResponse,
   SetupPresetResponse,
   SetupRecoverResponse,
@@ -17,6 +20,7 @@ import settingsStyles from "@/styles/settings.module.css";
 
 const RUN_STEP = 5;
 const SUMMARY_STEP = 6;
+const PRESET_TIMEOUT_MS = 4_000;
 
 function Field({
   label,
@@ -90,6 +94,7 @@ function readSetupError(data: unknown): SetupErrorResponse | null {
     needsRecovery: candidate.needsRecovery === true,
     recoveryEndpoint:
       typeof candidate.recoveryEndpoint === "string" ? candidate.recoveryEndpoint : undefined,
+    canUseEmergencyRecovery: candidate.canUseEmergencyRecovery === true,
   };
 }
 
@@ -146,6 +151,91 @@ function readSetupPreset(data: unknown): SetupPresetResponse | null {
   };
 }
 
+function readEmergencyState(data: unknown): SetupEmergencyStateResponse | null {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+  const candidate = data as Record<string, unknown>;
+  if (candidate.ok !== true || !Array.isArray(candidate.accounts)) {
+    return null;
+  }
+  if (typeof candidate.legacyRecoveryEndpoint !== "string" || typeof candidate.warning !== "string") {
+    return null;
+  }
+
+  const accounts: SetupEmergencyAccountOption[] = [];
+  for (const raw of candidate.accounts) {
+    if (!raw || typeof raw !== "object") {
+      return null;
+    }
+    const record = raw as Record<string, unknown>;
+    if (typeof record.userId !== "string" || typeof record.maskedEmail !== "string") {
+      return null;
+    }
+    accounts.push({
+      userId: record.userId,
+      maskedEmail: record.maskedEmail,
+    });
+  }
+
+  return {
+    ok: true,
+    accounts,
+    legacyRecoveryEndpoint: candidate.legacyRecoveryEndpoint,
+    warning: candidate.warning,
+  };
+}
+
+function readEmergencyReset(data: unknown): SetupEmergencyResetResponse | null {
+  if (!data || typeof data !== "object") {
+    return null;
+  }
+  const candidate = data as Record<string, unknown>;
+  if (candidate.ok !== true || typeof candidate.loginEmail !== "string") {
+    return null;
+  }
+  return {
+    ok: true,
+    loginEmail: candidate.loginEmail,
+  };
+}
+
+function getManualPreset(mode: SetupConnectionMode): SetupPresetResponse {
+  if (mode === "remote") {
+    return {
+      mode,
+      pgAdmin: {
+        host: "",
+        port: 5432,
+        user: "",
+        password: "",
+        sslMode: "require",
+      },
+      provision: {
+        dbName: "",
+        appRole: "",
+        appPassword: undefined,
+      },
+    };
+  }
+
+  return {
+    mode: "docker",
+    pgAdmin: {
+      host: "postgres",
+      port: 5432,
+      user: "netden",
+      password: "netdenpass",
+      sslMode: "disable",
+    },
+    provision: {
+      dbName: "netden",
+      appRole: "netden_app",
+      appPassword: undefined,
+    },
+  };
+}
+
 function SummaryTable({ summary }: { summary: SetupSummary }) {
   const rows: Array<{ key: string; value: string }> = [
     { key: "DATABASE_URL", value: summary.databaseUrl },
@@ -178,9 +268,12 @@ export function SetupWizard() {
   const [step, setStep] = useState(0);
   const [busy, setBusy] = useState(false);
   const [presetLoading, setPresetLoading] = useState(false);
+  const [presetWarning, setPresetWarning] = useState<string | null>(null);
+  const [presetReloadToken, setPresetReloadToken] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [alreadyInitialized, setAlreadyInitialized] = useState(false);
   const [recoveryOnly, setRecoveryOnly] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState<"emergency" | "legacy">("emergency");
   const [connectionMode, setConnectionMode] = useState<SetupConnectionMode>("docker");
 
   const [pgHost, setPgHost] = useState("");
@@ -196,9 +289,20 @@ export function SetupWizard() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [adminPasswordConfirm, setAdminPasswordConfirm] = useState("");
+
   const [recoveryEmail, setRecoveryEmail] = useState("");
   const [recoveryPassword, setRecoveryPassword] = useState("");
   const [recoveryPasswordConfirm, setRecoveryPasswordConfirm] = useState("");
+
+  const [emergencyAccounts, setEmergencyAccounts] = useState<SetupEmergencyAccountOption[]>([]);
+  const [emergencyLoading, setEmergencyLoading] = useState(false);
+  const [emergencyError, setEmergencyError] = useState<string | null>(null);
+  const [emergencyWarning, setEmergencyWarning] = useState<string | null>(null);
+  const [selectedEmergencyUserId, setSelectedEmergencyUserId] = useState("");
+  const [emergencyNewPassword, setEmergencyNewPassword] = useState("");
+  const [emergencyNewPasswordConfirm, setEmergencyNewPasswordConfirm] = useState("");
+  const [emergencyRecoveredEmail, setEmergencyRecoveredEmail] = useState<string | null>(null);
+  const [legacyRecoveryEndpoint, setLegacyRecoveryEndpoint] = useState("/api/setup/recover");
 
   const [done, setDone] = useState(false);
   const [needsRecovery, setNeedsRecovery] = useState(false);
@@ -206,6 +310,17 @@ export function SetupWizard() {
   const [summary, setSummary] = useState<SetupSummary | null>(null);
 
   const isRecoveryFlow = recoveryOnly || needsRecovery;
+
+  function applyPreset(preset: SetupPresetResponse) {
+    setPgHost(preset.pgAdmin.host);
+    setPgPort(preset.pgAdmin.port);
+    setPgUser(preset.pgAdmin.user);
+    setPgPassword(preset.pgAdmin.password);
+    setSslMode(preset.pgAdmin.sslMode);
+    setDbName(preset.provision.dbName);
+    setAppRole(preset.provision.appRole);
+    setAppPassword(preset.provision.appPassword ?? "");
+  }
 
   useEffect(() => {
     fetch("/api/setup/state")
@@ -231,10 +346,12 @@ export function SetupWizard() {
 
   useEffect(() => {
     let cancelled = false;
+    const abort = new AbortController();
+    const timeoutId = setTimeout(() => abort.abort(), PRESET_TIMEOUT_MS);
     setPresetLoading(true);
-    setError(null);
+    setPresetWarning(null);
 
-    fetch(`/api/setup/preset?mode=${connectionMode}`)
+    fetch(`/api/setup/preset?mode=${connectionMode}`, { signal: abort.signal })
       .then(async (response) => {
         const data: unknown = await response.json().catch(() => null);
         if (!response.ok) {
@@ -251,22 +368,23 @@ export function SetupWizard() {
         if (cancelled) {
           return;
         }
-        setPgHost(preset.pgAdmin.host);
-        setPgPort(preset.pgAdmin.port);
-        setPgUser(preset.pgAdmin.user);
-        setPgPassword(preset.pgAdmin.password);
-        setSslMode(preset.pgAdmin.sslMode);
-        setDbName(preset.provision.dbName);
-        setAppRole(preset.provision.appRole);
-        setAppPassword(preset.provision.appPassword ?? "");
+        applyPreset(preset);
       })
       .catch((presetError: unknown) => {
         if (cancelled) {
           return;
         }
-        setError(presetError instanceof Error ? presetError.message : "Ошибка загрузки пресета");
+        applyPreset(getManualPreset(connectionMode));
+        const message =
+          presetError instanceof Error
+            ? presetError.message
+            : "Не удалось загрузить автоподстановку";
+        setPresetWarning(
+          `Автоподстановка недоступна, включён ручной режим (${message})`,
+        );
       })
       .finally(() => {
+        clearTimeout(timeoutId);
         if (!cancelled) {
           setPresetLoading(false);
         }
@@ -274,15 +392,72 @@ export function SetupWizard() {
 
     return () => {
       cancelled = true;
+      clearTimeout(timeoutId);
+      abort.abort();
     };
-  }, [connectionMode]);
+  }, [connectionMode, presetReloadToken]);
+
+  useEffect(() => {
+    if (!isRecoveryFlow) {
+      return;
+    }
+
+    let cancelled = false;
+    setEmergencyLoading(true);
+    setEmergencyError(null);
+
+    fetch("/api/setup/emergency/state")
+      .then(async (response) => {
+        const data: unknown = await response.json().catch(() => null);
+        if (!response.ok) {
+          const setupError = readSetupError(data);
+          throw new Error(setupError?.error || `Ошибка emergency state (HTTP ${response.status})`);
+        }
+
+        const parsed = readEmergencyState(data);
+        if (!parsed) {
+          throw new Error("Некорректный ответ /api/setup/emergency/state");
+        }
+        return parsed;
+      })
+      .then((state) => {
+        if (cancelled) {
+          return;
+        }
+        setEmergencyAccounts(state.accounts);
+        setSelectedEmergencyUserId((current) =>
+          current || state.accounts[0]?.userId || "",
+        );
+        setEmergencyWarning(state.warning);
+        setLegacyRecoveryEndpoint(state.legacyRecoveryEndpoint);
+      })
+      .catch((loadError: unknown) => {
+        if (cancelled) {
+          return;
+        }
+        setEmergencyAccounts([]);
+        setSelectedEmergencyUserId("");
+        setEmergencyError(
+          loadError instanceof Error ? loadError.message : "Ошибка загрузки аварийного recovery",
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setEmergencyLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isRecoveryFlow]);
 
   const canProceed = useMemo(() => {
-    if (busy || done || presetLoading) {
+    if (busy || done) {
       return false;
     }
 
-    if (step === 0 || step === 1 || step === RUN_STEP) {
+    if (step === 0 || step === 1) {
       return true;
     }
 
@@ -306,6 +481,21 @@ export function SetupWizard() {
       );
     }
 
+    if (step === RUN_STEP) {
+      if (!isRecoveryFlow) {
+        return true;
+      }
+      if (recoveryMode === "legacy") {
+        return true;
+      }
+      return Boolean(
+        !emergencyLoading &&
+          selectedEmergencyUserId &&
+          emergencyNewPassword.trim().length >= 12 &&
+          emergencyNewPassword === emergencyNewPasswordConfirm,
+      );
+    }
+
     return false;
   }, [
     adminEmail,
@@ -316,12 +506,16 @@ export function SetupWizard() {
     busy,
     dbName,
     done,
+    emergencyLoading,
+    emergencyNewPassword,
+    emergencyNewPasswordConfirm,
     isRecoveryFlow,
     pgHost,
     pgPassword,
     pgPort,
     pgUser,
-    presetLoading,
+    recoveryMode,
+    selectedEmergencyUserId,
     step,
   ]);
 
@@ -363,6 +557,7 @@ export function SetupWizard() {
         if (response.status === 409 && setupError?.needsRecovery) {
           setNeedsRecovery(true);
           setRecoveryOnly(true);
+          setRecoveryMode("emergency");
           if (setupError.recoveryEndpoint) {
             setRecoveryEndpoint(setupError.recoveryEndpoint);
           }
@@ -382,7 +577,7 @@ export function SetupWizard() {
     }
   }
 
-  async function runRecovery() {
+  async function runLegacyRecovery() {
     setBusy(true);
     setError(null);
 
@@ -435,10 +630,60 @@ export function SetupWizard() {
     }
   }
 
+  async function runEmergencyRecovery() {
+    setBusy(true);
+    setError(null);
+
+    try {
+      if (!selectedEmergencyUserId) {
+        throw new Error("Выберите аккаунт для восстановления");
+      }
+      if (emergencyNewPassword.trim().length < 12) {
+        throw new Error("Новый пароль должен быть не короче 12 символов");
+      }
+      if (emergencyNewPassword !== emergencyNewPasswordConfirm) {
+        throw new Error("Пароли не совпадают");
+      }
+
+      const response = await fetch("/api/setup/emergency/reset", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          userId: selectedEmergencyUserId,
+          newPassword: emergencyNewPassword,
+        }),
+      });
+
+      const data: unknown = await response.json().catch(() => null);
+      if (!response.ok) {
+        const setupError = readSetupError(data);
+        throw new Error(setupError?.error || `Ошибка emergency reset (HTTP ${response.status})`);
+      }
+
+      const success = readEmergencyReset(data);
+      if (!success) {
+        throw new Error("Некорректный ответ /api/setup/emergency/reset");
+      }
+
+      setEmergencyRecoveredEmail(success.loginEmail);
+      setDone(true);
+      setSummary(null);
+      setStep(SUMMARY_STEP);
+    } catch (recoverError: unknown) {
+      setError(recoverError instanceof Error ? recoverError.message : "Ошибка emergency recovery");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function nextStep() {
     if (step === RUN_STEP) {
       if (isRecoveryFlow) {
-        void runRecovery();
+        if (recoveryMode === "legacy") {
+          void runLegacyRecovery();
+        } else {
+          void runEmergencyRecovery();
+        }
       } else {
         void runSetup();
       }
@@ -465,17 +710,15 @@ export function SetupWizard() {
   }
 
   function actionLabel(): string {
-    if (step === 0) {
-      return "Далее";
-    }
-
     if (step === RUN_STEP) {
       if (isRecoveryFlow) {
-        return busy ? "Восстанавливаем..." : "Восстановить из БД";
+        if (recoveryMode === "legacy") {
+          return busy ? "Восстанавливаем..." : "Восстановить через DB-учётку";
+        }
+        return busy ? "Сбрасываем..." : "Сбросить пароль и перейти к логину";
       }
       return busy ? "Запуск..." : "Запустить setup";
     }
-
     return "Далее";
   }
 
@@ -519,8 +762,8 @@ export function SetupWizard() {
               <div className={settingsStyles["acme-note"]}>
                 <p className={homeStyles["home-inline-title"]}>Источник подключения к PostgreSQL</p>
                 <p className={homeStyles["home-muted"]}>
-                  Для Docker параметры будут подставлены автоматически. Для удалённого сервера все
-                  поля заполняются вручную.
+                  Для Docker параметры подставляются автоматически. При сбое автоподстановки мастер
+                  перейдёт в ручной режим без блокировки.
                 </p>
               </div>
               <div className={homeStyles["home-links"]}>
@@ -540,13 +783,22 @@ export function SetupWizard() {
                 >
                   Remote IP
                 </Button>
+                <Button
+                  type="button"
+                  kind="ghost"
+                  disabled={busy || presetLoading}
+                  onClick={() => setPresetReloadToken((current) => current + 1)}
+                >
+                  {presetLoading ? "Пробуем..." : "Повторить автоподстановку"}
+                </Button>
               </div>
               <p className={homeStyles["home-muted"]}>
                 Текущий режим: <strong>{connectionMode === "docker" ? "Docker local" : "Remote IP"}</strong>
               </p>
               {presetLoading ? (
-                <p className={homeStyles["home-muted"]}>Подставляем значения для выбранного режима…</p>
+                <p className={homeStyles["home-muted"]}>Загружаем пресет…</p>
               ) : null}
+              {presetWarning ? <p className={homeStyles["notes-error"]}>{presetWarning}</p> : null}
             </div>
           ) : null}
 
@@ -557,7 +809,7 @@ export function SetupWizard() {
                   <p className={homeStyles["home-inline-title"]}>⚠ Настройка уже выполнялась</p>
                   <p className={homeStyles["home-muted"]}>
                     Обнаружена ранее настроенная система. Доступен recovery-режим для восстановления
-                    входа без удаления данных.
+                    доступа без удаления данных.
                   </p>
                 </div>
               ) : null}
@@ -565,8 +817,8 @@ export function SetupWizard() {
                 <div className={settingsStyles["acme-note"]}>
                   <p className={homeStyles["home-inline-title"]}>Включен recovery-режим</p>
                   <p className={homeStyles["home-muted"]}>
-                    Обычный setup недоступен при настроенном `DATABASE_URL`. На финальном шаге будет
-                    выполнено восстановление из существующей БД.
+                    Обычный setup недоступен при настроенном `DATABASE_URL`. Используйте аварийный
+                    recovery или расширенный режим с DB-учёткой.
                   </p>
                 </div>
               ) : (
@@ -577,13 +829,10 @@ export function SetupWizard() {
                     <li>Создание базы данных и применение миграций Prisma.</li>
                     <li>Создание первого пользователя с начальными событиями.</li>
                     <li>Генерация NETDEN_SESSION_SECRET.</li>
-                    <li>Вывод сводки для вставки в Timeweb Variables.</li>
+                    <li>Вывод сводки для вставки в Variables.</li>
                   </ul>
                 </div>
               )}
-              <p className={homeStyles["home-muted"]}>
-                После завершения setup или recovery обновите Variables и выполните redeploy.
-              </p>
             </div>
           ) : null}
 
@@ -625,8 +874,7 @@ export function SetupWizard() {
               {sslMode === "require" ? (
                 <p className={settingsStyles["setup-ssl-warning"]}>
                   ⚠ Режим <strong>require</strong> шифрует соединение, но не проверяет
-                  сертификат сервера — возможна MITM-атака. Для production-окружений
-                  используйте PostgreSQL с валидным CA-подписанным сертификатом.
+                  сертификат сервера — возможна MITM-атака.
                 </p>
               ) : null}
             </div>
@@ -695,39 +943,119 @@ export function SetupWizard() {
             <div className={settingsStyles["settings-grid"]}>
               {isRecoveryFlow ? (
                 <>
-                  <p className={settingsStyles["acme-note"]}>
-                    Нажмите «Восстановить из БД». Мастер проверит существующую базу и сформирует
-                    обновлённую сводку секретов. При необходимости можно сразу сбросить пароль
-                    пользователя.
-                  </p>
-                  <Field label="Email пользователя для сброса пароля (опционально)">
-                    <Input
-                      value={recoveryEmail}
-                      onChange={(e) => setRecoveryEmail(e.target.value)}
-                      type="email"
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                    />
-                  </Field>
-                  <Field label="Новый пароль (опционально)" hint="минимум 12 символов">
-                    <Input
-                      value={recoveryPassword}
-                      onChange={(e) => setRecoveryPassword(e.target.value)}
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={12}
-                    />
-                  </Field>
-                  <Field label="Повторите новый пароль">
-                    <Input
-                      value={recoveryPasswordConfirm}
-                      onChange={(e) => setRecoveryPasswordConfirm(e.target.value)}
-                      type="password"
-                      autoComplete="new-password"
-                      minLength={12}
-                    />
-                  </Field>
-                  <p className={homeStyles["home-muted"]}>Endpoint: {recoveryEndpoint}</p>
+                  <div className={settingsStyles["acme-note"]}>
+                    <p className={homeStyles["home-inline-title"]}>Выберите режим восстановления</p>
+                    <p className={homeStyles["home-muted"]}>
+                      Аварийный режим не требует DB-учётки, но должен использоваться только в
+                      доверенной self-hosted среде.
+                    </p>
+                  </div>
+                  <div className={homeStyles["home-links"]}>
+                    <Button
+                      type="button"
+                      kind={recoveryMode === "emergency" ? "primary" : "ghost"}
+                      disabled={busy}
+                      onClick={() => setRecoveryMode("emergency")}
+                    >
+                      Аварийное восстановление
+                    </Button>
+                    <Button
+                      type="button"
+                      kind={recoveryMode === "legacy" ? "primary" : "ghost"}
+                      disabled={busy}
+                      onClick={() => setRecoveryMode("legacy")}
+                    >
+                      Расширенный режим (DB)
+                    </Button>
+                  </div>
+
+                  {recoveryMode === "emergency" ? (
+                    <div className={settingsStyles["settings-grid"]}>
+                      {emergencyWarning ? (
+                        <p className={homeStyles["home-muted"]}>{emergencyWarning}</p>
+                      ) : null}
+                      {emergencyLoading ? (
+                        <p className={homeStyles["home-muted"]}>Загружаем доступные аккаунты…</p>
+                      ) : null}
+                      {emergencyError ? (
+                        <p className={homeStyles["notes-error"]}>{emergencyError}</p>
+                      ) : null}
+                      {!emergencyLoading && !emergencyError && emergencyAccounts.length === 0 ? (
+                        <p className={homeStyles["home-muted"]}>
+                          Нет доступных аккаунтов для аварийного восстановления.
+                        </p>
+                      ) : null}
+                      {!emergencyLoading && emergencyAccounts.length > 0 ? (
+                        <>
+                          <Field label="Аккаунт для восстановления">
+                            <Select
+                              value={selectedEmergencyUserId}
+                              onChange={(e) => setSelectedEmergencyUserId(e.target.value)}
+                            >
+                              {emergencyAccounts.map((account) => (
+                                <option key={account.userId} value={account.userId}>
+                                  {account.maskedEmail}
+                                </option>
+                              ))}
+                            </Select>
+                          </Field>
+                          <Field label="Новый пароль" hint="минимум 12 символов">
+                            <Input
+                              value={emergencyNewPassword}
+                              onChange={(e) => setEmergencyNewPassword(e.target.value)}
+                              type="password"
+                              autoComplete="new-password"
+                              minLength={12}
+                            />
+                          </Field>
+                          <Field label="Повторите новый пароль">
+                            <Input
+                              value={emergencyNewPasswordConfirm}
+                              onChange={(e) => setEmergencyNewPasswordConfirm(e.target.value)}
+                              type="password"
+                              autoComplete="new-password"
+                              minLength={12}
+                            />
+                          </Field>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <div className={settingsStyles["settings-grid"]}>
+                      <p className={settingsStyles["acme-note"]}>
+                        В этом режиме используются DB-учётки для восстановления через endpoint
+                        `{legacyRecoveryEndpoint}`.
+                      </p>
+                      <Field label="Email пользователя для сброса пароля (опционально)">
+                        <Input
+                          value={recoveryEmail}
+                          onChange={(e) => setRecoveryEmail(e.target.value)}
+                          type="email"
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                        />
+                      </Field>
+                      <Field label="Новый пароль (опционально)" hint="минимум 12 символов">
+                        <Input
+                          value={recoveryPassword}
+                          onChange={(e) => setRecoveryPassword(e.target.value)}
+                          type="password"
+                          autoComplete="new-password"
+                          minLength={12}
+                        />
+                      </Field>
+                      <Field label="Повторите новый пароль">
+                        <Input
+                          value={recoveryPasswordConfirm}
+                          onChange={(e) => setRecoveryPasswordConfirm(e.target.value)}
+                          type="password"
+                          autoComplete="new-password"
+                          minLength={12}
+                        />
+                      </Field>
+                      <p className={homeStyles["home-muted"]}>Endpoint: {recoveryEndpoint}</p>
+                    </div>
+                  )}
                 </>
               ) : (
                 <p className={settingsStyles["acme-note"]}>
@@ -740,23 +1068,36 @@ export function SetupWizard() {
 
           {step === SUMMARY_STEP ? (
             <div className={settingsStyles["settings-grid"]}>
+              {emergencyRecoveredEmail ? (
+                <div className={settingsStyles["acme-note"]}>
+                  <p className={homeStyles["home-inline-title"]}>Пароль успешно сброшен</p>
+                  <p className={homeStyles["home-muted"]}>
+                    Логин для входа: <code>{emergencyRecoveredEmail}</code>
+                  </p>
+                  <nav className={homeStyles["home-links"]}>
+                    <a
+                      href={`/login?email=${encodeURIComponent(emergencyRecoveredEmail)}`}
+                      className={homeStyles["home-link"]}
+                    >
+                      Открыть /login
+                    </a>
+                  </nav>
+                </div>
+              ) : null}
+
               {done && summary ? <SummaryTable summary={summary} /> : null}
 
-              <div className={settingsStyles["acme-note"]}>
-                <p className={homeStyles["home-inline-title"]}>Обязательные шаги после завершения</p>
-                <ol className={`${settingsStyles["setup-list"]} ${settingsStyles["setup-list-decimal"]}`}>
-                  <li>Откройте Timeweb Apps → Variables.</li>
-                  <li>Вставьте значения из сводки: DATABASE_URL и NETDEN_SESSION_SECRET.</li>
-                  <li>Сделайте redeploy приложения.</li>
-                  <li>После redeploy авторизуйтесь через /login.</li>
-                </ol>
-              </div>
-
-              <nav className={homeStyles["home-links"]}>
-                <a href="/login" className={homeStyles["home-link"]}>
-                  Открыть /login
-                </a>
-              </nav>
+              {summary ? (
+                <div className={settingsStyles["acme-note"]}>
+                  <p className={homeStyles["home-inline-title"]}>Обязательные шаги после завершения</p>
+                  <ol className={`${settingsStyles["setup-list"]} ${settingsStyles["setup-list-decimal"]}`}>
+                    <li>Откройте Variables.</li>
+                    <li>Вставьте значения из сводки: DATABASE_URL и NETDEN_SESSION_SECRET.</li>
+                    <li>Сделайте redeploy приложения.</li>
+                    <li>После redeploy авторизуйтесь через /login.</li>
+                  </ol>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -767,11 +1108,7 @@ export function SetupWizard() {
           ) : null}
 
           <div className={`${homeStyles["home-card-head"]} ${settingsStyles["setup-nav"]}`}>
-            <Button
-              kind="ghost"
-              onClick={previousStep}
-              disabled={busy || done || step === 0 || presetLoading}
-            >
+            <Button kind="ghost" onClick={previousStep} disabled={busy || done || step === 0}>
               Назад
             </Button>
             <Button onClick={nextStep} disabled={!canProceed}>
@@ -782,7 +1119,7 @@ export function SetupWizard() {
 
         <p className={homeStyles["home-muted"]}>
           В этом режиме значения не сохраняются на диске контейнера: финальная сводка предназначена
-          для ручного переноса в Timeweb Variables.
+          для ручного переноса в Variables.
         </p>
       </div>
     </div>
