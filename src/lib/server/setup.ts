@@ -11,12 +11,15 @@ import {
   SetupConnectionMode,
   SetupEmergencyAccountOption,
   SetupEmergencyResetInput,
+  SetupErrorReasonCode,
   SetupErrorResponse,
   SetupPgAdminInput,
   SetupPresetResponse,
   SetupRecoverInput,
   SetupRunInput,
   SetupSiteAdminInput,
+  SetupStateReason,
+  SetupStateResponse,
   SetupSummary,
   SslMode,
 } from "@/lib/types";
@@ -32,6 +35,77 @@ function normalize(value: unknown): string {
     return "";
   }
   return value.trim();
+}
+
+function readErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== "object") {
+    return undefined;
+  }
+
+  const candidate = error as { code?: unknown; originalCode?: unknown; cause?: unknown };
+  if (typeof candidate.code === "string" && candidate.code) {
+    return candidate.code;
+  }
+  if (typeof candidate.originalCode === "string" && candidate.originalCode) {
+    return candidate.originalCode;
+  }
+  if (candidate.cause) {
+    return readErrorCode(candidate.cause);
+  }
+  return undefined;
+}
+
+function readErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message.toLowerCase();
+  }
+  if (typeof error === "string") {
+    return error.toLowerCase();
+  }
+  return "";
+}
+
+function isSchemaNotReadyError(error: unknown): boolean {
+  const code = readErrorCode(error);
+  return code === "P2021" || code === "P2022" || code === "42P01";
+}
+
+function isDatabaseUnreachableError(error: unknown): boolean {
+  const code = readErrorCode(error);
+  if (
+    code === "P1001" ||
+    code === "ECONNREFUSED" ||
+    code === "ETIMEDOUT" ||
+    code === "ENOTFOUND"
+  ) {
+    return true;
+  }
+
+  const message = readErrorMessage(error);
+  return (
+    message.includes("can't reach database server") ||
+    message.includes("connection refused") ||
+    message.includes("connection terminated unexpectedly") ||
+    message.includes("connect etimedout") ||
+    message.includes("getaddrinfo enotfound")
+  );
+}
+
+function inferSetupErrorReasonCode(error: unknown): SetupErrorReasonCode | undefined {
+  if (isSchemaNotReadyError(error)) {
+    return "schema_not_ready";
+  }
+  if (isDatabaseUnreachableError(error)) {
+    return "db_unreachable";
+  }
+  return undefined;
+}
+
+export function detectSetupStateReason(error: unknown): SetupStateReason {
+  if (isSchemaNotReadyError(error)) {
+    return "schema_not_ready";
+  }
+  return "db_unreachable";
 }
 
 function readEnv(name: string): string | undefined {
@@ -394,12 +468,7 @@ export async function resetEmergencyPasswordByUserId(input: SetupEmergencyResetI
 }
 
 function isMissingTableError(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code?: unknown }).code === "P2021"
-  );
+  return readErrorCode(error) === "P2021";
 }
 
 async function cleanupOptionalTable(
@@ -430,6 +499,37 @@ export async function runEmergencyFactoryReset(): Promise<void> {
 
 export function isDatabaseConfigured(): boolean {
   return Boolean(process.env.DATABASE_URL?.trim());
+}
+
+export async function readSetupState(): Promise<SetupStateResponse> {
+  const databaseConfigured = isDatabaseConfigured();
+  if (!databaseConfigured) {
+    return {
+      databaseConfigured: false,
+      initialized: false,
+      setupRequired: true,
+    };
+  }
+
+  try {
+    const { hasUsers } = await import("@/lib/server/json-db");
+    const initialized = await hasUsers();
+    return {
+      databaseConfigured: true,
+      initialized,
+      setupRequired: !initialized,
+    };
+  } catch (error) {
+    const reason = detectSetupStateReason(error);
+    console.error("Failed to read setup state:", error);
+    return {
+      databaseConfigured: true,
+      initialized: false,
+      setupRequired: true,
+      degraded: true,
+      reason,
+    };
+  }
 }
 
 async function runPrismaMigrateDeploy(databaseUrl: string): Promise<void> {
@@ -693,11 +793,33 @@ export function buildSetupSummary(input: {
 
 export function handleSetupError(error: unknown): NextResponse {
   if (error instanceof HttpError) {
-    const body: SetupErrorResponse = { error: error.message };
+    const body: SetupErrorResponse = {
+      error: error.message,
+      reasonCode: inferSetupErrorReasonCode(error),
+    };
     return NextResponse.json(body, { status: error.status });
   }
 
+  const inferredReason = inferSetupErrorReasonCode(error);
+  if (inferredReason === "schema_not_ready") {
+    const body: SetupErrorResponse = {
+      error: "Database schema is not ready. Complete setup with infrastructure access.",
+      reasonCode: inferredReason,
+    };
+    return NextResponse.json(body, { status: 409 });
+  }
+  if (inferredReason === "db_unreachable") {
+    const body: SetupErrorResponse = {
+      error: "Database is unreachable. Check DATABASE_URL and PostgreSQL network access.",
+      reasonCode: inferredReason,
+    };
+    return NextResponse.json(body, { status: 503 });
+  }
+
   console.error("Unhandled setup error:", error);
-  const body: SetupErrorResponse = { error: "Internal server error" };
+  const body: SetupErrorResponse = {
+    error: "Internal server error",
+    reasonCode: "internal_server_error",
+  };
   return NextResponse.json(body, { status: 500 });
 }

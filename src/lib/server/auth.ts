@@ -47,7 +47,14 @@ async function ensureAuthBootstrap(): Promise<void> {
       "База данных не настроена. Завершите /setup и добавьте переменные в Timeweb.",
     );
   }
-  await hasUsers();
+  try {
+    await hasUsers();
+  } catch {
+    throw new HttpError(
+      503,
+      "База данных недоступна. Проверьте DATABASE_URL и доступность PostgreSQL.",
+    );
+  }
 }
 
 export async function bootstrapAuth(): Promise<void> {
@@ -64,7 +71,14 @@ export async function isSystemInitialized(): Promise<boolean> {
   if (!isDatabaseConfigured()) {
     return false;
   }
-  return hasUsers();
+  try {
+    return await hasUsers();
+  } catch {
+    throw new HttpError(
+      503,
+      "Не удалось проверить состояние системы: база данных недоступна.",
+    );
+  }
 }
 
 export async function authenticateUser(

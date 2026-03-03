@@ -47,4 +47,30 @@ describe("proxy page routing", () => {
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe("http://localhost/register");
   });
+
+  it("redirects non-setup routes to /setup when users check fails", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockRejectedValue(new Error("db down"));
+
+    const response = await proxy(new NextRequest("http://localhost/login"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/setup");
+  });
+
+  it("keeps /setup open when users check fails", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockRejectedValue(new Error("db down"));
+
+    const response = await proxy(new NextRequest("http://localhost/setup"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("location")).toBeNull();
+  });
 });

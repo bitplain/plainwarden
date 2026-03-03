@@ -115,10 +115,21 @@ export const createNetdenStore = () =>
     register: async (input) => {
       set({ isAuthLoading: true, error: null });
       try {
-        await api.register(input);
-        await get().login({ email: input.email, password: input.password });
+        const response = await api.register(input);
+        set({
+          user: response.user,
+          isAuthenticated: true,
+          hasCheckedAuth: true,
+          isAuthLoading: false,
+        });
+        await get().fetchEvents();
       } catch (error) {
-        set({ isAuthLoading: false, error: getErrorMessage(error) });
+        set({
+          user: null,
+          isAuthenticated: false,
+          isAuthLoading: false,
+          error: getErrorMessage(error),
+        });
         throw error;
       }
     },

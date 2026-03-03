@@ -111,7 +111,18 @@ async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
     return NextResponse.redirect(new URL(homeRoute, request.url));
   }
 
-  const initialized = await hasUsers();
+  let initialized = false;
+  try {
+    initialized = await hasUsers();
+  } catch (error) {
+    console.error("Proxy failed to determine initialization state:", error);
+
+    if (isSetupRoute) {
+      return NextResponse.next();
+    }
+
+    return NextResponse.redirect(new URL(setupRoute, request.url));
+  }
 
   if (isSetupRoute) {
     if (!initialized) {

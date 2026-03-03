@@ -372,18 +372,38 @@ export interface SetupRecoverResponse {
   recovered: SetupSummary;
 }
 
+export type SetupErrorReasonCode =
+  | "database_url_configured"
+  | "users_already_exist"
+  | "database_not_configured"
+  | "db_unreachable"
+  | "schema_not_ready"
+  | "legacy_endpoint_disabled"
+  | "internal_server_error";
+
 export interface SetupErrorResponse {
   error: string;
   needsRecovery?: boolean;
   recoveryEndpoint?: string;
   canFactoryReset?: boolean;
   canUseEmergencyRecovery?: boolean;
+  reasonCode?: SetupErrorReasonCode;
 }
 
 export interface SetupPresetResponse {
   mode: SetupConnectionMode;
   pgAdmin: SetupPgAdminInput;
   provision: SetupProvisionInput;
+}
+
+export type SetupStateReason = "db_unreachable" | "schema_not_ready";
+
+export interface SetupStateResponse {
+  databaseConfigured: boolean;
+  initialized: boolean;
+  setupRequired: boolean;
+  degraded?: boolean;
+  reason?: SetupStateReason;
 }
 
 export interface SetupEmergencyAccountOption {

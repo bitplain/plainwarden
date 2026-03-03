@@ -5,6 +5,7 @@ const VALID_SECRET = "a".repeat(32);
 
 describe("session token", () => {
   const originalSecret = process.env.NETDEN_SESSION_SECRET;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
 
   beforeEach(() => {
     process.env.NETDEN_SESSION_SECRET = VALID_SECRET;
@@ -15,6 +16,12 @@ describe("session token", () => {
       delete process.env.NETDEN_SESSION_SECRET;
     } else {
       process.env.NETDEN_SESSION_SECRET = originalSecret;
+    }
+
+    if (originalDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = originalDatabaseUrl;
     }
   });
 
@@ -41,17 +48,24 @@ describe("session token", () => {
     expect(verifySessionToken("nodothere")).toBeNull();
   });
 
-  it("throws when NETDEN_SESSION_SECRET is missing", () => {
+  it("uses secret derived from DATABASE_URL when NETDEN_SESSION_SECRET is missing", () => {
     delete process.env.NETDEN_SESSION_SECRET;
-    expect(() => createSessionToken({ id: "u", email: "u@e.com" })).toThrow(
-      "NETDEN_SESSION_SECRET is required",
-    );
+    process.env.DATABASE_URL = "postgresql://user:pass@db:5432/netden?schema=public";
+
+    const token = createSessionToken({ id: "u", email: "u@e.com" });
+    const payload = verifySessionToken(token);
+
+    expect(payload?.userId).toBe("u");
+    expect(payload?.email).toBe("u@e.com");
   });
 
-  it("throws when NETDEN_SESSION_SECRET is shorter than 32 characters", () => {
+  it("uses derived secret when NETDEN_SESSION_SECRET is shorter than 32 characters", () => {
     process.env.NETDEN_SESSION_SECRET = "short";
-    expect(() => createSessionToken({ id: "u", email: "u@e.com" })).toThrow(
-      "NETDEN_SESSION_SECRET must be at least 32 characters",
-    );
+
+    const token = createSessionToken({ id: "u", email: "u@e.com" });
+    const payload = verifySessionToken(token);
+
+    expect(payload?.userId).toBe("u");
+    expect(payload?.email).toBe("u@e.com");
   });
 });

@@ -43,6 +43,7 @@ describe("POST /api/setup/run", () => {
       needsRecovery: true,
       recoveryEndpoint: "/api/setup/recover",
       canFactoryReset: true,
+      reasonCode: "database_url_configured",
     });
   });
 

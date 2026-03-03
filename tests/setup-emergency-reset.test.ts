@@ -11,6 +11,7 @@ describe("POST /api/setup/emergency/reset", () => {
     expect(payload).toEqual({
       error: "Emergency password reset is disabled. Use /api/setup/emergency/factory-reset",
       canFactoryReset: true,
+      reasonCode: "legacy_endpoint_disabled",
     });
   });
 });
