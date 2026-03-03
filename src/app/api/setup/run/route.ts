@@ -14,7 +14,14 @@ import { SetupRunResponse } from "@/lib/types";
 export async function POST(request: Request) {
   try {
     if (isDatabaseConfigured()) {
-      throw new HttpError(409, "Setup is disabled because DATABASE_URL is already configured");
+      return NextResponse.json(
+        {
+          error: "Setup is disabled because DATABASE_URL is already configured",
+          needsRecovery: true,
+          recoveryEndpoint: "/api/setup/recover",
+        },
+        { status: 409 },
+      );
     }
 
     const body = await readJsonBody(request, { maxSizeKB: 32 });
