@@ -83,4 +83,40 @@ describe("POST /api/push/test", () => {
     expect(payload.reason).toBe("transient-failure");
     expect(payload.retryRecommended).toBe(true);
   });
+
+  it("passes targetEndpoint and generated test tag into delivery call", async () => {
+    mocks.sendPushToUser.mockResolvedValue({
+      sent: 1,
+      failed: 0,
+      inactive: 0,
+      transientFailed: 0,
+      permanentFailed: 0,
+      hasActiveSubscriptions: true,
+      deliveryStatus: "delivered",
+      reason: "ok",
+      retryRecommended: false,
+    });
+
+    const request = new NextRequest("http://localhost/api/push/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        title: "T",
+        message: "M",
+        targetEndpoint: "https://fcm.googleapis.com/fcm/send/current-endpoint",
+      }),
+    });
+
+    const response = await POST_PUSH_TEST(request);
+    expect(response.status).toBe(200);
+
+    expect(mocks.sendPushToUser).toHaveBeenCalledWith(
+      expect.objectContaining({
+        targetEndpoint: "https://fcm.googleapis.com/fcm/send/current-endpoint",
+        payload: expect.objectContaining({
+          tag: expect.stringMatching(/^push-test:/),
+        }),
+      }),
+    );
+  });
 });

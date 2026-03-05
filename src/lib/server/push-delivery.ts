@@ -12,6 +12,8 @@ export interface PushMessagePayload {
   navigateTo?: string;
   tag?: string;
   verifyToken?: string;
+  renotify?: boolean;
+  requireInteraction?: boolean;
 }
 
 export interface PushSendResult {
@@ -191,10 +193,17 @@ export async function sendPushToUser(input: {
   userId: string;
   payload: PushMessagePayload;
   requestId?: string;
+  targetEndpoint?: string;
 }): Promise<PushSendResult> {
   await ensureWebPushConfigured();
 
-  const subscriptions = await listActivePushSubscriptionsByUser(input.userId);
+  const allSubscriptions = await listActivePushSubscriptionsByUser(input.userId);
+  const targetEndpoint = input.targetEndpoint?.trim();
+  const subscriptions =
+    targetEndpoint && targetEndpoint.length > 0
+      ? allSubscriptions.filter((item) => item.endpoint === targetEndpoint)
+      : allSubscriptions;
+
   if (subscriptions.length === 0) {
     return {
       sent: 0,
@@ -222,6 +231,8 @@ export async function sendPushToUser(input: {
     badge: "/globe.svg",
     tag: input.payload.tag,
     verifyToken: input.payload.verifyToken,
+    renotify: input.payload.renotify,
+    requireInteraction: input.payload.requireInteraction,
   });
 
   let sent = 0;
@@ -234,6 +245,7 @@ export async function sendPushToUser(input: {
     requestId: input.requestId ?? null,
     userId: input.userId,
     subscriptions: subscriptions.length,
+    targeted: Boolean(targetEndpoint),
   });
 
   for (const subscription of subscriptions) {

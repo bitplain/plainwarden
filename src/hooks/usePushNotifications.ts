@@ -199,6 +199,11 @@ async function ensureServiceWorkerRegistration() {
   return registration;
 }
 
+async function getCurrentPushSubscription() {
+  const registration = await ensureServiceWorkerRegistration();
+  return registration.pushManager.getSubscription();
+}
+
 export function usePushNotifications(): UsePushNotificationsResult {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
@@ -398,11 +403,20 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
       setIsBusy(true);
       try {
+        const currentSubscription = await getCurrentPushSubscription();
+        if (!currentSubscription) {
+          return {
+            ok: false,
+            message: "Текущий браузер не подписан на push. Нажмите Enable push.",
+          };
+        }
+
         const response = await postJson<PushTestResponse>("/api/push/test", {
           title: "NetDen test",
           message,
           navigateTo: options?.navigateTo ?? "/",
           verifyToken: options?.verifyToken,
+          targetEndpoint: currentSubscription.endpoint,
         });
 
         if (response.deliveryStatus === "no-active-subscriptions" || response.deliveryStatus === "send-failed") {

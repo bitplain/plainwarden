@@ -8,6 +8,30 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+function createTestTag(): string {
+  return `push-test:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function parseTargetEndpoint(value: unknown): string | undefined {
+  if (typeof value !== "string" || !value.trim()) {
+    return undefined;
+  }
+
+  const endpoint = value.trim();
+  let parsed: URL;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    throw new HttpError(400, "targetEndpoint must be a valid URL");
+  }
+
+  if (parsed.protocol !== "https:") {
+    throw new HttpError(400, "targetEndpoint must use https");
+  }
+
+  return parsed.toString();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const userId = getUserIdFromRequest(request);
@@ -24,20 +48,25 @@ export async function POST(request: NextRequest) {
     const message = typeof body.message === "string" && body.message.trim() ? body.message.trim() : "Test push";
     const navigateTo = typeof body.navigateTo === "string" ? body.navigateTo : "/";
     const verifyToken = typeof body.verifyToken === "string" ? body.verifyToken.trim() : "";
+    const targetEndpoint = parseTargetEndpoint(body.targetEndpoint);
     if (verifyToken && !/^[A-Za-z0-9-]{8,128}$/.test(verifyToken)) {
       throw new HttpError(400, "verifyToken is invalid");
     }
 
+    const tag = verifyToken ? `push-verify:${verifyToken}` : createTestTag();
     const sent = await sendPushToUser({
       userId: userId,
       payload: {
         title,
         body: message,
         navigateTo,
-        tag: verifyToken ? `push-verify:${verifyToken}` : undefined,
+        tag,
         verifyToken: verifyToken || undefined,
+        renotify: true,
+        requireInteraction: true,
       },
       requestId: request.headers.get("x-request-id") ?? undefined,
+      targetEndpoint,
     });
 
     if (verifyToken && sent.sent > 0) {

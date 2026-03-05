@@ -116,6 +116,8 @@ self.addEventListener("push", (event) => {
         icon: data.icon || "/globe.svg",
         badge: data.badge || "/globe.svg",
         tag: data.tag,
+        renotify: data.renotify === true,
+        requireInteraction: data.requireInteraction === true,
         data: {
           navigateTo: data.navigateTo,
         },
