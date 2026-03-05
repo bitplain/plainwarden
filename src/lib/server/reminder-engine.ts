@@ -7,6 +7,7 @@ export interface ReminderCandidateInput {
   sourceId: string;
   title: string;
   dueDate: string;
+  dueTime?: string | null;
   navigateTo: string;
 }
 
@@ -27,7 +28,17 @@ export interface PushRateItem {
   severity: number;
 }
 
-function classifyKind(dueDate: string, today: string, tomorrow: string): ReminderKind | null {
+function isValidTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function classifyKind(input: {
+  dueDate: string;
+  today: string;
+  tomorrow: string;
+}): ReminderKind | null {
+  const { dueDate, today, tomorrow } = input;
+
   if (dueDate < today) {
     return "overdue";
   }
@@ -49,6 +60,18 @@ function kindSeverity(kind: ReminderKind): number {
   return 1;
 }
 
+function getSeverity(input: { kind: ReminderKind; dueDate: string; dueTime?: string | null; today: string }) {
+  const baseSeverity = kindSeverity(input.kind);
+  if (input.kind === "due_today" && input.dueDate === input.today) {
+    const dueTime = typeof input.dueTime === "string" ? input.dueTime : "";
+    if (isValidTime(dueTime)) {
+      // Time-specific event: prioritize above generic overdue backlog so same-day events are not starved.
+      return 4;
+    }
+  }
+  return baseSeverity;
+}
+
 export function buildReminderCandidates(input: {
   userId: string;
   nowIso: string;
@@ -60,8 +83,24 @@ export function buildReminderCandidates(input: {
 
   return input.items
     .map((item) => {
-      const kind = classifyKind(item.dueDate, today, tomorrow);
+      const kind = classifyKind({
+        dueDate: item.dueDate,
+        today,
+        tomorrow,
+      });
       if (!kind) return null;
+
+      const severity = getSeverity({
+        kind,
+        dueDate: item.dueDate,
+        dueTime: item.dueTime,
+        today,
+      });
+
+      const dedupeKeySuffix =
+        item.dueTime && isValidTime(item.dueTime)
+          ? `${kind}:${item.dueDate}:${item.dueTime}`
+          : `${kind}:${item.dueDate}`;
 
       return {
         sourceType: item.sourceType,
@@ -70,9 +109,9 @@ export function buildReminderCandidates(input: {
         dueDate: item.dueDate,
         navigateTo: item.navigateTo,
         kind,
-        severity: kindSeverity(kind),
+        severity,
         dedupeBucket: item.dueDate,
-        dedupeKey: `${input.userId}:${item.sourceType}:${item.sourceId}:${kind}:${item.dueDate}`,
+        dedupeKey: `${input.userId}:${item.sourceType}:${item.sourceId}:${dedupeKeySuffix}`,
       } satisfies ReminderCandidate;
     })
     .filter((item): item is ReminderCandidate => Boolean(item))
