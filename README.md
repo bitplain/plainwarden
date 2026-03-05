@@ -97,7 +97,7 @@ OPENROUTER_KEY_ENCRYPTION_SECRET=
 ## Push reminders (production flow)
 
 1. Откройте `Settings -> Календарь -> Push Notifications` и нажмите `Auto setup push`.
-2. Нажмите `Enable push`, затем `Send test`.
+2. Нажмите `Enable push`, затем `Verify delivery` (кнопка ждёт browser ack и показывает статус доставки).
 3. Настройте внешний cron (каждую минуту) на:
    - `POST /api/cron/reminders`
    - заголовок `x-netden-cron-secret: <NETDEN_CRON_SECRET>`

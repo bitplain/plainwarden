@@ -18,16 +18,47 @@ self.addEventListener("push", (event) => {
     // Fallback to defaults.
   }
 
+  const verifyToken = typeof data.verifyToken === "string" ? data.verifyToken.trim() : "";
+
+  const reportReceipt = async (phase) => {
+    if (!verifyToken) {
+      return;
+    }
+
+    try {
+      await fetch("/api/push/receipt", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        keepalive: true,
+        body: JSON.stringify({
+          token: verifyToken,
+          phase,
+        }),
+      });
+    } catch {
+      // Ignore reporting errors to avoid blocking notification display.
+    }
+  };
+
   event.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body,
-      icon: data.icon || "/globe.svg",
-      badge: data.badge || "/globe.svg",
-      tag: data.tag,
-      data: {
-        navigateTo: data.navigateTo,
-      },
-    }),
+    (async () => {
+      await reportReceipt("received");
+
+      await self.registration.showNotification(data.title, {
+        body: data.body,
+        icon: data.icon || "/globe.svg",
+        badge: data.badge || "/globe.svg",
+        tag: data.tag,
+        data: {
+          navigateTo: data.navigateTo,
+        },
+      });
+
+      await reportReceipt("shown");
+    })(),
   );
 });
 
