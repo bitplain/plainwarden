@@ -9,6 +9,8 @@ interface PushDiagnostics {
   invalid: string[];
   cronConfigured: boolean;
   source: "env" | "stored" | "none";
+  browserIssue: "none" | "unsupported" | "insecure-context" | "service-worker-error";
+  browserMessage: string | null;
   isLoading: boolean;
   error: string | null;
 }
@@ -70,6 +72,9 @@ interface PushAutoSetupResponse {
 interface PushTestResponse {
   ok?: boolean;
   verifyToken?: string | null;
+  deliveryStatus?: "delivered" | "partial-delivery" | "send-failed" | "no-active-subscriptions";
+  reason?: string;
+  retryRecommended?: boolean;
   sent?: {
     sent?: number;
     failed?: number;
@@ -123,6 +128,8 @@ const EMPTY_DIAGNOSTICS: PushDiagnostics = {
   invalid: [],
   cronConfigured: false,
   source: "none",
+  browserIssue: "none",
+  browserMessage: null,
   isLoading: true,
   error: null,
 };
@@ -152,6 +159,51 @@ function sleep(ms: number) {
   });
 }
 
+function toBrowserSupportMessage(issue: PushDiagnostics["browserIssue"]): string {
+  if (issue === "insecure-context") {
+    return "Push работает только в защищенном контексте (HTTPS или localhost).";
+  }
+  if (issue === "unsupported") {
+    return "Push API или Service Worker не поддерживаются в этом браузере.";
+  }
+  if (issue === "service-worker-error") {
+    return "Не удалось зарегистрировать service worker для push.";
+  }
+  return "Push не поддерживается в этом браузере.";
+}
+
+function toDeliveryErrorMessage(response: PushTestResponse): string {
+  if (response.deliveryStatus === "no-active-subscriptions") {
+    return "Нет активных подписок браузера. Выполните Enable push ещё раз.";
+  }
+  if (response.deliveryStatus === "send-failed") {
+    if (response.reason === "permanent-failure") {
+      return "Доставка push не удалась: подписка недействительна. Переподключите push.";
+    }
+    if (response.reason === "transient-failure") {
+      return "Доставка push временно недоступна. Повторите попытку позже.";
+    }
+    return response.retryRecommended
+      ? "Доставка push не удалась (временная ошибка). Повторите попытку."
+      : "Доставка push не удалась.";
+  }
+  return "Push отправлен, но подтверждения доставки нет.";
+}
+
+async function ensureServiceWorkerRegistration() {
+  const registration = await navigator.serviceWorker.register("/sw.js", {
+    scope: "/",
+    updateViaCache: "none",
+  });
+  await navigator.serviceWorker.ready;
+  return registration;
+}
+
+async function getCurrentPushSubscription() {
+  const registration = await ensureServiceWorkerRegistration();
+  return registration.pushManager.getSubscription();
+}
+
 export function usePushNotifications(): UsePushNotificationsResult {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
@@ -162,10 +214,27 @@ export function usePushNotifications(): UsePushNotificationsResult {
   const [verification, setVerification] = useState<PushVerificationState>(EMPTY_VERIFICATION);
 
   const refreshBrowserState = useCallback(async () => {
+    if (!window.isSecureContext) {
+      setSupported(false);
+      setPermission("unsupported");
+      setIsSubscribed(false);
+      setDiagnostics((prev) => ({
+        ...prev,
+        browserIssue: "insecure-context",
+        browserMessage: toBrowserSupportMessage("insecure-context"),
+      }));
+      return;
+    }
+
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setSupported(false);
       setPermission("unsupported");
       setIsSubscribed(false);
+      setDiagnostics((prev) => ({
+        ...prev,
+        browserIssue: "unsupported",
+        browserMessage: toBrowserSupportMessage("unsupported"),
+      }));
       return;
     }
 
@@ -173,17 +242,24 @@ export function usePushNotifications(): UsePushNotificationsResult {
     setPermission(Notification.permission);
 
     try {
-      const registration = await navigator.serviceWorker.register("/sw.js", {
-        scope: "/",
-        updateViaCache: "none",
-      });
+      const registration = await ensureServiceWorkerRegistration();
 
       const existing = await registration.pushManager.getSubscription();
       setIsSubscribed(Boolean(existing));
+      setDiagnostics((prev) => ({
+        ...prev,
+        browserIssue: "none",
+        browserMessage: null,
+      }));
     } catch {
       setSupported(false);
       setPermission("unsupported");
       setIsSubscribed(false);
+      setDiagnostics((prev) => ({
+        ...prev,
+        browserIssue: "service-worker-error",
+        browserMessage: toBrowserSupportMessage("service-worker-error"),
+      }));
     }
   }, []);
 
@@ -216,7 +292,8 @@ export function usePushNotifications(): UsePushNotificationsResult {
           : "none";
 
       setRuntimeVapidPublicKey(vapidPublicKey);
-      setDiagnostics({
+      setDiagnostics((prev) => ({
+        ...prev,
         configured,
         missing,
         invalid,
@@ -224,10 +301,11 @@ export function usePushNotifications(): UsePushNotificationsResult {
         source,
         isLoading: false,
         error: null,
-      });
+      }));
     } catch (error) {
       setRuntimeVapidPublicKey("");
-      setDiagnostics({
+      setDiagnostics((prev) => ({
+        ...prev,
         configured: false,
         missing: [],
         invalid: [],
@@ -235,7 +313,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         source: "none",
         isLoading: false,
         error: error instanceof Error ? error.message : "Failed to load push diagnostics",
-      });
+      }));
     }
   }, []);
 
@@ -249,7 +327,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
   const subscribe = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
     if (!supported) {
-      return { ok: false, message: "Push not supported" };
+      return { ok: false, message: diagnostics.browserMessage ?? "Push not supported" };
     }
 
     if (!diagnostics.configured || !runtimeVapidPublicKey) {
@@ -269,7 +347,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         return { ok: false, message: "Permission denied" };
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await ensureServiceWorkerRegistration();
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: base64ToUint8Array(runtimeVapidPublicKey),
@@ -290,12 +368,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
   const unsubscribe = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
     if (!supported) {
-      return { ok: false, message: "Push not supported" };
+      return { ok: false, message: diagnostics.browserMessage ?? "Push not supported" };
     }
 
     setIsBusy(true);
     try {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await ensureServiceWorkerRegistration();
       const subscription = await registration.pushManager.getSubscription();
 
       if (subscription) {
@@ -312,7 +390,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
     } finally {
       setIsBusy(false);
     }
-  }, [supported]);
+  }, [supported, diagnostics.browserMessage]);
 
   const sendTest = useCallback(
     async (
@@ -320,23 +398,33 @@ export function usePushNotifications(): UsePushNotificationsResult {
       options?: { verifyToken?: string; navigateTo?: string },
     ): Promise<{ ok: boolean; message: string }> => {
       if (!supported) {
-        return { ok: false, message: "Push not supported" };
+        return { ok: false, message: diagnostics.browserMessage ?? "Push not supported" };
       }
 
       setIsBusy(true);
       try {
+        const currentSubscription = await getCurrentPushSubscription();
+        if (!currentSubscription) {
+          return {
+            ok: false,
+            message: "Текущий браузер не подписан на push. Нажмите Enable push.",
+          };
+        }
+
         const response = await postJson<PushTestResponse>("/api/push/test", {
           title: "NetDen test",
           message,
           navigateTo: options?.navigateTo ?? "/",
           verifyToken: options?.verifyToken,
+          targetEndpoint: currentSubscription.endpoint,
         });
 
-        if ((response.sent?.sent ?? 0) <= 0) {
-          return {
-            ok: false,
-            message: "No active push subscriptions",
-          };
+        if (response.deliveryStatus === "no-active-subscriptions" || response.deliveryStatus === "send-failed") {
+          return { ok: false, message: toDeliveryErrorMessage(response) };
+        }
+
+        if (response.deliveryStatus === "partial-delivery") {
+          return { ok: true, message: "Push отправлен частично: часть подписок требует переподключения." };
         }
 
         return { ok: true, message: "Test push sent" };
@@ -346,12 +434,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
         setIsBusy(false);
       }
     },
-    [supported],
+    [supported, diagnostics.browserMessage],
   );
 
   const verifyDelivery = useCallback(async () => {
     if (!supported) {
-      return { ok: false, message: "Push not supported" };
+      return { ok: false, message: diagnostics.browserMessage ?? "Push not supported" };
     }
 
     if (!isSubscribed) {
@@ -370,8 +458,8 @@ export function usePushNotifications(): UsePushNotificationsResult {
         verifyToken,
       });
 
-      if ((sendResult.sent?.sent ?? 0) <= 0) {
-        const message = "No active push subscriptions";
+      if (sendResult.deliveryStatus === "no-active-subscriptions" || sendResult.deliveryStatus === "send-failed") {
+        const message = toDeliveryErrorMessage(sendResult);
         setVerification({
           status: "error",
           token: verifyToken,
@@ -381,7 +469,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         return { ok: false, message };
       }
 
-      const deadline = Date.now() + 15000;
+      const deadline = Date.now() + 20000;
       let lastReceipt: PushDeliveryReceipt | null = null;
 
       while (Date.now() < deadline) {
@@ -413,7 +501,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
         await sleep(1000);
       }
 
-      const timeoutMessage = "Push отправлен, но подтверждение от браузера не получено за 15 секунд";
+      const timeoutMessage = lastReceipt?.sentAt
+        ? "Push отправлен, но браузер не подтвердил получение за 20 секунд"
+        : "Push отправлен, но сервер не увидел receipt за 20 секунд";
       setVerification({
         status: "timeout",
         token: verifyToken,
@@ -434,7 +524,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
     } finally {
       setIsBusy(false);
     }
-  }, [supported, isSubscribed]);
+  }, [supported, isSubscribed, diagnostics.browserMessage]);
 
   const autoSetup = useCallback(async (): Promise<{ ok: boolean; message: string; cronSecret: string | null }> => {
     setIsBusy(true);

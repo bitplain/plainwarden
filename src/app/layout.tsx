@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { NetdenStoreProvider } from "@/lib/store";
 import AiChatWidgetWrapper from "@/components/AiChatWidgetWrapper";
+import PushForegroundOverlay from "@/components/PushForegroundOverlay";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -31,6 +32,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NetdenStoreProvider>
           {children}
+          <PushForegroundOverlay />
           <AiChatWidgetWrapper />
         </NetdenStoreProvider>
       </body>
