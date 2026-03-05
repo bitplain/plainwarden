@@ -27,6 +27,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
         id: true,
         title: true,
         date: true,
+        time: true,
       },
       orderBy: [{ date: "asc" }],
       take: 200,
@@ -60,6 +61,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
         sourceId: event.id,
         title: event.title,
         dueDate: event.date,
+        dueTime: event.time,
         navigateTo: "/calendar",
       })),
       ...cards
