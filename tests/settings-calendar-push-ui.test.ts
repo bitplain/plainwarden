@@ -17,9 +17,14 @@ vi.mock("@/hooks/usePushNotifications", () => ({
       isLoading: false,
       error: null,
     },
+    verification: {
+      status: "idle",
+      token: null,
+    },
     subscribe: async () => ({ ok: true, message: "ok" }),
     unsubscribe: async () => ({ ok: true, message: "ok" }),
     sendTest: async () => ({ ok: true, message: "ok" }),
+    verifyDelivery: async () => ({ ok: true, message: "ok", receipt: null }),
     recheck: async () => undefined,
     autoSetup: async () => ({ ok: true, message: "ok", cronSecret: null }),
   }),
@@ -35,6 +40,7 @@ describe("SettingsCalendarTab push section", () => {
     expect(html).toContain("Enable push");
     expect(html).toContain("Disable push");
     expect(html).toContain("Send test");
+    expect(html).toContain("Verify delivery");
     expect(html).toContain("Recheck");
     expect(html).toContain("Auto setup push");
     expect(html).toContain("VAPID_SUBJECT");

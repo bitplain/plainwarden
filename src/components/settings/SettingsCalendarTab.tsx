@@ -11,6 +11,17 @@ function formatPermission(permission: NotificationPermission | "unsupported"): s
   return "Unsupported";
 }
 
+function formatVerificationStatus(
+  status: "idle" | "pending" | "received" | "shown" | "timeout" | "error",
+): string {
+  if (status === "idle") return "Not checked";
+  if (status === "pending") return "Waiting browser ack";
+  if (status === "received") return "Received by browser";
+  if (status === "shown") return "Shown by browser";
+  if (status === "timeout") return "No ack (timeout)";
+  return "Verification error";
+}
+
 export default function SettingsCalendarTab() {
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,6 +149,20 @@ export default function SettingsCalendarTab() {
     setPushError(result.message);
   };
 
+  const handleVerifyPush = async () => {
+    if (push.isBusy) return;
+    setPushError(null);
+    setPushNotice(null);
+    setCronSecret(null);
+
+    const result = await push.verifyDelivery();
+    if (result.ok) {
+      setPushNotice(result.message);
+      return;
+    }
+    setPushError(result.message);
+  };
+
   return (
     <div className={styles["settings-tab-content"]}>
       <div className={styles["settings-tab-card"]}>
@@ -189,6 +214,12 @@ export default function SettingsCalendarTab() {
             <span className={styles["settings-tab-label"]}>Config source</span>
             <span className={styles["settings-tab-value"]}>{push.diagnostics.source}</span>
           </div>
+          <div className={styles["settings-tab-row"]}>
+            <span className={styles["settings-tab-label"]}>Delivery check</span>
+            <span className={styles["settings-tab-value"]}>
+              {formatVerificationStatus(push.verification.status)}
+            </span>
+          </div>
         </div>
 
         <div className={styles["settings-choice-row"]}>
@@ -227,6 +258,14 @@ export default function SettingsCalendarTab() {
           <button
             type="button"
             className={styles["settings-tab-btn-secondary"]}
+            onClick={() => void handleVerifyPush()}
+            disabled={push.isBusy || !push.supported || !push.isSubscribed}
+          >
+            Verify delivery
+          </button>
+          <button
+            type="button"
+            className={styles["settings-tab-btn-secondary"]}
             onClick={() => void handleRecheck()}
             disabled={push.isBusy || push.diagnostics.isLoading}
           >
@@ -261,6 +300,11 @@ export default function SettingsCalendarTab() {
         ) : null}
         {pushError ? <p className={styles["settings-tab-note"]}>{pushError}</p> : null}
         {pushNotice ? <p className={styles["settings-tab-muted"]}>{pushNotice}</p> : null}
+        {push.verification.checkedAt ? (
+          <p className={styles["settings-tab-muted"]}>
+            Last check: {new Date(push.verification.checkedAt).toLocaleString("ru-RU")}
+          </p>
+        ) : null}
         {cronSecret ? (
           <p className={styles["settings-tab-note"]}>
             New cron secret (save now): <code>{cronSecret}</code>

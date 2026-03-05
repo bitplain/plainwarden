@@ -11,6 +11,7 @@ export interface PushMessagePayload {
   body: string;
   navigateTo?: string;
   tag?: string;
+  verifyToken?: string;
 }
 
 export interface PushSendResult {
@@ -70,6 +71,7 @@ export async function sendPushToUser(input: {
     icon: "/globe.svg",
     badge: "/globe.svg",
     tag: input.payload.tag,
+    verifyToken: input.payload.verifyToken,
   });
 
   let sent = 0;
