@@ -72,6 +72,19 @@ class ApiClient {
         // Keep default message for non-json errors.
       }
 
+      if (typeof window !== "undefined" && response.status === 401) {
+        const isAuthEndpoint = endpoint.startsWith("/auth/");
+        if (!isAuthEndpoint) {
+          const currentPath = window.location.pathname;
+          const loginUrl = new URL("/login", window.location.origin);
+          if (currentPath !== "/login") {
+            loginUrl.searchParams.set("from", currentPath);
+          }
+          loginUrl.searchParams.set("reason", "session");
+          window.location.assign(loginUrl.toString());
+        }
+      }
+
       throw new Error(message);
     }
 

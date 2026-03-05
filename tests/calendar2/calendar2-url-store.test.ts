@@ -16,8 +16,6 @@ describe("readCalendar2UrlStateFromSearch", () => {
       view: "week",
       category: "task",
       q: "review",
-      dateFrom: "2026-03-01",
-      dateTo: "2026-03-31",
       date: "2026-03-12",
     });
   });
@@ -33,8 +31,6 @@ describe("readCalendar2UrlStateFromSearch", () => {
       view: "month",
       category: "all",
       q: "",
-      dateFrom: "",
-      dateTo: "",
       date: "2026-03-10",
     });
   });
@@ -51,8 +47,6 @@ describe("buildCalendar2UrlChange", () => {
         view: "day",
         category: "pending",
         q: "standup",
-        dateFrom: "2026-02-01",
-        dateTo: "2026-02-28",
         date: "2026-02-10",
       },
     });
@@ -68,9 +62,27 @@ describe("buildCalendar2UrlChange", () => {
     expect(params.get("view")).toBe("day");
     expect(params.get("category")).toBe("pending");
     expect(params.get("q")).toBe("standup");
-    expect(params.get("dateFrom")).toBe("2026-02-01");
-    expect(params.get("dateTo")).toBe("2026-02-28");
     expect(params.get("date")).toBe("2026-02-10");
+  });
+
+  it("clears legacy date range params from next URL", () => {
+    const result = buildCalendar2UrlChange({
+      pathname: "/calendar",
+      search: "?embedded=1&dateFrom=2026-01-01&dateTo=2026-02-01",
+      state: {
+        tab: "calendar",
+        view: "month",
+        category: "all",
+        q: "",
+        date: "2026-03-12",
+      },
+    });
+
+    const query = result.nextUrl.split("?")[1];
+    const params = new URLSearchParams(query);
+    expect(params.get("embedded")).toBe("1");
+    expect(params.get("dateFrom")).toBeNull();
+    expect(params.get("dateTo")).toBeNull();
   });
 
   it("detects unchanged query", () => {
@@ -82,8 +94,6 @@ describe("buildCalendar2UrlChange", () => {
         view: "week",
         category: "done",
         q: "review",
-        dateFrom: "",
-        dateTo: "",
         date: "2026-03-12",
       },
     });

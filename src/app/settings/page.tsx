@@ -8,12 +8,14 @@ import SettingsApiTab from "@/components/settings/SettingsApiTab";
 import SettingsGitHubTab from "@/components/settings/SettingsGitHubTab";
 import SettingsTlsTab from "@/components/settings/SettingsTlsTab";
 import SettingsAiThemeTab from "@/components/settings/SettingsAiThemeTab";
+import SettingsCalendarTab from "@/components/settings/SettingsCalendarTab";
 import styles from "@/styles/settings.module.css";
 
-type SettingsTab = "cli" | "ai" | "api" | "github" | "tls";
+type SettingsTab = "cli" | "calendar" | "ai" | "api" | "github" | "tls";
 
 const TAB_OPTIONS: { id: SettingsTab; label: string }[] = [
   { id: "cli", label: "Интерфейс" },
+  { id: "calendar", label: "Календарь" },
   { id: "ai", label: "AI Виджет" },
   { id: "api", label: "API" },
   { id: "github", label: "GitHub" },
@@ -32,6 +34,8 @@ export default function SettingsPage() {
     switch (activeTab) {
       case "cli":
         return <SettingsCliTab />;
+      case "calendar":
+        return <SettingsCalendarTab />;
       case "ai":
         return <SettingsAiThemeTab />;
       case "api":

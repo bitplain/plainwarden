@@ -2,7 +2,6 @@
 
 import { startOfDay } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { buildEventListQueryString } from "@/lib/event-filter-query";
 import { useNetdenStore } from "@/lib/store";
 import type {
   CalendarEvent,
@@ -38,6 +37,13 @@ import Calendar2AiPanel from "./Calendar2AiPanel";
 import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
+import {
+  readUiPreferences,
+  resolveDesktopSidebarInitialState,
+  saveRememberedDesktopSidebarState,
+  subscribeUiPreferences,
+  type UiPreferences,
+} from "@/components/settings/settings-ui-preferences";
 
 type EventMovePayload = { date: string; time?: string };
 const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
@@ -125,14 +131,15 @@ export default function Calendar2() {
   const view = urlState.view;
   const categoryFilter = urlState.category;
   const searchQuery = urlState.q;
-  const dateFrom = urlState.dateFrom;
-  const dateTo = urlState.dateTo;
   const anchorDate = useMemo(() => toDayStart(urlState.date), [urlState.date]);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
+  const [isSidebarVisible, setIsSidebarVisible] = useState(() =>
+    resolveDesktopSidebarInitialState(readUiPreferences()),
+  );
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
@@ -174,30 +181,20 @@ export default function Calendar2() {
       buildCalendar2EventFilters({
         q: debouncedSearchQuery,
         category: categoryFilter,
-        dateFrom,
-        dateTo,
       }),
-    [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
+    [debouncedSearchQuery, categoryFilter],
   );
   const liveCalendarQueryFilters = useMemo(
     () =>
       buildCalendar2EventFilters({
         q: searchQuery.trim(),
         category: categoryFilter,
-        dateFrom,
-        dateTo,
       }),
-    [searchQuery, categoryFilter, dateFrom, dateTo],
+    [searchQuery, categoryFilter],
   );
   const hasActiveCalendarFilters = useMemo(
-    () =>
-      Boolean(
-        debouncedSearchQuery ||
-          categoryFilter !== "all" ||
-          dateFrom ||
-          dateTo,
-      ),
-    [debouncedSearchQuery, categoryFilter, dateFrom, dateTo],
+    () => Boolean(debouncedSearchQuery || categoryFilter !== "all"),
+    [debouncedSearchQuery, categoryFilter],
   );
 
   useEffect(() => {
@@ -208,19 +205,21 @@ export default function Calendar2() {
     void fetchEvents(calendarQueryFilters);
   }, [user, fetchEvents, calendarQueryFilters]);
 
+  useEffect(() => subscribeUiPreferences(setUiPreferences), []);
+
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
     const apply = () => {
       const mobile = media.matches;
       setIsMobileLayout(mobile);
-      if (!mobile) {
-        setIsSidebarVisible(false);
-      }
+      setIsSidebarVisible(
+        mobile ? false : resolveDesktopSidebarInitialState(uiPreferences),
+      );
     };
     apply();
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
-  }, []);
+  }, [uiPreferences]);
 
   useEffect(() => {
     const clearDragOverTargets = () => {
@@ -560,25 +559,15 @@ export default function Calendar2() {
       setIsSidebarVisible(false);
     }
   };
-
-  const handleClearCalendarFilters = () => {
-    setUrlState(
-      (prev) => ({
-        ...prev,
-        category: "all",
-        q: "",
-        dateFrom: "",
-        dateTo: "",
-      }),
-      "push",
-    );
-  };
-
-  const handleExportIcs = () => {
-    const query = buildEventListQueryString(liveCalendarQueryFilters);
-    const endpoint = query ? `/api/events/export.ics?${query}` : "/api/events/export.ics";
-    window.open(endpoint, "_blank", "noopener,noreferrer");
-  };
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarVisible((prev) => {
+      const next = !prev;
+      if (!isMobileLayout && uiPreferences.sidebarRemember) {
+        saveRememberedDesktopSidebarState(next);
+      }
+      return next;
+    });
+  }, [isMobileLayout, uiPreferences.sidebarRemember]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -659,10 +648,15 @@ export default function Calendar2() {
     }
   };
 
+  const isCompactDensity = uiPreferences.density === "compact";
+  const isReducedMotion = uiPreferences.motion === "reduced";
+
   return (
     <div
       style={CALENDAR2_LINEAR_VARS}
-      className="flex h-dvh flex-col bg-[var(--cal2-bg)] font-[family-name:var(--font-geist-sans)] text-[13px] leading-[1.3] text-[var(--cal2-text-primary)]"
+      className={`flex h-dvh flex-col bg-[var(--cal2-bg)] font-[family-name:var(--font-geist-sans)] leading-[1.3] text-[var(--cal2-text-primary)] ${
+        isCompactDensity ? "text-[12px]" : "text-[13px]"
+      } ${isReducedMotion ? "[&_*]:animate-none [&_*]:duration-0" : ""}`}
     >
       <Calendar2Toolbar
         activeTab={activeTab}
@@ -693,7 +687,6 @@ export default function Calendar2() {
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
-        onExportIcs={handleExportIcs}
         onLogout={handleLogout}
         searchValue={searchQuery}
         onSearchChange={(value) =>
@@ -702,29 +695,18 @@ export default function Calendar2() {
             q: value,
           }))
         }
-        dateFromValue={dateFrom}
-        dateToValue={dateTo}
-        onDateFromChange={(value) =>
-          setUrlState((prev) => ({
-            ...prev,
-            dateFrom: value,
-          }))
-        }
-        onDateToChange={(value) =>
-          setUrlState((prev) => ({
-            ...prev,
-            dateTo: value,
-          }))
-        }
-        onClearCalendarFilters={handleClearCalendarFilters}
-        onToggleSidebar={() => setIsSidebarVisible((prev) => !prev)}
+        onToggleSidebar={handleToggleSidebar}
         isSidebarVisible={isSidebarVisible}
       />
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        <div className="grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 lg:grid-cols-[280px_1fr]">
+        <div
+          className={`grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 ${
+            isSidebarVisible ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1"
+          }`}
+        >
           {/* Sidebar */}
-          <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0 lg:block`}>
+          <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0`}>
             <Calendar2Sidebar
               anchorDate={anchorDate}
               eventsByDate={eventsByDate}
@@ -741,7 +723,11 @@ export default function Calendar2() {
           <main
             className={`${
               isSidebarVisible ? "hidden lg:flex" : "flex"
-            } relative min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2 sm:p-3 lg:rounded-l-none lg:border-l-0`}
+            } relative min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] ${
+              isCompactDensity ? "p-2 sm:p-2.5" : "p-2 sm:p-3"
+            } ${
+              isSidebarVisible ? "lg:rounded-l-none lg:border-l-0" : ""
+            }`}
           >
             {(isAuthLoading || isEventsLoading) && (
               <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-3 py-2 text-[11px] text-[var(--cal2-text-secondary)] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.8)]">

@@ -7,8 +7,6 @@ import {
 interface CaseInput {
   q: string;
   category: Calendar2CategoryFilter;
-  dateFrom?: string;
-  dateTo?: string;
 }
 
 describe("buildCalendar2EventFilters", () => {
@@ -16,15 +14,11 @@ describe("buildCalendar2EventFilters", () => {
     const input: CaseInput = {
       q: " review ",
       category: "event",
-      dateFrom: "2026-03-01",
-      dateTo: "2026-03-31",
     };
 
     expect(buildCalendar2EventFilters(input)).toEqual({
       q: "review",
       type: "event",
-      dateFrom: "2026-03-01",
-      dateTo: "2026-03-31",
     });
   });
 
@@ -39,28 +33,12 @@ describe("buildCalendar2EventFilters", () => {
     });
   });
 
-  it("drops invalid dates and empty query", () => {
+  it("drops empty query", () => {
     const input: CaseInput = {
       q: "   ",
       category: "all",
-      dateFrom: "20260301",
-      dateTo: "bad",
     };
 
     expect(buildCalendar2EventFilters(input)).toEqual({});
-  });
-
-  it("normalizes inverted date ranges", () => {
-    const input: CaseInput = {
-      q: "",
-      category: "all",
-      dateFrom: "2026-03-31",
-      dateTo: "2026-03-01",
-    };
-
-    expect(buildCalendar2EventFilters(input)).toEqual({
-      dateFrom: "2026-03-01",
-      dateTo: "2026-03-31",
-    });
   });
 });

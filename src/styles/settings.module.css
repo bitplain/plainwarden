@@ -317,6 +317,32 @@
   cursor: not-allowed;
 }
 
+.settings-tab-choice-active {
+  border-color: rgba(94, 106, 210, 0.62);
+  background: var(--cal2-accent-soft);
+  color: var(--cal2-text-primary);
+}
+
+.settings-choice-row {
+  margin-top: 0.48rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.settings-tab-checkbox {
+  margin-top: 0.48rem;
+  display: flex;
+  align-items: center;
+  gap: 0.44rem;
+  color: var(--cal2-text-secondary);
+  font-size: 0.82rem;
+}
+
+.settings-tab-checkbox input {
+  accent-color: var(--cal2-accent);
+}
+
 .settings-tab-card {
   border: 1px solid var(--cal2-border);
   border-radius: 6px;

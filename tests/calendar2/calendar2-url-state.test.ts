@@ -12,8 +12,6 @@ describe("parseCalendar2UrlState", () => {
         tab: "kanban",
         view: "week",
         category: "task",
-        dateFrom: "2026-03-01",
-        dateTo: "2026-03-31",
         date: "2026-03-15",
       }),
       "2026-03-11",
@@ -24,8 +22,6 @@ describe("parseCalendar2UrlState", () => {
       tab: "kanban",
       view: "week",
       category: "task",
-      dateFrom: "2026-03-01",
-      dateTo: "2026-03-31",
       date: "2026-03-15",
     });
   });
@@ -37,8 +33,6 @@ describe("parseCalendar2UrlState", () => {
         tab: "overview",
         view: "quarter",
         category: "meeting",
-        dateFrom: "2026-99-01",
-        dateTo: "bad-date",
         date: "not-a-date",
       }),
       "2026-03-11",
@@ -49,23 +43,8 @@ describe("parseCalendar2UrlState", () => {
       tab: "calendar",
       view: "month",
       category: "all",
-      dateFrom: "",
-      dateTo: "",
       date: "2026-03-11",
     });
-  });
-
-  it("normalizes inverted date range", () => {
-    const state = parseCalendar2UrlState(
-      new URLSearchParams({
-        dateFrom: "2026-03-31",
-        dateTo: "2026-03-01",
-      }),
-      "2026-03-11",
-    );
-
-    expect(state.dateFrom).toBe("2026-03-01");
-    expect(state.dateTo).toBe("2026-03-31");
   });
 
   it("accepts ai tab value", () => {
@@ -89,8 +68,6 @@ describe("buildCalendar2UrlQuery", () => {
         tab: "kanban",
         view: "day",
         category: "pending",
-        dateFrom: "2026-02-01",
-        dateTo: "2026-02-28",
         date: "2026-02-10",
       },
     });
@@ -102,8 +79,6 @@ describe("buildCalendar2UrlQuery", () => {
     expect(params.get("tab")).toBe("kanban");
     expect(params.get("view")).toBe("day");
     expect(params.get("category")).toBe("pending");
-    expect(params.get("dateFrom")).toBe("2026-02-01");
-    expect(params.get("dateTo")).toBe("2026-02-28");
     expect(params.get("date")).toBe("2026-02-10");
   });
 
@@ -115,8 +90,6 @@ describe("buildCalendar2UrlQuery", () => {
         tab: "calendar",
         view: "month",
         category: "all",
-        dateFrom: "2026-99-01",
-        dateTo: "bad-date",
         date: "2026-13-40",
       },
     });
@@ -131,22 +104,20 @@ describe("buildCalendar2UrlQuery", () => {
     expect(params.get("date")).toBeNull();
   });
 
-  it("normalizes inverted date range in query output", () => {
+  it("removes legacy date range params from existing query", () => {
     const query = buildCalendar2UrlQuery({
-      currentSearchParams: new URLSearchParams(),
+      currentSearchParams: new URLSearchParams("dateFrom=2026-04-01&dateTo=2026-04-12"),
       state: {
         q: "",
         tab: "calendar",
         view: "month",
         category: "all",
-        dateFrom: "2026-04-10",
-        dateTo: "2026-04-01",
         date: "2026-04-11",
       },
     });
 
     const params = new URLSearchParams(query);
-    expect(params.get("dateFrom")).toBe("2026-04-01");
-    expect(params.get("dateTo")).toBe("2026-04-10");
+    expect(params.get("dateFrom")).toBeNull();
+    expect(params.get("dateTo")).toBeNull();
   });
 });

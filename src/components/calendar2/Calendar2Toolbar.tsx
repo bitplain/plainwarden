@@ -11,17 +11,11 @@ interface Calendar2ToolbarProps {
   onNext: () => void;
   onToday: () => void;
   onAdd: () => void;
-  onExportIcs: () => void;
   onLogout: () => void;
   onToggleSidebar: () => void;
   isSidebarVisible: boolean;
   searchValue: string;
   onSearchChange: (value: string) => void;
-  dateFromValue: string;
-  dateToValue: string;
-  onDateFromChange: (value: string) => void;
-  onDateToChange: (value: string) => void;
-  onClearCalendarFilters: () => void;
 }
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
@@ -47,17 +41,11 @@ export default function Calendar2Toolbar({
   onNext,
   onToday,
   onAdd,
-  onExportIcs,
   onLogout,
   onToggleSidebar,
   isSidebarVisible,
   searchValue,
   onSearchChange,
-  dateFromValue,
-  dateToValue,
-  onDateFromChange,
-  onDateToChange,
-  onClearCalendarFilters,
 }: Calendar2ToolbarProps) {
   return (
     <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
@@ -85,9 +73,9 @@ export default function Calendar2Toolbar({
             <button
               type="button"
               onClick={onToggleSidebar}
-              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] lg:hidden"
+              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
             >
-              {isSidebarVisible ? "Скрыть" : "Панель"}
+              {isSidebarVisible ? "Скрыть панель" : "Показать панель"}
             </button>
             <button
               type="button"
@@ -190,46 +178,6 @@ export default function Calendar2Toolbar({
                   className="h-full w-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none placeholder:text-[var(--cal2-text-disabled)]"
                 />
               </label>
-
-              <label className="inline-flex h-[30px] items-center rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2">
-                <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  От
-                </span>
-                <input
-                  type="date"
-                  value={dateFromValue}
-                  onChange={(event) => onDateFromChange(event.target.value)}
-                  className="h-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none"
-                />
-              </label>
-
-              <label className="inline-flex h-[30px] items-center rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2">
-                <span className="mr-2 text-[10px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
-                  До
-                </span>
-                <input
-                  type="date"
-                  value={dateToValue}
-                  onChange={(event) => onDateToChange(event.target.value)}
-                  className="h-full bg-transparent text-[12px] text-[var(--cal2-text-primary)] outline-none"
-                />
-              </label>
-
-              <button
-                type="button"
-                onClick={onClearCalendarFilters}
-                className="h-[30px] rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-              >
-                Сброс
-              </button>
-
-              <button
-                type="button"
-                onClick={onExportIcs}
-                className="h-[30px] rounded-[6px] border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] px-2.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
-              >
-                Export .ics
-              </button>
             </div>
           )}
         </div>

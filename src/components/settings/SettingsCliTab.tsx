@@ -1,143 +1,117 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import styles from "@/styles/settings.module.css";
+import {
+  readUiPreferences,
+  saveUiPreferences,
+  subscribeUiPreferences,
+  type UiDensity,
+  type UiMotion,
+  type UiPreferences,
+  type UiSidebarDefaultDesktop,
+} from "@/components/settings/settings-ui-preferences";
 
-const CLI_SCALE_KEY = "netden:cli-scale";
-const CLI_SETTINGS_MESSAGE = "netden:cli-settings-updated";
-const MIN = 0.8;
-const MAX = 1.2;
-const STEP = 0.01;
-const DEFAULT_SCALE = 1;
-const CLI_STROKE_KEY = "netden:cli-stroke";
-const STROKE_MIN = 0.5;
-const STROKE_MAX = 2;
-const STROKE_STEP = 0.05;
-const DEFAULT_STROKE = 1;
-
-function clampScale(value: number): number {
-  if (!Number.isFinite(value)) return DEFAULT_SCALE;
-  return Math.min(MAX, Math.max(MIN, value));
-}
-
-function formatPercent(value: number): string {
-  return `${Math.round(value * 100)}%`;
-}
-
-function clampStroke(value: number): number {
-  if (!Number.isFinite(value)) return DEFAULT_STROKE;
-  return Math.min(STROKE_MAX, Math.max(STROKE_MIN, value));
-}
-
-function formatStroke(value: number): string {
-  return `${value.toFixed(2)}x`;
+function ChoiceButton(props: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  const { active, label, onClick } = props;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`${styles["settings-tab-btn-secondary"]} ${
+        active ? styles["settings-tab-choice-active"] : ""
+      }`}
+    >
+      {label}
+    </button>
+  );
 }
 
 export default function SettingsCliTab() {
-  const [scale, setScale] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_SCALE;
-    const raw = window.localStorage.getItem(CLI_SCALE_KEY);
-    if (!raw) return DEFAULT_SCALE;
-    return clampScale(Number(raw));
-  });
+  const [preferences, setPreferences] = useState<UiPreferences>(() => readUiPreferences());
 
-  const [stroke, setStroke] = useState(() => {
-    if (typeof window === "undefined") return DEFAULT_STROKE;
-    const raw = window.localStorage.getItem(CLI_STROKE_KEY);
-    if (!raw) return DEFAULT_STROKE;
-    return clampStroke(Number(raw));
-  });
+  useEffect(() => subscribeUiPreferences(setPreferences), []);
 
-  const saveScale = (nextScale: number) => {
-    const clamped = clampScale(nextScale);
-    setScale(clamped);
-    window.localStorage.setItem(CLI_SCALE_KEY, String(clamped));
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage(
-        { type: CLI_SETTINGS_MESSAGE, scale: clamped },
-        window.location.origin,
-      );
-    }
+  const updatePreferences = (patch: Partial<UiPreferences>) => {
+    const next = { ...preferences, ...patch };
+    setPreferences(next);
+    saveUiPreferences(next);
   };
 
-  const resetScale = () => {
-    setScale(DEFAULT_SCALE);
-    window.localStorage.setItem(CLI_SCALE_KEY, String(DEFAULT_SCALE));
-    if (window.parent && window.parent !== window) {
-      window.parent.postMessage(
-        { type: CLI_SETTINGS_MESSAGE, scale: DEFAULT_SCALE },
-        window.location.origin,
-      );
-    }
-  };
-
-  const saveStroke = (nextStroke: number) => {
-    const clamped = clampStroke(nextStroke);
-    setStroke(clamped);
-    window.localStorage.setItem(CLI_STROKE_KEY, String(clamped));
-  };
-
-  const resetStroke = () => {
-    setStroke(DEFAULT_STROKE);
-    window.localStorage.setItem(CLI_STROKE_KEY, String(DEFAULT_STROKE));
-  };
+  const updateDensity = (density: UiDensity) => updatePreferences({ density });
+  const updateMotion = (motion: UiMotion) => updatePreferences({ motion });
+  const updateSidebarDefault = (sidebarDefaultDesktop: UiSidebarDefaultDesktop) =>
+    updatePreferences({ sidebarDefaultDesktop });
 
   return (
-    <div className={styles['settings-tab-content']}>
-      <div className={styles['settings-range-block']}>
-        <div className={styles['settings-tab-row']}>
-          <span className={styles['settings-tab-label']}>Размер окна ввода CLI</span>
-          <strong className={styles['settings-tab-value']}>{formatPercent(scale)}</strong>
+    <div className={styles["settings-tab-content"]}>
+      <div className={styles["settings-tab-card"]}>
+        <p className={styles["settings-tab-card-title"]}>Плотность интерфейса</p>
+        <p className={styles["settings-tab-card-body"]}>
+          Управляет размером и плотностью элементов в рабочих экранах.
+        </p>
+        <div className={styles["settings-choice-row"]}>
+          <ChoiceButton
+            active={preferences.density === "comfortable"}
+            label="Comfortable"
+            onClick={() => updateDensity("comfortable")}
+          />
+          <ChoiceButton
+            active={preferences.density === "compact"}
+            label="Compact"
+            onClick={() => updateDensity("compact")}
+          />
         </div>
-
-        <input
-          type="range"
-          min={MIN}
-          max={MAX}
-          step={STEP}
-          value={scale}
-          onChange={(event) => saveScale(Number(event.target.value))}
-          className={styles['settings-range']}
-        />
-
-        <div className={styles['settings-range-meta']}>
-          <span>{formatPercent(MIN)}</span>
-          <span>{formatPercent(DEFAULT_SCALE)}</span>
-          <span>{formatPercent(MAX)}</span>
-        </div>
-
-        <button type="button" onClick={resetScale} className={styles['settings-tab-btn-secondary']}>
-          Сбросить размер
-        </button>
       </div>
 
-      <div className={styles['settings-range-divider']} aria-hidden />
-
-      <div className={styles['settings-range-block']}>
-        <div className={styles['settings-tab-row']}>
-          <span className={styles['settings-tab-label']}>Толщина командной строки</span>
-          <strong className={styles['settings-tab-value']}>{formatStroke(stroke)}</strong>
+      <div className={styles["settings-tab-card"]}>
+        <p className={styles["settings-tab-card-title"]}>Анимации</p>
+        <p className={styles["settings-tab-card-body"]}>
+          Выберите стандартную анимацию или уменьшенное движение.
+        </p>
+        <div className={styles["settings-choice-row"]}>
+          <ChoiceButton
+            active={preferences.motion === "standard"}
+            label="Standard"
+            onClick={() => updateMotion("standard")}
+          />
+          <ChoiceButton
+            active={preferences.motion === "reduced"}
+            label="Reduced"
+            onClick={() => updateMotion("reduced")}
+          />
         </div>
+      </div>
 
-        <input
-          type="range"
-          min={STROKE_MIN}
-          max={STROKE_MAX}
-          step={STROKE_STEP}
-          value={stroke}
-          onChange={(event) => saveStroke(Number(event.target.value))}
-          className={styles['settings-range']}
-        />
-
-        <div className={styles['settings-range-meta']}>
-          <span>{formatStroke(STROKE_MIN)}</span>
-          <span>{formatStroke(DEFAULT_STROKE)}</span>
-          <span>{formatStroke(STROKE_MAX)}</span>
+      <div className={styles["settings-tab-card"]}>
+        <p className={styles["settings-tab-card-title"]}>Панель календаря</p>
+        <p className={styles["settings-tab-card-body"]}>
+          Настройка поведения левой панели для desktop-режима.
+        </p>
+        <label className={styles["settings-tab-checkbox"]}>
+          <input
+            type="checkbox"
+            checked={preferences.sidebarRemember}
+            onChange={(event) => updatePreferences({ sidebarRemember: event.target.checked })}
+          />
+          <span>Запоминать последнее состояние панели</span>
+        </label>
+        <div className={styles["settings-choice-row"]}>
+          <ChoiceButton
+            active={preferences.sidebarDefaultDesktop === "open"}
+            label="Desktop: open"
+            onClick={() => updateSidebarDefault("open")}
+          />
+          <ChoiceButton
+            active={preferences.sidebarDefaultDesktop === "closed"}
+            label="Desktop: closed"
+            onClick={() => updateSidebarDefault("closed")}
+          />
         </div>
-
-        <button type="button" onClick={resetStroke} className={styles['settings-tab-btn-secondary']}>
-          Сбросить толщину
-        </button>
       </div>
     </div>
   );
