@@ -83,6 +83,21 @@ async function disableOldSubscription(endpoint) {
   });
 }
 
+async function notifyVisibleClients(data) {
+  const windowClients = await clients.matchAll({ type: "window", includeUncontrolled: true });
+  for (const client of windowClients) {
+    client.postMessage({
+      type: "netden-push-foreground",
+      payload: {
+        title: data.title,
+        body: data.body,
+        navigateTo: data.navigateTo,
+        tag: data.tag,
+      },
+    });
+  }
+}
+
 self.addEventListener("push", (event) => {
   if (!(self.Notification && self.Notification.permission === "granted")) {
     return;
@@ -110,6 +125,7 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     (async () => {
       await reportReceipt(verifyToken, "received");
+      await notifyVisibleClients(data);
 
       await self.registration.showNotification(data.title, {
         body: data.body,
