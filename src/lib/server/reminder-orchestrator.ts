@@ -1,18 +1,19 @@
-import { addDays, format } from "date-fns";
+import { addMinutes } from "date-fns";
 import { applyPushRateLimit, buildReminderCandidates } from "@/lib/server/reminder-engine";
 import {
   countPushedInLastHour,
   listPendingPushReminders,
-  markRemindersPushed,
+  markReminderPushDelivered,
+  markReminderPushFailedFinal,
+  markReminderPushRetryScheduled,
   saveReminderCandidates,
 } from "@/lib/server/reminder-db";
 import { sendPushToUser } from "@/lib/server/push-delivery";
+import { getReminderDateContext, getReminderNow } from "@/lib/server/reminder-time";
 import prisma from "@/lib/server/prisma";
 
 async function collectUserReminderSources(input: { userId: string; nowIso: string }) {
-  const now = new Date(input.nowIso);
-  const today = format(now, "yyyy-MM-dd");
-  const tomorrow = format(addDays(now, 1), "yyyy-MM-dd");
+  const context = getReminderDateContext(input.nowIso);
 
   const [events, cards] = await Promise.all([
     prisma.event.findMany({
@@ -20,7 +21,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
         userId: input.userId,
         status: "pending",
         date: {
-          lte: tomorrow,
+          lte: context.tomorrow,
         },
       },
       select: {
@@ -37,7 +38,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
         userId: input.userId,
         dueDate: {
           not: null,
-          lte: tomorrow,
+          lte: context.tomorrow,
         },
         column: {
           isDone: false,
@@ -54,7 +55,7 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
   ]);
 
   return {
-    today,
+    today: context.today,
     items: [
       ...events.map((event) => ({
         sourceType: "calendar_event" as const,
@@ -77,12 +78,60 @@ async function collectUserReminderSources(input: { userId: string; nowIso: strin
   };
 }
 
+function getRetryDelayMinutes(nextAttemptCount: number): number {
+  if (nextAttemptCount <= 1) return 2;
+  if (nextAttemptCount === 2) return 4;
+  return 4;
+}
+
+function buildPushFailureMessage(input: {
+  hasActiveSubscriptions: boolean;
+  permanentFailed: number;
+  transientFailed: number;
+}): string {
+  if (!input.hasActiveSubscriptions) {
+    return "No active push subscriptions";
+  }
+  if (input.permanentFailed > 0 && input.transientFailed === 0) {
+    return "Permanent push failure";
+  }
+  if (input.transientFailed > 0) {
+    return "Transient push retries exhausted";
+  }
+  return "Push delivery failed";
+}
+
+export interface ReminderJobUserSummary {
+  userId: string;
+  candidates: number;
+  created: number;
+  pushAllowed: number;
+  pushDropped: number;
+  pushSent: number;
+  pushRetried: number;
+  pushRetryScheduled: number;
+  pushFailedFinal: number;
+  retried: number;
+}
+
+export interface ReminderJobTotals {
+  candidates: number;
+  created: number;
+  pushAllowed: number;
+  pushDropped: number;
+  pushSent: number;
+  pushRetried: number;
+  pushRetryScheduled: number;
+  pushFailedFinal: number;
+}
+
 export async function runReminderJob(input: {
   nowIso?: string;
   userId?: string;
   hourlyPushLimit?: number;
 }) {
-  const nowIso = input.nowIso ?? new Date().toISOString();
+  const now = getReminderNow(input.nowIso);
+  const nowIso = now.toISOString();
   const hourlyPushLimit = input.hourlyPushLimit ?? 3;
 
   const users = input.userId
@@ -91,14 +140,17 @@ export async function runReminderJob(input: {
         select: { id: true },
       });
 
-  const summaries: Array<{
-    userId: string;
-    candidates: number;
-    created: number;
-    pushAllowed: number;
-    pushDropped: number;
-    pushSent: number;
-  }> = [];
+  const summaries: ReminderJobUserSummary[] = [];
+  const totals: ReminderJobTotals = {
+    candidates: 0,
+    created: 0,
+    pushAllowed: 0,
+    pushDropped: 0,
+    pushSent: 0,
+    pushRetried: 0,
+    pushRetryScheduled: 0,
+    pushFailedFinal: 0,
+  };
 
   for (const user of users) {
     const source = await collectUserReminderSources({ userId: user.id, nowIso });
@@ -109,8 +161,8 @@ export async function runReminderJob(input: {
     });
 
     const saved = await saveReminderCandidates(user.id, candidates);
-    const pendingPush = await listPendingPushReminders(user.id, 50);
-    const sentInLastHour = await countPushedInLastHour(user.id, new Date(nowIso));
+    const pendingPush = await listPendingPushReminders(user.id, 50, now);
+    const sentInLastHour = await countPushedInLastHour(user.id, now);
 
     const limited = applyPushRateLimit({
       alreadySentInLastHour: sentInLastHour,
@@ -121,7 +173,19 @@ export async function runReminderJob(input: {
       })),
     });
 
-    let pushSent = 0;
+    const summary: ReminderJobUserSummary = {
+      userId: user.id,
+      candidates: candidates.length,
+      created: saved.created,
+      pushAllowed: limited.allowed.length,
+      pushDropped: limited.dropped.length,
+      pushSent: 0,
+      pushRetried: 0,
+      pushRetryScheduled: 0,
+      pushFailedFinal: 0,
+      retried: 0,
+    };
+
     for (const allowed of limited.allowed) {
       const reminder = pendingPush.find((item) => item.id === allowed.id);
       if (!reminder) continue;
@@ -136,23 +200,62 @@ export async function runReminderJob(input: {
         },
       });
 
-      pushSent += sent.sent;
-      // Mark as pushed even when no active subscription to avoid repeated spam attempts.
-      await markRemindersPushed([reminder.id]);
+      summary.pushSent += sent.sent;
+
+      if (sent.sent > 0) {
+        await markReminderPushDelivered({
+          reminderId: reminder.id,
+          expectedAttemptCount: reminder.pushAttemptCount,
+          now,
+        });
+        continue;
+      }
+
+      const nextAttemptCount = reminder.pushAttemptCount + 1;
+      if (sent.transientFailed > 0) {
+        summary.pushRetried += 1;
+        if (nextAttemptCount < 3) {
+          const retryAt = addMinutes(now, getRetryDelayMinutes(nextAttemptCount));
+          const scheduled = await markReminderPushRetryScheduled({
+            reminderId: reminder.id,
+            expectedAttemptCount: reminder.pushAttemptCount,
+            nextPushAttemptAt: retryAt,
+            lastPushError: "Transient push failure",
+            now,
+          });
+          if (scheduled) {
+            summary.pushRetryScheduled += 1;
+          }
+          continue;
+        }
+      }
+
+      const finalized = await markReminderPushFailedFinal({
+        reminderId: reminder.id,
+        expectedAttemptCount: reminder.pushAttemptCount,
+        lastPushError: buildPushFailureMessage(sent),
+        now,
+      });
+      if (finalized) {
+        summary.pushFailedFinal += 1;
+      }
     }
 
-    summaries.push({
-      userId: user.id,
-      candidates: candidates.length,
-      created: saved.created,
-      pushAllowed: limited.allowed.length,
-      pushDropped: limited.dropped.length,
-      pushSent,
-    });
+    summary.retried = summary.pushRetried;
+    summaries.push(summary);
+    totals.candidates += summary.candidates;
+    totals.created += summary.created;
+    totals.pushAllowed += summary.pushAllowed;
+    totals.pushDropped += summary.pushDropped;
+    totals.pushSent += summary.pushSent;
+    totals.pushRetried += summary.pushRetried;
+    totals.pushRetryScheduled += summary.pushRetryScheduled;
+    totals.pushFailedFinal += summary.pushFailedFinal;
   }
 
   return {
     nowIso,
     users: summaries,
+    totals,
   };
 }

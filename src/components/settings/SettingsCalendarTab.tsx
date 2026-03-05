@@ -268,7 +268,7 @@ export default function SettingsCalendarTab() {
         ) : null}
         <p className={styles["settings-tab-muted"]}>
           Для auto-reminders запускайте внешний cron: <code>POST /api/cron/reminders</code> с заголовком{" "}
-          <code>x-netden-cron-secret</code> (например, каждые 5 минут).
+          <code>x-netden-cron-secret</code> (каждую минуту).
         </p>
       </div>
     </div>

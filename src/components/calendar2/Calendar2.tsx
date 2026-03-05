@@ -40,6 +40,7 @@ import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerRe
 import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 import { useInboxTasks } from "./useInboxTasks";
+import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
   readUiPreferences,
   resolveDesktopSidebarInitialState,
@@ -154,6 +155,7 @@ export default function Calendar2() {
 
   // Global store
   const user = useNetdenStore((s) => s.user);
+  const isAuthenticated = useNetdenStore((s) => s.isAuthenticated);
   const events = useNetdenStore((s) => s.events);
   const error = useNetdenStore((s) => s.error);
   const isAuthLoading = useNetdenStore((s) => s.isAuthLoading);
@@ -169,6 +171,13 @@ export default function Calendar2() {
   const localStore = useCalendar2Store();
   const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
   const inboxTasks = useInboxTasks(toDateKey(anchorDate));
+
+  usePreciseReminderTick({
+    events,
+    user,
+    isAuthenticated,
+    addNotification: localStore.addNotification,
+  });
 
   useEffect(() => {
     void bootstrapAuth();

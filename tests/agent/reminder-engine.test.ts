@@ -72,12 +72,31 @@ describe("buildReminderCandidates", () => {
 
     const reminders = buildReminderCandidates({
       userId: "u1",
-      nowIso: "2026-03-05T13:20:00.000Z", // 16:20 local (MSK)
+      nowIso: "2026-03-05T13:30:00.000Z", // 16:30 local (MSK)
       items: [event],
     });
     expect(reminders).toHaveLength(1);
     expect(reminders[0].kind).toBe("due_today");
     expect(reminders[0].severity).toBe(4);
     expect(reminders[0].dedupeKey).toBe("u1:calendar_event:evt-1630:due_today:2026-03-05:16:30");
+  });
+
+  it("does not emit timed due_today reminder before due minute", () => {
+    const reminders = buildReminderCandidates({
+      userId: "u1",
+      nowIso: "2026-03-05T13:20:00.000Z", // 16:20 local (MSK)
+      items: [
+        {
+          sourceType: "calendar_event",
+          sourceId: "evt-1653",
+          title: "3333",
+          dueDate: "2026-03-05",
+          dueTime: "16:53",
+          navigateTo: "/calendar",
+        },
+      ],
+    });
+
+    expect(reminders).toHaveLength(0);
   });
 });
