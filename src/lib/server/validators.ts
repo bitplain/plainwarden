@@ -1,17 +1,29 @@
 import { NextResponse } from "next/server";
 import {
   ApiErrorResponse,
+  ConvertInboxItemInput,
+  CreateInboxItemInput,
   CreateEventInput,
   CreateNoteInput,
+  CreateSubtaskInput,
+  CreateTaskInput,
   EventRecurrence,
   RecurrenceFrequency,
   RecurrenceScope,
   EventStatus,
   EventType,
+  InboxConvertedEntityType,
+  InboxItemStatus,
+  InboxTypeHint,
   LoginInput,
   RegisterInput,
+  SubtaskStatus,
+  TaskProgressMode,
+  TaskStatus,
   UpdateEventInput,
   UpdateNoteInput,
+  UpdateSubtaskInput,
+  UpdateTaskInput,
 } from "@/lib/types";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -107,6 +119,13 @@ function readPositiveInteger(
   return value;
 }
 
+function readBoolean(value: unknown, fieldName: string): boolean {
+  if (typeof value !== "boolean") {
+    throw new HttpError(400, `${fieldName} must be a boolean`);
+  }
+  return value;
+}
+
 function readDate(value: unknown): string {
   const date = readString(value, "date");
   if (!ISO_DATE_REGEX.test(date)) {
@@ -141,6 +160,48 @@ function readOptionalDate(value: unknown, fieldName: string): string | undefined
     throw new HttpError(400, `${fieldName} must use YYYY-MM-DD format`);
   }
   return normalized;
+}
+
+function readInboxTypeHint(value: unknown): InboxTypeHint {
+  if (value === "idea" || value === "task" || value === "note" || value === "link") {
+    return value;
+  }
+  throw new HttpError(400, "typeHint must be one of 'idea', 'task', 'note', 'link'");
+}
+
+function readInboxItemStatus(value: unknown): InboxItemStatus {
+  if (value === "new" || value === "processed" || value === "archived") {
+    return value;
+  }
+  throw new HttpError(400, "status must be one of 'new', 'processed', 'archived'");
+}
+
+function readInboxConvertedEntityType(value: unknown): InboxConvertedEntityType {
+  if (value === "task" || value === "event" || value === "note") {
+    return value;
+  }
+  throw new HttpError(400, "target must be one of 'task', 'event', 'note'");
+}
+
+function readTaskStatus(value: unknown): TaskStatus {
+  if (value === "todo" || value === "in_progress" || value === "blocked" || value === "done") {
+    return value;
+  }
+  throw new HttpError(400, "status must be one of 'todo', 'in_progress', 'blocked', 'done'");
+}
+
+function readTaskProgressMode(value: unknown): TaskProgressMode {
+  if (value === "subtasks" || value === "manual") {
+    return value;
+  }
+  throw new HttpError(400, "progressMode must be one of 'subtasks', 'manual'");
+}
+
+function readSubtaskStatus(value: unknown): SubtaskStatus {
+  if (value === "todo" || value === "doing" || value === "done") {
+    return value;
+  }
+  throw new HttpError(400, "status must be one of 'todo', 'doing', 'done'");
 }
 
 function readRecurrence(value: unknown): EventRecurrence | undefined {
@@ -454,6 +515,200 @@ export function validateUpdateNoteInput(body: unknown): UpdateNoteInput {
   return payload;
 }
 
+export function parseInboxStatusParam(value: string | null): InboxItemStatus | undefined {
+  if (value === null || value.trim() === "") {
+    return undefined;
+  }
+  return readInboxItemStatus(value.trim());
+}
+
+export function validateCreateInboxItemInput(body: unknown): CreateInboxItemInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const content = readString(body.content, "content", { maxLength: 2000 });
+  const typeHint = body.typeHint === undefined ? undefined : readInboxTypeHint(body.typeHint);
+
+  return {
+    content,
+    typeHint,
+  };
+}
+
+export function validateConvertInboxItemInput(body: unknown): ConvertInboxItemInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const target = readInboxConvertedEntityType(body.target);
+  const payload: ConvertInboxItemInput = { target };
+
+  if (body.dueDate !== undefined) {
+    payload.dueDate = readOptionalDate(body.dueDate, "dueDate");
+  }
+  if (body.date !== undefined) {
+    payload.date = readOptionalDate(body.date, "date");
+  }
+  if (body.isPriority !== undefined) {
+    payload.isPriority = readBoolean(body.isPriority, "isPriority");
+  }
+
+  return payload;
+}
+
+export function validateCreateTaskInput(body: unknown): CreateTaskInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const title = readString(body.title, "title", { maxLength: 200 });
+  const description = readString(body.description, "description", {
+    required: false,
+    maxLength: 2000,
+  });
+  const status = body.status === undefined ? undefined : readTaskStatus(body.status);
+  const progressMode =
+    body.progressMode === undefined ? undefined : readTaskProgressMode(body.progressMode);
+  const manualProgress = readPositiveInteger(body.manualProgress, "manualProgress", {
+    min: 0,
+    max: 100,
+    required: false,
+  });
+  const dueDate = readOptionalDate(body.dueDate, "dueDate");
+  const isPriority = body.isPriority === undefined ? undefined : readBoolean(body.isPriority, "isPriority");
+  const sourceInboxItemId =
+    body.sourceInboxItemId !== undefined
+      ? readString(body.sourceInboxItemId, "sourceInboxItemId", {
+          required: false,
+          maxLength: 120,
+        }) || undefined
+      : undefined;
+
+  return {
+    title,
+    description,
+    status,
+    progressMode,
+    manualProgress,
+    dueDate,
+    isPriority,
+    sourceInboxItemId,
+  };
+}
+
+export function validateUpdateTaskInput(body: unknown): UpdateTaskInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const payload: UpdateTaskInput = {};
+
+  if (body.title !== undefined) {
+    payload.title = readString(body.title, "title", { maxLength: 200 });
+  }
+  if (body.description !== undefined) {
+    payload.description = readString(body.description, "description", {
+      required: false,
+      maxLength: 2000,
+    });
+  }
+  if (body.status !== undefined) {
+    payload.status = readTaskStatus(body.status);
+  }
+  if (body.progressMode !== undefined) {
+    payload.progressMode = readTaskProgressMode(body.progressMode);
+  }
+  if (body.manualProgress !== undefined) {
+    payload.manualProgress =
+      readPositiveInteger(body.manualProgress, "manualProgress", {
+        min: 0,
+        max: 100,
+        required: true,
+      }) ?? 0;
+  }
+  if ("dueDate" in body) {
+    if (body.dueDate === null) {
+      payload.dueDate = null;
+    } else {
+      payload.dueDate = readOptionalDate(body.dueDate, "dueDate");
+    }
+  }
+  if (body.isPriority !== undefined) {
+    payload.isPriority = readBoolean(body.isPriority, "isPriority");
+  }
+
+  if (Object.keys(payload).length === 0) {
+    throw new HttpError(400, "At least one field must be provided for update");
+  }
+
+  return payload;
+}
+
+export function validateCreateSubtaskInput(body: unknown): CreateSubtaskInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const title = readString(body.title, "title", { maxLength: 300 });
+  const position = readPositiveInteger(body.position, "position", {
+    min: 0,
+    required: false,
+  });
+  const estimateMin = readPositiveInteger(body.estimateMin, "estimateMin", {
+    min: 1,
+    max: 8 * 60,
+    required: false,
+  });
+
+  return {
+    title,
+    position,
+    estimateMin,
+    createdBy: "user",
+  };
+}
+
+export function validateUpdateSubtaskInput(body: unknown): UpdateSubtaskInput {
+  if (!isRecord(body)) {
+    throw new HttpError(400, "Invalid payload");
+  }
+
+  const payload: UpdateSubtaskInput = {};
+
+  if (body.title !== undefined) {
+    payload.title = readString(body.title, "title", { maxLength: 300 });
+  }
+  if (body.position !== undefined) {
+    payload.position =
+      readPositiveInteger(body.position, "position", {
+        min: 0,
+        required: true,
+      }) ?? 0;
+  }
+  if (body.status !== undefined) {
+    payload.status = readSubtaskStatus(body.status);
+  }
+  if ("estimateMin" in body) {
+    if (body.estimateMin === null) {
+      payload.estimateMin = null;
+    } else {
+      payload.estimateMin =
+        readPositiveInteger(body.estimateMin, "estimateMin", {
+          min: 1,
+          max: 8 * 60,
+          required: true,
+        }) ?? undefined;
+    }
+  }
+
+  if (Object.keys(payload).length === 0) {
+    throw new HttpError(400, "At least one field must be provided for update");
+  }
+
+  return payload;
+}
+
 export function handleRouteError(error: unknown) {
   if (error instanceof HttpError) {
     const body: ApiErrorResponse = { message: error.message };
@@ -473,6 +728,16 @@ export function handleRouteError(error: unknown) {
   if (error instanceof Error && error.name === "DbStateError") {
     const body: ApiErrorResponse = { message: error.message };
     return NextResponse.json(body, { status: 400 });
+  }
+
+  if (error instanceof Error && error.name === "TaskPriorityLimitError") {
+    const body: ApiErrorResponse = { message: error.message };
+    return NextResponse.json(body, { status: 409 });
+  }
+
+  if (error instanceof Error && error.name === "TaskNotFoundError") {
+    const body: ApiErrorResponse = { message: error.message };
+    return NextResponse.json(body, { status: 404 });
   }
 
   console.error("Unhandled route error:", error);

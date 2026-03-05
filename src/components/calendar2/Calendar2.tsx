@@ -34,9 +34,12 @@ import Calendar2DayView from "./Calendar2DayView";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
 import Calendar2AiPanel from "./Calendar2AiPanel";
+import InboxPanel from "./InboxPanel";
 import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
+import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
+import { useInboxTasks } from "./useInboxTasks";
 import {
   readUiPreferences,
   resolveDesktopSidebarInitialState,
@@ -134,7 +137,9 @@ export default function Calendar2() {
   const anchorDate = useMemo(() => toDayStart(urlState.date), [urlState.date]);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
   const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
   const [isSidebarVisible, setIsSidebarVisible] = useState(() =>
@@ -163,6 +168,7 @@ export default function Calendar2() {
   // Local store for kanban, notes, time blocks
   const localStore = useCalendar2Store();
   const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
+  const inboxTasks = useInboxTasks(toDateKey(anchorDate));
 
   useEffect(() => {
     void bootstrapAuth();
@@ -220,6 +226,27 @@ export default function Calendar2() {
     media.addEventListener("change", apply);
     return () => media.removeEventListener("change", apply);
   }, [uiPreferences]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName?.toLowerCase();
+      const isTypingTarget =
+        tag === "input" || tag === "textarea" || target?.isContentEditable;
+
+      if (isTypingTarget) {
+        return;
+      }
+
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "i") {
+        event.preventDefault();
+        setShowQuickCapture(true);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     const clearDragOverTargets = () => {
@@ -571,6 +598,43 @@ export default function Calendar2() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case "inbox":
+        return (
+          <div className="min-h-0 flex-1">
+            <InboxPanel
+              loading={inboxTasks.loading}
+              error={inboxTasks.error}
+              anchorDateKey={toDateKey(anchorDate)}
+              inbox={inboxTasks.inbox}
+              tasks={inboxTasks.tasks}
+              subtasksByTaskId={inboxTasks.subtasksByTaskId}
+              selectedTaskId={selectedTaskId}
+              onSelectTask={setSelectedTaskId}
+              onCreateQuickItem={async (content) => {
+                await inboxTasks.createInboxItem(content, "task");
+              }}
+              onConvert={async (id, target) => {
+                await inboxTasks.convertInboxItem(id, target, {
+                  dueDate: target === "task" ? toDateKey(anchorDate) : undefined,
+                  date: target === "event" ? toDateKey(anchorDate) : undefined,
+                });
+              }}
+              onArchive={inboxTasks.archiveInboxItem}
+              onPanicReset={async () => {
+                await inboxTasks.panicReset(toDateKey(anchorDate));
+              }}
+              onLoadSubtasks={inboxTasks.loadSubtasks}
+              onUpdateTask={inboxTasks.updateTask}
+              onAddSubtask={inboxTasks.addSubtask}
+              onSetSubtaskDone={async (subtaskId, taskId, done) => {
+                await inboxTasks.setSubtaskStatus(subtaskId, taskId, done ? "done" : "todo");
+              }}
+              dailyStats={inboxTasks.dailyStats}
+              weeklyStats={inboxTasks.weeklyStats}
+              priorityTasksTodayCount={inboxTasks.priorityTasksToday.length}
+            />
+          </div>
+        );
       case "calendar":
         return (
           <div className="min-h-0 flex-1">
@@ -687,6 +751,7 @@ export default function Calendar2() {
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
+        onQuickCapture={() => setShowQuickCapture(true)}
         onLogout={handleLogout}
         searchValue={searchQuery}
         onSearchChange={(value) =>
@@ -750,14 +815,26 @@ export default function Calendar2() {
       <button
         type="button"
         onClick={() => {
+          if (activeTab === "inbox") {
+            setShowQuickCapture(true);
+            return;
+          }
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
         className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
         aria-label="Добавить"
       >
-        +
+        {activeTab === "inbox" ? "I" : "+"}
       </button>
+
+      <QuickCaptureDialog
+        open={showQuickCapture}
+        onClose={() => setShowQuickCapture(false)}
+        onSave={async (content, typeHint) => {
+          await inboxTasks.createInboxItem(content, typeHint);
+        }}
+      />
 
       {/* Event view modal */}
       {selectedEvent && (

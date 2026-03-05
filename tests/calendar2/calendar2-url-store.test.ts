@@ -27,7 +27,7 @@ describe("readCalendar2UrlStateFromSearch", () => {
         "2026-03-10",
       ),
     ).toEqual({
-      tab: "calendar",
+      tab: "inbox",
       view: "month",
       category: "all",
       q: "",

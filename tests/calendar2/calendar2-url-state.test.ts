@@ -40,7 +40,7 @@ describe("parseCalendar2UrlState", () => {
 
     expect(state).toEqual({
       q: "",
-      tab: "calendar",
+      tab: "inbox",
       view: "month",
       category: "all",
       date: "2026-03-11",
@@ -87,7 +87,7 @@ describe("buildCalendar2UrlQuery", () => {
       currentSearchParams: new URLSearchParams("tab=notes&view=week&category=done&date=2026-01-01"),
       state: {
         q: "   ",
-        tab: "calendar",
+        tab: "inbox",
         view: "month",
         category: "all",
         date: "2026-13-40",
@@ -109,7 +109,7 @@ describe("buildCalendar2UrlQuery", () => {
       currentSearchParams: new URLSearchParams("dateFrom=2026-04-01&dateTo=2026-04-12"),
       state: {
         q: "",
-        tab: "calendar",
+        tab: "inbox",
         view: "month",
         category: "all",
         date: "2026-04-11",

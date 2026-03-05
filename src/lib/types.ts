@@ -2,6 +2,13 @@ export type EventType = "event" | "task";
 export type EventStatus = "pending" | "done";
 export type RecurrenceFrequency = "daily" | "weekly" | "monthly";
 export type RecurrenceScope = "this" | "all" | "this_and_following";
+export type InboxItemStatus = "new" | "processed" | "archived";
+export type InboxTypeHint = "idea" | "task" | "note" | "link";
+export type InboxConvertedEntityType = "task" | "event" | "note";
+export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
+export type TaskProgressMode = "subtasks" | "manual";
+export type SubtaskStatus = "todo" | "doing" | "done";
+export type SubtaskCreatedBy = "user" | "ai";
 
 export interface EventRecurrence {
   frequency: RecurrenceFrequency;
@@ -65,6 +72,116 @@ export interface UpdateEventInput {
   recurrence?: EventRecurrence;
   recurrenceScope?: RecurrenceScope;
   revision?: number;
+}
+
+export interface InboxItem {
+  id: string;
+  userId: string;
+  content: string;
+  typeHint: InboxTypeHint;
+  status: InboxItemStatus;
+  convertedToEntityType?: InboxConvertedEntityType;
+  convertedToEntityId?: string;
+  createdAt: string;
+  updatedAt: string;
+  processedAt?: string;
+  archivedAt?: string;
+}
+
+export interface CreateInboxItemInput {
+  content: string;
+  typeHint?: InboxTypeHint;
+}
+
+export interface ConvertInboxItemInput {
+  target: InboxConvertedEntityType;
+  dueDate?: string;
+  date?: string;
+  isPriority?: boolean;
+}
+
+export interface Task {
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  status: TaskStatus;
+  progressMode: TaskProgressMode;
+  manualProgress: number;
+  dueDate?: string;
+  isPriority: boolean;
+  linkedEventId?: string;
+  sourceInboxItemId?: string;
+  createdAt: string;
+  updatedAt: string;
+  progressPercent: number;
+  subtasksTotal: number;
+  subtasksDone: number;
+}
+
+export interface CreateTaskInput {
+  title: string;
+  description?: string;
+  status?: TaskStatus;
+  progressMode?: TaskProgressMode;
+  manualProgress?: number;
+  dueDate?: string;
+  isPriority?: boolean;
+  sourceInboxItemId?: string;
+}
+
+export interface UpdateTaskInput {
+  title?: string;
+  description?: string;
+  status?: TaskStatus;
+  progressMode?: TaskProgressMode;
+  manualProgress?: number;
+  dueDate?: string | null;
+  isPriority?: boolean;
+}
+
+export interface Subtask {
+  id: string;
+  taskId: string;
+  title: string;
+  position: number;
+  status: SubtaskStatus;
+  estimateMin?: number;
+  createdBy: SubtaskCreatedBy;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSubtaskInput {
+  title: string;
+  position?: number;
+  estimateMin?: number;
+  createdBy?: SubtaskCreatedBy;
+}
+
+export interface UpdateSubtaskInput {
+  title?: string;
+  position?: number;
+  status?: SubtaskStatus;
+  estimateMin?: number | null;
+}
+
+export interface StatsDaily {
+  date: string;
+  tasksCompleted: number;
+  focusMinutes: number;
+  habitsCompleted: number;
+  overdueCount: number;
+  priorityPlanned: number;
+}
+
+export interface StatsWeekly {
+  weekStart: string;
+  weekEnd: string;
+  tasksCompleted: number;
+  focusMinutes: number;
+  habitsCompleted: number;
+  overdueCount: number;
 }
 
 export interface EventListFilters {
