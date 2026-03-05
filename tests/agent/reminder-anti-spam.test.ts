@@ -27,4 +27,18 @@ describe("applyPushRateLimit", () => {
     expect(limited.allowed).toHaveLength(0);
     expect(limited.dropped).toHaveLength(1);
   });
+
+  it("keeps one emergency timed reminder even when budget is exhausted", () => {
+    const limited = applyPushRateLimit({
+      alreadySentInLastHour: 5,
+      hourlyLimit: 5,
+      reminders: [
+        { id: "r-time", severity: 4 },
+        { id: "r-overdue", severity: 3 },
+      ],
+    });
+
+    expect(limited.allowed.map((item) => item.id)).toEqual(["r-time"]);
+    expect(limited.dropped.map((item) => item.id)).toEqual(["r-overdue"]);
+  });
 });

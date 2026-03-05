@@ -31,6 +31,7 @@ const PUBLIC_API_ROUTES = new Set([
   "/api/setup/emergency/reset",
   "/api/setup/emergency/factory-reset",
   "/api/cron/reminders", // protected by NETDEN_CRON_SECRET, not session
+  "/api/push/status", // diagnostics only, no user data
 ]);
 
 /** HTTP methods that mutate state — checked for CSRF */
@@ -196,6 +197,6 @@ export async function proxy(request: NextRequest): Promise<NextResponse> {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|.*\\.svg|.*\\.png|.*\\.webp|.*\\.ico|sitemap.xml|robots.txt).*)",
   ],
 };

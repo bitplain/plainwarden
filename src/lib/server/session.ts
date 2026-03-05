@@ -81,7 +81,7 @@ function resolveSessionSecret(): {
   };
 }
 
-function getSessionSecret(): string {
+export function getSessionSecret(): string {
   const resolved = resolveSessionSecret();
 
   if (resolved.mode !== "configured" && warnedSessionMode !== resolved.mode) {

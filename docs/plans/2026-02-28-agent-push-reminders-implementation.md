@@ -95,3 +95,39 @@ Run: `npm run build`
 Commit: `feat: add push notifications and proactive reminder engine`
 
 **Step 3: Push и новый PR в `main` (follow-up к #52).**
+
+---
+
+## Operational Notes (2026-03-05)
+
+- Добавлен runtime-диагностический endpoint `GET /api/push/status` (без утечки секретов):
+  - `configured/supported`, `missing[]`, `invalid[]`, `vapidPublicKey`, `cronConfigured`.
+- Клиентский хук push больше не зависит от build-time `process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY`;
+  public key подтягивается runtime через `/api/push/status`.
+- Основной GUI-вход для push теперь в `Settings -> Calendar -> Push Notifications`:
+  - `Enable push`, `Disable push`, `Send test`, `Recheck`.
+  - `Auto setup push` генерирует VAPID + runtime cron secret в серверном хранилище.
+  - Явная диагностика missing/invalid env.
+- Для автодоставки reminders обязателен внешний cron:
+  - `POST /api/cron/reminders`
+  - header `x-netden-cron-secret: <NETDEN_CRON_SECRET>`
+  - рекомендуемый интервал: каждые 5 минут.
+
+## Operational Notes (2026-03-05, minute-precise reminders)
+
+- Добавлен `POST /api/agent/reminders/tick` (auth endpoint) для форсированного прогона reminders по текущему пользователю.
+- В `Calendar2` подключён локальный minute-timer (`usePreciseReminderTick`):
+  - в момент дедлайна создаёт in-app reminder;
+  - вызывает `POST /api/agent/reminders/tick` для мгновенной push-доставки без ожидания cron.
+- Серверный reminder pipeline обновлён:
+  - timed `due_today` не создаётся до наступления `HH:mm`;
+  - retry-поля `AgentReminder`: `pushAttemptCount`, `nextPushAttemptAt`, `lastPushAttemptAt`, `lastPushError`;
+  - retry лестница: `+2m`, `+4m`, `+4m` (до 3 попыток за 10 минут);
+  - финальный статус после исчерпания retry или перманентной ошибки.
+- `POST /api/cron/reminders` теперь возвращает retry-агрегаты:
+  - `pushRetried`
+  - `pushRetryScheduled`
+  - `pushFailedFinal`
+- Для production обязательно:
+  - cron cadence: каждую минуту;
+  - системный timezone reminders через `NETDEN_REMINDER_TZ` (default `Europe/Moscow`).

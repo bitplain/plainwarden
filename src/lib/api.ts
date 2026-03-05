@@ -1,14 +1,25 @@
 import {
+  ConvertInboxItemInput,
+  CreateInboxItemInput,
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
   CreateNoteInput,
+  CreateSubtaskInput,
+  CreateTaskInput,
+  InboxItem,
   RecurrenceScope,
   LoginInput,
+  StatsDaily,
+  StatsWeekly,
+  Subtask,
+  Task,
   Note,
   NoteListFilters,
   NoteVersion,
   RegisterInput,
+  UpdateSubtaskInput,
+  UpdateTaskInput,
   UpdateEventInput,
   UpdateNoteInput,
   KanbanBoard,
@@ -121,6 +132,104 @@ class ApiClient {
     await this.request<{ success: boolean }>(`/events/${id}${query}`, {
       method: "DELETE",
     });
+  }
+
+  async listInbox(status?: "new" | "processed" | "archived"): Promise<InboxItem[]> {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    const payload = await this.request<{ items: InboxItem[] }>(`/inbox${query}`);
+    return payload.items;
+  }
+
+  async createInboxItem(input: CreateInboxItemInput): Promise<InboxItem> {
+    return this.request<InboxItem>("/inbox", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async convertInboxItem(id: string, input: ConvertInboxItemInput): Promise<{
+    item: InboxItem;
+    converted: { type: "task" | "event" | "note"; id: string };
+  }> {
+    return this.request(`/inbox/${id}/convert`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async archiveInboxItem(id: string): Promise<InboxItem> {
+    return this.request<InboxItem>(`/inbox/${id}/archive`, {
+      method: "POST",
+    });
+  }
+
+  async listTasks(filters: {
+    q?: string;
+    status?: "todo" | "in_progress" | "blocked" | "done";
+    dueDate?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  } = {}): Promise<Task[]> {
+    const params = new URLSearchParams();
+    if (filters.q) params.set("q", filters.q);
+    if (filters.status) params.set("status", filters.status);
+    if (filters.dueDate) params.set("dueDate", filters.dueDate);
+    if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+    if (filters.dateTo) params.set("dateTo", filters.dateTo);
+
+    const query = params.toString();
+    const payload = await this.request<{ tasks: Task[] }>(query ? `/tasks?${query}` : "/tasks");
+    return payload.tasks;
+  }
+
+  async createTask(input: CreateTaskInput): Promise<Task> {
+    return this.request<Task>("/tasks", {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateTask(id: string, input: UpdateTaskInput): Promise<Task> {
+    return this.request<Task>(`/tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async panicResetTasks(fromDate?: string): Promise<{ moved: number; fromDate: string; toDate: string }> {
+    return this.request("/tasks/panic-reset", {
+      method: "POST",
+      body: JSON.stringify({ fromDate }),
+    });
+  }
+
+  async listSubtasks(taskId: string): Promise<Subtask[]> {
+    const payload = await this.request<{ subtasks: Subtask[] }>(`/tasks/${taskId}/subtasks`);
+    return payload.subtasks;
+  }
+
+  async createSubtask(taskId: string, input: CreateSubtaskInput): Promise<Subtask> {
+    return this.request<Subtask>(`/tasks/${taskId}/subtasks`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async updateSubtask(id: string, input: UpdateSubtaskInput): Promise<Subtask> {
+    return this.request<Subtask>(`/subtasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(input),
+    });
+  }
+
+  async getDailyStats(date?: string): Promise<StatsDaily> {
+    const query = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.request<StatsDaily>(`/stats/daily${query}`);
+  }
+
+  async getWeeklyStats(date?: string): Promise<StatsWeekly> {
+    const query = date ? `?date=${encodeURIComponent(date)}` : "";
+    return this.request<StatsWeekly>(`/stats/weekly${query}`);
   }
 
   async login(input: LoginInput): Promise<AuthResponse> {

@@ -1,4 +1,4 @@
-import { addDays, format } from "date-fns";
+import { getReminderDateContext } from "@/lib/server/reminder-time";
 
 export type ReminderKind = "due_today" | "due_tomorrow" | "overdue";
 
@@ -7,6 +7,7 @@ export interface ReminderCandidateInput {
   sourceId: string;
   title: string;
   dueDate: string;
+  dueTime?: string | null;
   navigateTo: string;
 }
 
@@ -27,12 +28,27 @@ export interface PushRateItem {
   severity: number;
 }
 
-function classifyKind(dueDate: string, today: string, tomorrow: string): ReminderKind | null {
+function isValidTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+function classifyKind(input: {
+  dueDate: string;
+  dueTime?: string | null;
+  today: string;
+  tomorrow: string;
+  nowTime: string;
+}): ReminderKind | null {
+  const { dueDate, dueTime, today, tomorrow, nowTime } = input;
+
   if (dueDate < today) {
     return "overdue";
   }
 
   if (dueDate === today) {
+    if (isValidTime(dueTime ?? "") && nowTime < dueTime!) {
+      return null;
+    }
     return "due_today";
   }
 
@@ -49,19 +65,47 @@ function kindSeverity(kind: ReminderKind): number {
   return 1;
 }
 
+function getSeverity(input: { kind: ReminderKind; dueDate: string; dueTime?: string | null; today: string }) {
+  const baseSeverity = kindSeverity(input.kind);
+  if (input.kind === "due_today" && input.dueDate === input.today) {
+    const dueTime = typeof input.dueTime === "string" ? input.dueTime : "";
+    if (isValidTime(dueTime)) {
+      // Time-specific event: prioritize above generic overdue backlog so same-day events are not starved.
+      return 4;
+    }
+  }
+  return baseSeverity;
+}
+
 export function buildReminderCandidates(input: {
   userId: string;
   nowIso: string;
   items: ReminderCandidateInput[];
 }): ReminderCandidate[] {
-  const now = new Date(input.nowIso);
-  const today = format(now, "yyyy-MM-dd");
-  const tomorrow = format(addDays(now, 1), "yyyy-MM-dd");
+  const context = getReminderDateContext(input.nowIso);
 
   return input.items
     .map((item) => {
-      const kind = classifyKind(item.dueDate, today, tomorrow);
+      const kind = classifyKind({
+        dueDate: item.dueDate,
+        dueTime: item.dueTime,
+        today: context.today,
+        tomorrow: context.tomorrow,
+        nowTime: context.nowTime,
+      });
       if (!kind) return null;
+
+      const severity = getSeverity({
+        kind,
+        dueDate: item.dueDate,
+        dueTime: item.dueTime,
+        today: context.today,
+      });
+
+      const dedupeKeySuffix =
+        item.dueTime && isValidTime(item.dueTime)
+          ? `${kind}:${item.dueDate}:${item.dueTime}`
+          : `${kind}:${item.dueDate}`;
 
       return {
         sourceType: item.sourceType,
@@ -70,9 +114,9 @@ export function buildReminderCandidates(input: {
         dueDate: item.dueDate,
         navigateTo: item.navigateTo,
         kind,
-        severity: kindSeverity(kind),
+        severity,
         dedupeBucket: item.dueDate,
-        dedupeKey: `${input.userId}:${item.sourceType}:${item.sourceId}:${kind}:${item.dueDate}`,
+        dedupeKey: `${input.userId}:${item.sourceType}:${item.sourceId}:${dedupeKeySuffix}`,
       } satisfies ReminderCandidate;
     })
     .filter((item): item is ReminderCandidate => Boolean(item))
@@ -88,11 +132,26 @@ export function applyPushRateLimit(input: {
   hourlyLimit: number;
   reminders: PushRateItem[];
 }): { allowed: PushRateItem[]; dropped: PushRateItem[] } {
-  const budget = Math.max(0, input.hourlyLimit - input.alreadySentInLastHour);
   const sorted = [...input.reminders].sort((a, b) => b.severity - a.severity);
+  const budget = Math.max(0, input.hourlyLimit - input.alreadySentInLastHour);
+
+  if (budget > 0) {
+    return {
+      allowed: sorted.slice(0, budget),
+      dropped: sorted.slice(budget),
+    };
+  }
+
+  const emergency = sorted.find((item) => item.severity >= 4);
+  if (!emergency) {
+    return {
+      allowed: [],
+      dropped: sorted,
+    };
+  }
 
   return {
-    allowed: sorted.slice(0, budget),
-    dropped: sorted.slice(budget),
+    allowed: [emergency],
+    dropped: sorted.filter((item) => item.id !== emergency.id),
   };
 }

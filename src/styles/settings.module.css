@@ -388,6 +388,12 @@
   font-size: 0.82rem;
 }
 
+.settings-tab-note {
+  margin: 0.3rem 0 0;
+  color: #b8c3df;
+  font-size: 0.8rem;
+}
+
 /* ── Agent status lamp ── */
 .agent-status-lamp {
   display: inline-block;

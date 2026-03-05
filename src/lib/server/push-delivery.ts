@@ -4,30 +4,39 @@ import {
   markPushSubscriptionFailure,
   markPushSubscriptionSuccess,
 } from "@/lib/server/push-subscriptions-db";
-import { assertPushConfiguration } from "@/lib/server/push-config";
+import { getRuntimePushDeliveryConfig } from "@/lib/server/push-runtime-config";
 
 export interface PushMessagePayload {
   title: string;
   body: string;
   navigateTo?: string;
   tag?: string;
+  verifyToken?: string;
 }
 
-interface PushSendResult {
+export interface PushSendResult {
   sent: number;
   failed: number;
   inactive: number;
+  transientFailed: number;
+  permanentFailed: number;
+  hasActiveSubscriptions: boolean;
 }
 
 let isConfigured = false;
+let configuredFingerprint = "";
 
-function ensureWebPushConfigured() {
-  if (isConfigured) return;
+async function ensureWebPushConfigured() {
+  const { subject, publicKey, privateKey } = await getRuntimePushDeliveryConfig();
+  const nextFingerprint = `${subject}:${publicKey}:${privateKey}`;
 
-  const { subject, publicKey, privateKey } = assertPushConfiguration();
+  if (isConfigured && configuredFingerprint === nextFingerprint) {
+    return;
+  }
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
   isConfigured = true;
+  configuredFingerprint = nextFingerprint;
 }
 
 function isPermanentPushError(error: unknown): boolean {
@@ -41,25 +50,35 @@ export async function sendPushToUser(input: {
   userId: string;
   payload: PushMessagePayload;
 }): Promise<PushSendResult> {
-  ensureWebPushConfigured();
+  await ensureWebPushConfigured();
 
   const subscriptions = await listActivePushSubscriptionsByUser(input.userId);
   if (subscriptions.length === 0) {
-    return { sent: 0, failed: 0, inactive: 0 };
+    return {
+      sent: 0,
+      failed: 0,
+      inactive: 0,
+      transientFailed: 0,
+      permanentFailed: 0,
+      hasActiveSubscriptions: false,
+    };
   }
 
   const payload = JSON.stringify({
     title: input.payload.title,
     body: input.payload.body,
     navigateTo: input.payload.navigateTo,
-    icon: "/icon.png",
-    badge: "/badge.png",
+    icon: "/globe.svg",
+    badge: "/globe.svg",
     tag: input.payload.tag,
+    verifyToken: input.payload.verifyToken,
   });
 
   let sent = 0;
   let failed = 0;
   let inactive = 0;
+  let transientFailed = 0;
+  let permanentFailed = 0;
 
   for (const subscription of subscriptions) {
     try {
@@ -86,10 +105,20 @@ export async function sendPushToUser(input: {
       const disableNow = isPermanentPushError(error);
       if (disableNow) {
         inactive += 1;
+        permanentFailed += 1;
+      } else {
+        transientFailed += 1;
       }
       await markPushSubscriptionFailure({ id: subscription.id, disableNow });
     }
   }
 
-  return { sent, failed, inactive };
+  return {
+    sent,
+    failed,
+    inactive,
+    transientFailed,
+    permanentFailed,
+    hasActiveSubscriptions: true,
+  };
 }

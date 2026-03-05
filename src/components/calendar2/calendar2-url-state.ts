@@ -3,7 +3,7 @@ import type { Calendar2Tab, Calendar2View } from "./calendar2-types";
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const TAB_VALUES = new Set<Calendar2Tab>(["calendar", "kanban", "notes", "ai"]);
+const TAB_VALUES = new Set<Calendar2Tab>(["inbox", "calendar", "kanban", "notes", "ai"]);
 const VIEW_VALUES = new Set<Calendar2View>(["month", "week", "day"]);
 const CATEGORY_VALUES = new Set<Calendar2CategoryFilter>([
   "all",
@@ -49,7 +49,7 @@ function normalizeDate(value: string | null): string | undefined {
 }
 
 function parseTab(value: string | null): Calendar2Tab {
-  return value && TAB_VALUES.has(value as Calendar2Tab) ? (value as Calendar2Tab) : "calendar";
+  return value && TAB_VALUES.has(value as Calendar2Tab) ? (value as Calendar2Tab) : "inbox";
 }
 
 function parseView(value: string | null): Calendar2View {
@@ -92,7 +92,7 @@ export function buildCalendar2UrlQuery(input: {
   params.delete("dateTo");
 
   setOrDelete(params, "q", input.state.q.trim() || undefined);
-  setOrDelete(params, "tab", input.state.tab === "calendar" ? undefined : input.state.tab);
+  setOrDelete(params, "tab", input.state.tab === "inbox" ? undefined : input.state.tab);
   setOrDelete(params, "view", input.state.view === "month" ? undefined : input.state.view);
   setOrDelete(
     params,

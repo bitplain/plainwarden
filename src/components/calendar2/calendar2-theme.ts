@@ -35,6 +35,7 @@ export const CALENDAR2_LINEAR_VARS: Calendar2CssVariables = {
   "--cal2-accent-hover": "#6C78E0",
   "--cal2-accent-soft": "rgba(94,106,210,0.18)",
   "--cal2-accent-soft-strong": "rgba(94,106,210,0.28)",
+  "--cal2-inbox-soft": "rgba(94,106,210,0.1)",
   "--cal2-overlay": "rgba(15,15,15,0.78)",
   "--cal2-success": "#4ADE80",
   "--cal2-success-soft": "rgba(74,222,128,0.12)",

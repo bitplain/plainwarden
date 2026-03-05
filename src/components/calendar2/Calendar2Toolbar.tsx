@@ -11,6 +11,7 @@ interface Calendar2ToolbarProps {
   onNext: () => void;
   onToday: () => void;
   onAdd: () => void;
+  onQuickCapture: () => void;
   onLogout: () => void;
   onToggleSidebar: () => void;
   isSidebarVisible: boolean;
@@ -19,6 +20,7 @@ interface Calendar2ToolbarProps {
 }
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
+  { id: "inbox", label: "Inbox" },
   { id: "calendar", label: "Календарь" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
@@ -41,6 +43,7 @@ export default function Calendar2Toolbar({
   onNext,
   onToday,
   onAdd,
+  onQuickCapture,
   onLogout,
   onToggleSidebar,
   isSidebarVisible,
@@ -70,6 +73,13 @@ export default function Calendar2Toolbar({
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              type="button"
+              onClick={onQuickCapture}
+              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)] sm:text-[12px]"
+            >
+              Quick Capture
+            </button>
             <button
               type="button"
               onClick={onToggleSidebar}

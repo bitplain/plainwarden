@@ -34,6 +34,13 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `POST /api/terminal/run` — запуск allowlisted shell-команд
 - `GET|POST /api/events`
 - `PATCH|DELETE /api/events/:id`
+- `GET /api/push/status`
+- `POST /api/push/setup`
+- `POST /api/push/subscribe`
+- `POST /api/push/unsubscribe`
+- `POST /api/push/test`
+- `POST /api/cron/reminders` (через `x-netden-cron-secret`)
+- `POST /api/agent/reminders/tick` (auth, локальный minute-tick из календаря)
 - `POST /api/setup/run`
 - `POST /api/setup/recover`
 - `GET /api/setup/preset?mode=docker|remote`
@@ -82,8 +89,30 @@ PROXY_PORT=8080
 VAPID_SUBJECT=mailto:admin@example.com
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=
 VAPID_PRIVATE_KEY=
+NETDEN_CRON_SECRET=
+NETDEN_REMINDER_TZ=Europe/Moscow
 OPENROUTER_KEY_ENCRYPTION_SECRET=
 ```
+
+## Push reminders (production flow)
+
+1. Откройте `Settings -> Календарь -> Push Notifications` и нажмите `Auto setup push`.
+2. Нажмите `Enable push`, затем `Verify delivery` (кнопка ждёт browser ack и показывает статус доставки).
+3. Настройте внешний cron (каждую минуту) на:
+   - `POST /api/cron/reminders`
+   - заголовок `x-netden-cron-secret: <NETDEN_CRON_SECRET>`
+4. При необходимости можно использовать ручной env-конфиг:
+   - `VAPID_SUBJECT` (`mailto:` или `https://`)
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `NETDEN_CRON_SECRET`
+   - `NETDEN_REMINDER_TZ` (default: `Europe/Moscow`)
+5. Диагностика конфига доступна в:
+   - `GET /api/push/status`
+   - `GET /api/health` (`checks.push`, `checks.cron`)
+6. Для кейса `16:52 -> 16:53` используется hybrid-триггер:
+   - открытая вкладка календаря даёт точный local minute-tick (`/api/agent/reminders/tick`)
+   - закрытая вкладка покрывается минутным cron.
 
 ## Локальный запуск
 
