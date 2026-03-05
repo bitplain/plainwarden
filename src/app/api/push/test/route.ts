@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         tag: verifyToken ? `push-verify:${verifyToken}` : undefined,
         verifyToken: verifyToken || undefined,
       },
+      requestId: request.headers.get("x-request-id") ?? undefined,
     });
 
     if (verifyToken && sent.sent > 0) {
@@ -52,6 +53,9 @@ export async function POST(request: NextRequest) {
       ok: true,
       sent,
       verifyToken: verifyToken || null,
+      deliveryStatus: sent.deliveryStatus,
+      reason: sent.reason,
+      retryRecommended: sent.retryRecommended,
     });
   } catch (error) {
     return handleRouteError(error);

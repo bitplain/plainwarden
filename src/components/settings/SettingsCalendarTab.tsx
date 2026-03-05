@@ -11,6 +11,21 @@ function formatPermission(permission: NotificationPermission | "unsupported"): s
   return "Unsupported";
 }
 
+function formatPushReadiness(input: {
+  supported: boolean;
+  permission: NotificationPermission | "unsupported";
+  isSubscribed: boolean;
+  verificationStatus: "idle" | "pending" | "received" | "shown" | "timeout" | "error";
+}): string {
+  if (!input.supported) return "Не поддерживается";
+  if (input.permission === "denied") return "Разрешение отклонено";
+  if (input.isSubscribed && (input.verificationStatus === "timeout" || input.verificationStatus === "error")) {
+    return "Подписка есть, но доставка падает";
+  }
+  if (input.isSubscribed) return "Подписка активна";
+  return "Не подписан";
+}
+
 function formatVerificationStatus(
   status: "idle" | "pending" | "received" | "shown" | "timeout" | "error",
 ): string {
@@ -220,6 +235,17 @@ export default function SettingsCalendarTab() {
               {formatVerificationStatus(push.verification.status)}
             </span>
           </div>
+          <div className={styles["settings-tab-row"]}>
+            <span className={styles["settings-tab-label"]}>Push readiness</span>
+            <span className={styles["settings-tab-value"]}>
+              {formatPushReadiness({
+                supported: push.supported,
+                permission: push.permission,
+                isSubscribed: push.isSubscribed,
+                verificationStatus: push.verification.status,
+              })}
+            </span>
+          </div>
         </div>
 
         <div className={styles["settings-choice-row"]}>
@@ -297,6 +323,9 @@ export default function SettingsCalendarTab() {
 
         {push.diagnostics.error ? (
           <p className={styles["settings-tab-note"]}>Diagnostics error: {push.diagnostics.error}</p>
+        ) : null}
+        {push.diagnostics.browserMessage ? (
+          <p className={styles["settings-tab-note"]}>Browser diagnostics: {push.diagnostics.browserMessage}</p>
         ) : null}
         {pushError ? <p className={styles["settings-tab-note"]}>{pushError}</p> : null}
         {pushNotice ? <p className={styles["settings-tab-muted"]}>{pushNotice}</p> : null}
