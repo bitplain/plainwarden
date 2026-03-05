@@ -112,3 +112,22 @@ Commit: `feat: add push notifications and proactive reminder engine`
   - `POST /api/cron/reminders`
   - header `x-netden-cron-secret: <NETDEN_CRON_SECRET>`
   - рекомендуемый интервал: каждые 5 минут.
+
+## Operational Notes (2026-03-05, minute-precise reminders)
+
+- Добавлен `POST /api/agent/reminders/tick` (auth endpoint) для форсированного прогона reminders по текущему пользователю.
+- В `Calendar2` подключён локальный minute-timer (`usePreciseReminderTick`):
+  - в момент дедлайна создаёт in-app reminder;
+  - вызывает `POST /api/agent/reminders/tick` для мгновенной push-доставки без ожидания cron.
+- Серверный reminder pipeline обновлён:
+  - timed `due_today` не создаётся до наступления `HH:mm`;
+  - retry-поля `AgentReminder`: `pushAttemptCount`, `nextPushAttemptAt`, `lastPushAttemptAt`, `lastPushError`;
+  - retry лестница: `+2m`, `+4m`, `+4m` (до 3 попыток за 10 минут);
+  - финальный статус после исчерпания retry или перманентной ошибки.
+- `POST /api/cron/reminders` теперь возвращает retry-агрегаты:
+  - `pushRetried`
+  - `pushRetryScheduled`
+  - `pushFailedFinal`
+- Для production обязательно:
+  - cron cadence: каждую минуту;
+  - системный timezone reminders через `NETDEN_REMINDER_TZ` (default `Europe/Moscow`).

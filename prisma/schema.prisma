@@ -409,27 +409,31 @@ model PushSubscription {
 }
 
 model AgentReminder {
-  id          String               @id @default(uuid())
-  userId      String
-  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
-  sourceType  String
-  sourceId    String
-  title       String
-  body        String
-  kind        AgentReminderKind
-  channel     AgentReminderChannel @default(in_app)
-  severity    Int                  @default(1)
-  dueDate     String?
-  navigateTo  String?
+  id               String               @id @default(uuid())
+  userId           String
+  user             User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceType       String
+  sourceId         String
+  title            String
+  body             String
+  kind             AgentReminderKind
+  channel          AgentReminderChannel @default(in_app)
+  severity         Int                  @default(1)
+  dueDate          String?
+  navigateTo       String?
   dedupeBucket String
-  dedupeKey   String               @unique
-  pushedAt    DateTime?
-  readAt      DateTime?
-  createdAt   DateTime             @default(now())
-  updatedAt   DateTime             @updatedAt
+  dedupeKey        String               @unique
+  pushedAt         DateTime?
+  pushAttemptCount Int                  @default(0)
+  nextPushAttemptAt DateTime?
+  lastPushAttemptAt DateTime?
+  lastPushError    String?
+  readAt           DateTime?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
 
   @@index([userId, readAt, createdAt])
-  @@index([userId, pushedAt, createdAt])
+  @@index([userId, pushedAt, nextPushAttemptAt, createdAt])
   @@index([userId, sourceType, sourceId])
 }
 

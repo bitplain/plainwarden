@@ -72,15 +72,25 @@ export async function countPushedInLastHour(userId: string, now = new Date()) {
   });
 }
 
-export async function listPendingPushReminders(userId: string, limit = 20) {
+export async function listPendingPushReminders(userId: string, limit = 20, now = new Date()) {
   return prisma.agentReminder.findMany({
     where: {
       userId,
-      readAt: null,
       pushedAt: null,
       channel: "push",
+      pushAttemptCount: {
+        lt: 3,
+      },
+      OR: [
+        { nextPushAttemptAt: null },
+        {
+          nextPushAttemptAt: {
+            lte: now,
+          },
+        },
+      ],
     },
-    orderBy: [{ severity: "desc" }, { createdAt: "asc" }],
+    orderBy: [{ severity: "desc" }, { nextPushAttemptAt: "asc" }, { createdAt: "asc" }],
     take: Math.min(100, Math.max(1, limit)),
   });
 }
@@ -96,8 +106,88 @@ export async function markRemindersPushed(reminderIds: string[]) {
     },
     data: {
       pushedAt: new Date(),
+      pushAttemptCount: {
+        increment: 1,
+      },
+      lastPushAttemptAt: new Date(),
+      nextPushAttemptAt: null,
+      lastPushError: null,
     },
   });
 
   return result.count;
+}
+
+export async function markReminderPushDelivered(input: {
+  reminderId: string;
+  expectedAttemptCount: number;
+  now?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const result = await prisma.agentReminder.updateMany({
+    where: {
+      id: input.reminderId,
+      pushedAt: null,
+      pushAttemptCount: input.expectedAttemptCount,
+    },
+    data: {
+      pushedAt: now,
+      pushAttemptCount: input.expectedAttemptCount + 1,
+      lastPushAttemptAt: now,
+      nextPushAttemptAt: null,
+      lastPushError: null,
+    },
+  });
+
+  return result.count > 0;
+}
+
+export async function markReminderPushRetryScheduled(input: {
+  reminderId: string;
+  expectedAttemptCount: number;
+  nextPushAttemptAt: Date;
+  lastPushError: string;
+  now?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const nextAttemptCount = input.expectedAttemptCount + 1;
+  const result = await prisma.agentReminder.updateMany({
+    where: {
+      id: input.reminderId,
+      pushedAt: null,
+      pushAttemptCount: input.expectedAttemptCount,
+    },
+    data: {
+      pushAttemptCount: nextAttemptCount,
+      lastPushAttemptAt: now,
+      nextPushAttemptAt: input.nextPushAttemptAt,
+      lastPushError: input.lastPushError.slice(0, 512),
+    },
+  });
+
+  return result.count > 0;
+}
+
+export async function markReminderPushFailedFinal(input: {
+  reminderId: string;
+  expectedAttemptCount: number;
+  lastPushError: string;
+  now?: Date;
+}) {
+  const now = input.now ?? new Date();
+  const result = await prisma.agentReminder.updateMany({
+    where: {
+      id: input.reminderId,
+      pushedAt: null,
+      pushAttemptCount: input.expectedAttemptCount,
+    },
+    data: {
+      pushAttemptCount: 3,
+      lastPushAttemptAt: now,
+      nextPushAttemptAt: null,
+      lastPushError: input.lastPushError.slice(0, 512),
+    },
+  });
+
+  return result.count > 0;
 }

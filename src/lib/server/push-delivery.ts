@@ -13,10 +13,13 @@ export interface PushMessagePayload {
   tag?: string;
 }
 
-interface PushSendResult {
+export interface PushSendResult {
   sent: number;
   failed: number;
   inactive: number;
+  transientFailed: number;
+  permanentFailed: number;
+  hasActiveSubscriptions: boolean;
 }
 
 let isConfigured = false;
@@ -50,7 +53,14 @@ export async function sendPushToUser(input: {
 
   const subscriptions = await listActivePushSubscriptionsByUser(input.userId);
   if (subscriptions.length === 0) {
-    return { sent: 0, failed: 0, inactive: 0 };
+    return {
+      sent: 0,
+      failed: 0,
+      inactive: 0,
+      transientFailed: 0,
+      permanentFailed: 0,
+      hasActiveSubscriptions: false,
+    };
   }
 
   const payload = JSON.stringify({
@@ -65,6 +75,8 @@ export async function sendPushToUser(input: {
   let sent = 0;
   let failed = 0;
   let inactive = 0;
+  let transientFailed = 0;
+  let permanentFailed = 0;
 
   for (const subscription of subscriptions) {
     try {
@@ -91,10 +103,20 @@ export async function sendPushToUser(input: {
       const disableNow = isPermanentPushError(error);
       if (disableNow) {
         inactive += 1;
+        permanentFailed += 1;
+      } else {
+        transientFailed += 1;
       }
       await markPushSubscriptionFailure({ id: subscription.id, disableNow });
     }
   }
 
-  return { sent, failed, inactive };
+  return {
+    sent,
+    failed,
+    inactive,
+    transientFailed,
+    permanentFailed,
+    hasActiveSubscriptions: true,
+  };
 }

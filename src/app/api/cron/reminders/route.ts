@@ -38,7 +38,13 @@ export async function POST(request: NextRequest) {
           : undefined,
     });
 
-    return NextResponse.json({ ok: true, result });
+    return NextResponse.json({
+      ok: true,
+      result,
+      pushRetried: result.totals.pushRetried,
+      pushRetryScheduled: result.totals.pushRetryScheduled,
+      pushFailedFinal: result.totals.pushFailedFinal,
+    });
   } catch (error) {
     return handleRouteError(error);
   }

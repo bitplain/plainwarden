@@ -1,4 +1,4 @@
-import { addDays, format } from "date-fns";
+import { getReminderDateContext } from "@/lib/server/reminder-time";
 
 export type ReminderKind = "due_today" | "due_tomorrow" | "overdue";
 
@@ -34,16 +34,21 @@ function isValidTime(value: string): boolean {
 
 function classifyKind(input: {
   dueDate: string;
+  dueTime?: string | null;
   today: string;
   tomorrow: string;
+  nowTime: string;
 }): ReminderKind | null {
-  const { dueDate, today, tomorrow } = input;
+  const { dueDate, dueTime, today, tomorrow, nowTime } = input;
 
   if (dueDate < today) {
     return "overdue";
   }
 
   if (dueDate === today) {
+    if (isValidTime(dueTime ?? "") && nowTime < dueTime!) {
+      return null;
+    }
     return "due_today";
   }
 
@@ -77,16 +82,16 @@ export function buildReminderCandidates(input: {
   nowIso: string;
   items: ReminderCandidateInput[];
 }): ReminderCandidate[] {
-  const now = new Date(input.nowIso);
-  const today = format(now, "yyyy-MM-dd");
-  const tomorrow = format(addDays(now, 1), "yyyy-MM-dd");
+  const context = getReminderDateContext(input.nowIso);
 
   return input.items
     .map((item) => {
       const kind = classifyKind({
         dueDate: item.dueDate,
-        today,
-        tomorrow,
+        dueTime: item.dueTime,
+        today: context.today,
+        tomorrow: context.tomorrow,
+        nowTime: context.nowTime,
       });
       if (!kind) return null;
 
@@ -94,7 +99,7 @@ export function buildReminderCandidates(input: {
         kind,
         dueDate: item.dueDate,
         dueTime: item.dueTime,
-        today,
+        today: context.today,
       });
 
       const dedupeKeySuffix =
