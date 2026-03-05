@@ -7,6 +7,7 @@ interface PushDiagnostics {
   missing: string[];
   invalid: string[];
   cronConfigured: boolean;
+  source: "env" | "stored" | "none";
   isLoading: boolean;
   error: string | null;
 }
@@ -21,6 +22,7 @@ interface UsePushNotificationsResult {
   unsubscribe: () => Promise<{ ok: boolean; message: string }>;
   sendTest: (message: string) => Promise<{ ok: boolean; message: string }>;
   recheck: () => Promise<void>;
+  autoSetup: () => Promise<{ ok: boolean; message: string; cronSecret: string | null }>;
 }
 
 interface PushStatusResponse {
@@ -30,6 +32,14 @@ interface PushStatusResponse {
   invalid?: string[];
   vapidPublicKey?: string;
   cronConfigured?: boolean;
+  source?: "env" | "stored" | "none";
+}
+
+interface PushAutoSetupResponse {
+  ok?: boolean;
+  generatedPushConfig?: boolean;
+  generatedCronSecret?: boolean;
+  cronSecret?: string | null;
 }
 
 function base64ToUint8Array(base64String: string) {
@@ -69,6 +79,7 @@ const EMPTY_DIAGNOSTICS: PushDiagnostics = {
   missing: [],
   invalid: [],
   cronConfigured: false,
+  source: "none",
   isLoading: true,
   error: null,
 };
@@ -144,6 +155,10 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const vapidPublicKey =
         typeof payload.vapidPublicKey === "string" ? payload.vapidPublicKey.trim() : "";
       const cronConfigured = Boolean(payload.cronConfigured);
+      const source =
+        payload.source === "env" || payload.source === "stored" || payload.source === "none"
+          ? payload.source
+          : "none";
 
       setRuntimeVapidPublicKey(vapidPublicKey);
       setDiagnostics({
@@ -151,6 +166,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         missing,
         invalid,
         cronConfigured,
+        source,
         isLoading: false,
         error: null,
       });
@@ -161,6 +177,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
         missing: [],
         invalid: [],
         cronConfigured: false,
+        source: "none",
         isLoading: false,
         error: error instanceof Error ? error.message : "Failed to load push diagnostics",
       });
@@ -262,6 +279,41 @@ export function usePushNotifications(): UsePushNotificationsResult {
     }
   }, [supported]);
 
+  const autoSetup = useCallback(async (): Promise<{ ok: boolean; message: string; cronSecret: string | null }> => {
+    setIsBusy(true);
+    try {
+      const payload = await postJson<PushAutoSetupResponse>("/api/push/setup", {});
+      await recheck();
+
+      if (!payload?.ok) {
+        return { ok: false, message: "Auto setup failed", cronSecret: null };
+      }
+
+      const notes: string[] = [];
+      if (payload.generatedPushConfig) {
+        notes.push("VAPID generated");
+      }
+      if (payload.generatedCronSecret) {
+        notes.push("Cron secret generated");
+      }
+
+      const message = notes.length > 0 ? notes.join(", ") : "Push config already available";
+      return {
+        ok: true,
+        message,
+        cronSecret: typeof payload.cronSecret === "string" ? payload.cronSecret : null,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : "Auto setup failed",
+        cronSecret: null,
+      };
+    } finally {
+      setIsBusy(false);
+    }
+  }, [recheck]);
+
   return useMemo(
     () => ({
       supported,
@@ -273,7 +325,8 @@ export function usePushNotifications(): UsePushNotificationsResult {
       unsubscribe,
       sendTest,
       recheck,
+      autoSetup,
     }),
-    [supported, permission, isSubscribed, isBusy, diagnostics, subscribe, unsubscribe, sendTest, recheck],
+    [supported, permission, isSubscribed, isBusy, diagnostics, subscribe, unsubscribe, sendTest, recheck, autoSetup],
   );
 }

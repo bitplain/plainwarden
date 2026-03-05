@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runReminderJob } from "@/lib/server/reminder-orchestrator";
+import { getRuntimeCronSecret } from "@/lib/server/push-runtime-config";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function assertCronSecret(request: NextRequest) {
-  const expected = process.env.NETDEN_CRON_SECRET?.trim();
+async function assertCronSecret(request: NextRequest) {
+  const expected = await getRuntimeCronSecret();
   if (!expected) {
     throw new HttpError(503, "NETDEN_CRON_SECRET is not configured");
   }
@@ -23,7 +24,7 @@ function assertCronSecret(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    assertCronSecret(request);
+    await assertCronSecret(request);
 
     const body = await readJsonBody(request, { maxSizeKB: 16 }).catch(() => null);
     const payload = isRecord(body) ? body : {};

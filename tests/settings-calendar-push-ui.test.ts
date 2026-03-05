@@ -13,6 +13,7 @@ vi.mock("@/hooks/usePushNotifications", () => ({
       missing: ["VAPID_SUBJECT", "NEXT_PUBLIC_VAPID_PUBLIC_KEY"],
       invalid: [],
       cronConfigured: false,
+      source: "none",
       isLoading: false,
       error: null,
     },
@@ -20,6 +21,7 @@ vi.mock("@/hooks/usePushNotifications", () => ({
     unsubscribe: async () => ({ ok: true, message: "ok" }),
     sendTest: async () => ({ ok: true, message: "ok" }),
     recheck: async () => undefined,
+    autoSetup: async () => ({ ok: true, message: "ok", cronSecret: null }),
   }),
 }));
 
@@ -34,6 +36,7 @@ describe("SettingsCalendarTab push section", () => {
     expect(html).toContain("Disable push");
     expect(html).toContain("Send test");
     expect(html).toContain("Recheck");
+    expect(html).toContain("Auto setup push");
     expect(html).toContain("VAPID_SUBJECT");
     expect(html).toContain("NEXT_PUBLIC_VAPID_PUBLIC_KEY");
   });

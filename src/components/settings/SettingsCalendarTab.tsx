@@ -16,6 +16,7 @@ export default function SettingsCalendarTab() {
   const [error, setError] = useState<string | null>(null);
   const [pushNotice, setPushNotice] = useState<string | null>(null);
   const [pushError, setPushError] = useState<string | null>(null);
+  const [cronSecret, setCronSecret] = useState<string | null>(null);
   const push = usePushNotifications();
 
   const handleExportAll = async () => {
@@ -75,6 +76,7 @@ export default function SettingsCalendarTab() {
     if (push.isBusy) return;
     setPushError(null);
     setPushNotice(null);
+    setCronSecret(null);
     const result = await push.subscribe();
     if (result.ok) {
       setPushNotice(result.message);
@@ -87,6 +89,7 @@ export default function SettingsCalendarTab() {
     if (push.isBusy) return;
     setPushError(null);
     setPushNotice(null);
+    setCronSecret(null);
     const result = await push.unsubscribe();
     if (result.ok) {
       setPushNotice(result.message);
@@ -99,6 +102,7 @@ export default function SettingsCalendarTab() {
     if (push.isBusy) return;
     setPushError(null);
     setPushNotice(null);
+    setCronSecret(null);
     const result = await push.sendTest("NetDen test notification");
     if (result.ok) {
       setPushNotice(result.message);
@@ -111,12 +115,27 @@ export default function SettingsCalendarTab() {
     if (push.isBusy) return;
     setPushError(null);
     setPushNotice(null);
+    setCronSecret(null);
     try {
       await push.recheck();
       setPushNotice("Push diagnostics updated");
     } catch (recheckError) {
       setPushError(recheckError instanceof Error ? recheckError.message : "Failed to refresh push diagnostics");
     }
+  };
+
+  const handleAutoSetup = async () => {
+    if (push.isBusy) return;
+    setPushError(null);
+    setPushNotice(null);
+    setCronSecret(null);
+    const result = await push.autoSetup();
+    if (result.ok) {
+      setPushNotice(result.message);
+      setCronSecret(result.cronSecret);
+      return;
+    }
+    setPushError(result.message);
   };
 
   return (
@@ -166,9 +185,21 @@ export default function SettingsCalendarTab() {
             <span className={styles["settings-tab-label"]}>Cron readiness</span>
             <span className={styles["settings-tab-value"]}>{push.diagnostics.cronConfigured ? "Ready" : "Missing secret"}</span>
           </div>
+          <div className={styles["settings-tab-row"]}>
+            <span className={styles["settings-tab-label"]}>Config source</span>
+            <span className={styles["settings-tab-value"]}>{push.diagnostics.source}</span>
+          </div>
         </div>
 
         <div className={styles["settings-choice-row"]}>
+          <button
+            type="button"
+            className={styles["settings-tab-btn"]}
+            onClick={() => void handleAutoSetup()}
+            disabled={push.isBusy}
+          >
+            {push.isBusy ? "Working..." : "Auto setup push"}
+          </button>
           <button
             type="button"
             className={styles["settings-tab-btn"]}
@@ -230,6 +261,11 @@ export default function SettingsCalendarTab() {
         ) : null}
         {pushError ? <p className={styles["settings-tab-note"]}>{pushError}</p> : null}
         {pushNotice ? <p className={styles["settings-tab-muted"]}>{pushNotice}</p> : null}
+        {cronSecret ? (
+          <p className={styles["settings-tab-note"]}>
+            New cron secret (save now): <code>{cronSecret}</code>
+          </p>
+        ) : null}
         <p className={styles["settings-tab-muted"]}>
           Для auto-reminders запускайте внешний cron: <code>POST /api/cron/reminders</code> с заголовком{" "}
           <code>x-netden-cron-secret</code> (например, каждые 5 минут).

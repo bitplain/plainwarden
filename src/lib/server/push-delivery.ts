@@ -4,7 +4,7 @@ import {
   markPushSubscriptionFailure,
   markPushSubscriptionSuccess,
 } from "@/lib/server/push-subscriptions-db";
-import { assertPushConfiguration } from "@/lib/server/push-config";
+import { getRuntimePushDeliveryConfig } from "@/lib/server/push-runtime-config";
 
 export interface PushMessagePayload {
   title: string;
@@ -20,14 +20,19 @@ interface PushSendResult {
 }
 
 let isConfigured = false;
+let configuredFingerprint = "";
 
-function ensureWebPushConfigured() {
-  if (isConfigured) return;
+async function ensureWebPushConfigured() {
+  const { subject, publicKey, privateKey } = await getRuntimePushDeliveryConfig();
+  const nextFingerprint = `${subject}:${publicKey}:${privateKey}`;
 
-  const { subject, publicKey, privateKey } = assertPushConfiguration();
+  if (isConfigured && configuredFingerprint === nextFingerprint) {
+    return;
+  }
 
   webpush.setVapidDetails(subject, publicKey, privateKey);
   isConfigured = true;
+  configuredFingerprint = nextFingerprint;
 }
 
 function isPermanentPushError(error: unknown): boolean {
@@ -41,7 +46,7 @@ export async function sendPushToUser(input: {
   userId: string;
   payload: PushMessagePayload;
 }): Promise<PushSendResult> {
-  ensureWebPushConfigured();
+  await ensureWebPushConfigured();
 
   const subscriptions = await listActivePushSubscriptionsByUser(input.userId);
   if (subscriptions.length === 0) {

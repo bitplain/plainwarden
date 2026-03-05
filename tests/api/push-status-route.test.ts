@@ -58,6 +58,7 @@ describe("GET /api/push/status", () => {
     ]);
     expect(payload.vapidPublicKey).toBe("");
     expect(payload.cronConfigured).toBe(false);
+    expect(payload.source).toBe("none");
   });
 
   it("returns configured=true and runtime public key when env is set", async () => {
@@ -76,5 +77,6 @@ describe("GET /api/push/status", () => {
     expect(payload.invalid).toEqual([]);
     expect(payload.vapidPublicKey).toBe("BAbcdEF_12345-test-public-key");
     expect(payload.cronConfigured).toBe(true);
+    expect(payload.source).toBe("env");
   });
 });

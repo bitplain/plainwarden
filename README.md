@@ -35,6 +35,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `GET|POST /api/events`
 - `PATCH|DELETE /api/events/:id`
 - `GET /api/push/status`
+- `POST /api/push/setup`
 - `POST /api/push/subscribe`
 - `POST /api/push/unsubscribe`
 - `POST /api/push/test`
@@ -93,15 +94,17 @@ OPENROUTER_KEY_ENCRYPTION_SECRET=
 
 ## Push reminders (production flow)
 
-1. Сгенерируйте VAPID ключи и заполните:
-   - `VAPID_SUBJECT` (`mailto:` или `https://`)
-   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
-   - `VAPID_PRIVATE_KEY`
-2. Откройте `Settings -> Календарь -> Push Notifications`, нажмите `Enable push`, затем `Send test`.
+1. Откройте `Settings -> Календарь -> Push Notifications` и нажмите `Auto setup push`.
+2. Нажмите `Enable push`, затем `Send test`.
 3. Настройте внешний cron (каждые 5 минут) на:
    - `POST /api/cron/reminders`
    - заголовок `x-netden-cron-secret: <NETDEN_CRON_SECRET>`
-4. Диагностика конфига доступна в:
+4. При необходимости можно использовать ручной env-конфиг:
+   - `VAPID_SUBJECT` (`mailto:` или `https://`)
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+   - `VAPID_PRIVATE_KEY`
+   - `NETDEN_CRON_SECRET`
+5. Диагностика конфига доступна в:
    - `GET /api/push/status`
    - `GET /api/health` (`checks.push`, `checks.cron`)
 

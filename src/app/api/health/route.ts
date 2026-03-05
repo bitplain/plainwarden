@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
-import { getPushConfigurationStatus } from "@/lib/server/push-config";
+import { getRuntimePushStatus } from "@/lib/server/push-runtime-config";
 import { getSessionSecretHealth } from "@/lib/server/session";
 
 export async function GET() {
-  const push = getPushConfigurationStatus();
+  const push = await getRuntimePushStatus();
   const session = getSessionSecretHealth();
-  const cronConfigured = Boolean(process.env.NETDEN_CRON_SECRET?.trim());
 
   return NextResponse.json({
     status: "ok",
@@ -14,9 +13,10 @@ export async function GET() {
         configured: push.configured,
         missing: push.missing,
         invalid: push.invalid,
+        source: push.source,
       },
       cron: {
-        configured: cronConfigured,
+        configured: push.cronConfigured,
       },
       session,
     },

@@ -106,6 +106,7 @@ Commit: `feat: add push notifications and proactive reminder engine`
   public key подтягивается runtime через `/api/push/status`.
 - Основной GUI-вход для push теперь в `Settings -> Calendar -> Push Notifications`:
   - `Enable push`, `Disable push`, `Send test`, `Recheck`.
+  - `Auto setup push` генерирует VAPID + runtime cron secret в серверном хранилище.
   - Явная диагностика missing/invalid env.
 - Для автодоставки reminders обязателен внешний cron:
   - `POST /api/cron/reminders`

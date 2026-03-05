@@ -1,25 +1,18 @@
 import { NextResponse } from "next/server";
-import { getPushConfigurationStatus } from "@/lib/server/push-config";
-
-export const dynamic = "force-dynamic";
-
-function readTrimmed(value: string | undefined): string {
-  return typeof value === "string" ? value.trim() : "";
-}
+import { getRuntimePushStatus } from "@/lib/server/push-runtime-config";
 
 export async function GET() {
-  const config = getPushConfigurationStatus();
-  const vapidPublicKey = readTrimmed(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY);
-  const cronConfigured = Boolean(readTrimmed(process.env.NETDEN_CRON_SECRET));
+  const status = await getRuntimePushStatus();
 
   return NextResponse.json(
     {
-      supported: config.configured,
-      configured: config.configured,
-      missing: config.missing,
-      invalid: config.invalid,
-      vapidPublicKey,
-      cronConfigured,
+      supported: status.configured,
+      configured: status.configured,
+      missing: status.missing,
+      invalid: status.invalid,
+      vapidPublicKey: status.vapidPublicKey,
+      cronConfigured: status.cronConfigured,
+      source: status.source,
     },
     {
       headers: {
