@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import settingsStyles from "@/styles/settings.module.css";
 import aipStyles from "@/components/AiChatWidget.module.css";
-
-const AI_THEME_KEY = "netden:ai-theme";
-
-type AiTheme = "cyber" | "ambient" | "terminal";
+import {
+  readAiTheme,
+  saveAiTheme,
+  subscribeAiTheme,
+  type AiTheme,
+} from "@/components/ai-theme";
 
 const THEMES: { id: AiTheme; label: string; description: string; colors: string[] }[] = [
   {
@@ -30,17 +32,13 @@ const THEMES: { id: AiTheme; label: string; description: string; colors: string[
 ];
 
 export default function SettingsAiThemeTab() {
-  const [theme, setTheme] = useState<AiTheme>(() => {
-    if (typeof window === "undefined") return "cyber";
-    const stored = window.localStorage.getItem(AI_THEME_KEY);
-    if (stored === "cyber" || stored === "ambient" || stored === "terminal") return stored;
-    return "cyber";
-  });
+  const [theme, setTheme] = useState<AiTheme>(() => readAiTheme());
+
+  useEffect(() => subscribeAiTheme(setTheme), []);
 
   const saveTheme = (next: AiTheme) => {
     setTheme(next);
-    window.localStorage.setItem(AI_THEME_KEY, next);
-    window.dispatchEvent(new CustomEvent("netden:ai-theme-changed", { detail: next }));
+    saveAiTheme(next);
   };
 
   return (

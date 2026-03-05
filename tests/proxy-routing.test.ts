@@ -73,4 +73,84 @@ describe("proxy page routing", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("location")).toBeNull();
   });
+
+  it("redirects revoked page session to /login and clears cookie", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+    const { verifySessionToken, isSessionActive } = await import("@/lib/server/session");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockResolvedValue(true);
+    vi.mocked(verifySessionToken).mockReturnValue({
+      userId: "u1",
+      email: "admin@example.com",
+      iat: 1,
+      exp: 9999999999,
+    });
+    vi.mocked(isSessionActive).mockResolvedValue(false);
+
+    const response = await proxy(
+      new NextRequest("http://localhost/calendar", {
+        headers: { cookie: "netden_session=token123" },
+      }),
+    );
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("http://localhost/login?from=%2Fcalendar");
+    expect(response.headers.get("set-cookie")).toContain("netden_session=;");
+  });
+
+  it("keeps /login open for revoked session and clears cookie", async () => {
+    const { isDatabaseConfigured } = await import("@/lib/server/setup");
+    const { hasUsers } = await import("@/lib/server/json-db");
+    const { verifySessionToken, isSessionActive } = await import("@/lib/server/session");
+
+    vi.mocked(isDatabaseConfigured).mockReturnValue(true);
+    vi.mocked(hasUsers).mockResolvedValue(true);
+    vi.mocked(verifySessionToken).mockReturnValue({
+      userId: "u1",
+      email: "admin@example.com",
+      iat: 1,
+      exp: 9999999999,
+    });
+    vi.mocked(isSessionActive).mockResolvedValue(false);
+
+    const response = await proxy(
+      new NextRequest("http://localhost/login", {
+        headers: { cookie: "netden_session=token123" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toContain("netden_session=;");
+  });
+});
+
+describe("proxy api routing", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns 401 session revoked and clears cookie for protected API", async () => {
+    const { verifySessionToken, isSessionActive } = await import("@/lib/server/session");
+
+    vi.mocked(verifySessionToken).mockReturnValue({
+      userId: "u1",
+      email: "admin@example.com",
+      iat: 1,
+      exp: 9999999999,
+    });
+    vi.mocked(isSessionActive).mockResolvedValue(false);
+
+    const response = await proxy(
+      new NextRequest("http://localhost/api/events", {
+        method: "GET",
+        headers: { cookie: "netden_session=token123" },
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ message: "Session revoked" });
+    expect(response.headers.get("set-cookie")).toContain("netden_session=;");
+  });
 });

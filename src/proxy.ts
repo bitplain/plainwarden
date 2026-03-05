@@ -5,6 +5,7 @@ import {
   SESSION_COOKIE_NAME,
   hashSessionToken,
   isSessionActive,
+  type SessionPayload,
   verifySessionToken,
 } from "@/lib/server/session";
 import { isDatabaseConfigured } from "@/lib/server/setup";
@@ -66,7 +67,9 @@ async function handleApiRoute(request: NextRequest): Promise<NextResponse> {
   const tokenHash = hashSessionToken(token!);
   const active = await isSessionActive(tokenHash);
   if (!active) {
-    return NextResponse.json({ message: "Session revoked" }, { status: 401 });
+    const response = NextResponse.json({ message: "Session revoked" }, { status: 401 });
+    response.cookies.delete(SESSION_COOKIE_NAME);
+    return response;
   }
 
   // Inject validated user info into request headers for downstream handlers.
@@ -94,21 +97,44 @@ function matchesRoute(pathname: string, route: string): boolean {
   return pathname === route || pathname.startsWith(`${route}/`);
 }
 
-async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
-  const pathname = request.nextUrl.pathname;
+async function readActiveSession(
+  request: NextRequest,
+): Promise<{ session: SessionPayload | null; revoked: boolean }> {
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = verifySessionToken(token);
+  if (!session || !token) {
+    return { session: null, revoked: false };
+  }
+
+  const active = await isSessionActive(hashSessionToken(token));
+  if (!active) {
+    return { session: null, revoked: true };
+  }
+
+  return { session, revoked: false };
+}
+
+async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
+  const pathname = request.nextUrl.pathname;
+  const { session, revoked } = await readActiveSession(request);
   const isRegisterRoute = matchesRoute(pathname, registerRoute);
   const isLoginRoute = matchesRoute(pathname, loginRoute);
   const isSetupRoute = matchesRoute(pathname, setupRoute);
   const isHomeRoute = pathname === homeRoute;
   const hasDatabase = isDatabaseConfigured();
 
+  const finalizeResponse = (response: NextResponse): NextResponse => {
+    if (revoked) {
+      response.cookies.delete(SESSION_COOKIE_NAME);
+    }
+    return response;
+  };
+
   if (!hasDatabase) {
     if (isHomeRoute || isSetupRoute) {
-      return NextResponse.next();
+      return finalizeResponse(NextResponse.next());
     }
-    return NextResponse.redirect(new URL(homeRoute, request.url));
+    return finalizeResponse(NextResponse.redirect(new URL(homeRoute, request.url)));
   }
 
   let initialized = false;
@@ -118,45 +144,45 @@ async function handlePageRoute(request: NextRequest): Promise<NextResponse> {
     console.error("Proxy failed to determine initialization state:", error);
 
     if (isSetupRoute) {
-      return NextResponse.next();
+      return finalizeResponse(NextResponse.next());
     }
 
-    return NextResponse.redirect(new URL(setupRoute, request.url));
+    return finalizeResponse(NextResponse.redirect(new URL(setupRoute, request.url)));
   }
 
   if (isSetupRoute) {
     if (!initialized) {
-      return NextResponse.redirect(new URL(registerRoute, request.url));
+      return finalizeResponse(NextResponse.redirect(new URL(registerRoute, request.url)));
     }
     // Allow unauthenticated access to setup for recovery (forgot password).
     // Redirect to home only if the user already has an active session (normal mode).
     if (session) {
-      return NextResponse.redirect(new URL(homeRoute, request.url));
+      return finalizeResponse(NextResponse.redirect(new URL(homeRoute, request.url)));
     }
-    return NextResponse.next();
+    return finalizeResponse(NextResponse.next());
   }
 
   if (!initialized) {
     if (!isRegisterRoute && !isHomeRoute) {
-      return NextResponse.redirect(new URL(registerRoute, request.url));
+      return finalizeResponse(NextResponse.redirect(new URL(registerRoute, request.url)));
     }
-    return NextResponse.next();
+    return finalizeResponse(NextResponse.next());
   }
 
   if (session && (isLoginRoute || isRegisterRoute)) {
-    return NextResponse.redirect(new URL("/", request.url));
+    return finalizeResponse(NextResponse.redirect(new URL("/", request.url)));
   }
 
   if (!session) {
     if (isHomeRoute || isLoginRoute) {
-      return NextResponse.next();
+      return finalizeResponse(NextResponse.next());
     }
     const loginUrl = new URL(loginRoute, request.url);
     loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    return finalizeResponse(NextResponse.redirect(loginUrl));
   }
 
-  return NextResponse.next();
+  return finalizeResponse(NextResponse.next());
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────

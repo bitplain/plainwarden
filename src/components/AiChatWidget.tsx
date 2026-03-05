@@ -6,17 +6,7 @@ import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
 import ChatMarkdown from "@/components/ChatMarkdown";
 import styles from "@/components/AiChatWidget.module.css";
-
-/* ── Theme support ── */
-const AI_THEME_KEY = "netden:ai-theme";
-type AiTheme = "cyber" | "ambient" | "terminal";
-
-function readAiTheme(): AiTheme {
-  if (typeof window === "undefined") return "cyber";
-  const stored = window.localStorage.getItem(AI_THEME_KEY);
-  if (stored === "cyber" || stored === "ambient" || stored === "terminal") return stored;
-  return "cyber";
-}
+import { readAiTheme, subscribeAiTheme, type AiTheme } from "@/components/ai-theme";
 
 /* ── Context chip definitions ── */
 const CONTEXT_CHIPS = [
@@ -116,16 +106,7 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
   }, [handleToggle, isOpen]);
 
   /* ── Listen for theme changes from settings ── */
-  useEffect(() => {
-    const onThemeChange = (e: Event) => {
-      const detail = (e as CustomEvent<string>).detail;
-      if (detail === "cyber" || detail === "ambient" || detail === "terminal") {
-        setTheme(detail);
-      }
-    };
-    window.addEventListener("netden:ai-theme-changed", onThemeChange);
-    return () => window.removeEventListener("netden:ai-theme-changed", onThemeChange);
-  }, []);
+  useEffect(() => subscribeAiTheme(setTheme), []);
 
   /* ── Staggered chips ── */
   useEffect(() => {
