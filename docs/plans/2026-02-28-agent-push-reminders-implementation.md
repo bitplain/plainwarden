@@ -95,3 +95,19 @@ Run: `npm run build`
 Commit: `feat: add push notifications and proactive reminder engine`
 
 **Step 3: Push и новый PR в `main` (follow-up к #52).**
+
+---
+
+## Operational Notes (2026-03-05)
+
+- Добавлен runtime-диагностический endpoint `GET /api/push/status` (без утечки секретов):
+  - `configured/supported`, `missing[]`, `invalid[]`, `vapidPublicKey`, `cronConfigured`.
+- Клиентский хук push больше не зависит от build-time `process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY`;
+  public key подтягивается runtime через `/api/push/status`.
+- Основной GUI-вход для push теперь в `Settings -> Calendar -> Push Notifications`:
+  - `Enable push`, `Disable push`, `Send test`, `Recheck`.
+  - Явная диагностика missing/invalid env.
+- Для автодоставки reminders обязателен внешний cron:
+  - `POST /api/cron/reminders`
+  - header `x-netden-cron-secret: <NETDEN_CRON_SECRET>`
+  - рекомендуемый интервал: каждые 5 минут.

@@ -2,14 +2,34 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+interface PushDiagnostics {
+  configured: boolean;
+  missing: string[];
+  invalid: string[];
+  cronConfigured: boolean;
+  isLoading: boolean;
+  error: string | null;
+}
+
 interface UsePushNotificationsResult {
   supported: boolean;
   permission: NotificationPermission | "unsupported";
   isSubscribed: boolean;
   isBusy: boolean;
+  diagnostics: PushDiagnostics;
   subscribe: () => Promise<{ ok: boolean; message: string }>;
   unsubscribe: () => Promise<{ ok: boolean; message: string }>;
   sendTest: (message: string) => Promise<{ ok: boolean; message: string }>;
+  recheck: () => Promise<void>;
+}
+
+interface PushStatusResponse {
+  supported?: boolean;
+  configured?: boolean;
+  missing?: string[];
+  invalid?: string[];
+  vapidPublicKey?: string;
+  cronConfigured?: boolean;
 }
 
 function base64ToUint8Array(base64String: string) {
@@ -44,49 +64,129 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
   return payload as T;
 }
 
+const EMPTY_DIAGNOSTICS: PushDiagnostics = {
+  configured: false,
+  missing: [],
+  invalid: [],
+  cronConfigured: false,
+  isLoading: true,
+  error: null,
+};
+
+function toDiagnosticsErrorMessage(diagnostics: Pick<PushDiagnostics, "missing" | "invalid">): string {
+  const parts: string[] = [];
+  if (diagnostics.missing.length > 0) {
+    parts.push(`missing: ${diagnostics.missing.join(", ")}`);
+  }
+  if (diagnostics.invalid.length > 0) {
+    parts.push(`invalid: ${diagnostics.invalid.join(", ")}`);
+  }
+  if (parts.length === 0) {
+    return "Push server is not configured";
+  }
+  return `Push server is not configured (${parts.join("; ")})`;
+}
+
 export function usePushNotifications(): UsePushNotificationsResult {
   const [supported, setSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | "unsupported">("unsupported");
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const [runtimeVapidPublicKey, setRuntimeVapidPublicKey] = useState("");
+  const [diagnostics, setDiagnostics] = useState<PushDiagnostics>(EMPTY_DIAGNOSTICS);
 
-  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim() || "";
-
-  useEffect(() => {
+  const refreshBrowserState = useCallback(async () => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
       setSupported(false);
       setPermission("unsupported");
+      setIsSubscribed(false);
       return;
     }
 
     setSupported(true);
     setPermission(Notification.permission);
 
-    const init = async () => {
-      try {
-        const registration = await navigator.serviceWorker.register("/sw.js", {
-          scope: "/",
-          updateViaCache: "none",
-        });
+    try {
+      const registration = await navigator.serviceWorker.register("/sw.js", {
+        scope: "/",
+        updateViaCache: "none",
+      });
 
-        const existing = await registration.pushManager.getSubscription();
-        setIsSubscribed(Boolean(existing));
-      } catch {
-        setSupported(false);
-        setPermission("unsupported");
-      }
-    };
-
-    void init();
+      const existing = await registration.pushManager.getSubscription();
+      setIsSubscribed(Boolean(existing));
+    } catch {
+      setSupported(false);
+      setPermission("unsupported");
+      setIsSubscribed(false);
+    }
   }, []);
 
-  const subscribe = useCallback(async () => {
+  const loadServerDiagnostics = useCallback(async () => {
+    setDiagnostics((prev) => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+    }));
+
+    try {
+      const response = await fetch("/api/push/status", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as PushStatusResponse | null;
+      if (!response.ok || !payload) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const configured = payload.configured ?? payload.supported ?? false;
+      const missing = Array.isArray(payload.missing) ? payload.missing : [];
+      const invalid = Array.isArray(payload.invalid) ? payload.invalid : [];
+      const vapidPublicKey =
+        typeof payload.vapidPublicKey === "string" ? payload.vapidPublicKey.trim() : "";
+      const cronConfigured = Boolean(payload.cronConfigured);
+
+      setRuntimeVapidPublicKey(vapidPublicKey);
+      setDiagnostics({
+        configured,
+        missing,
+        invalid,
+        cronConfigured,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error) {
+      setRuntimeVapidPublicKey("");
+      setDiagnostics({
+        configured: false,
+        missing: [],
+        invalid: [],
+        cronConfigured: false,
+        isLoading: false,
+        error: error instanceof Error ? error.message : "Failed to load push diagnostics",
+      });
+    }
+  }, []);
+
+  const recheck = useCallback(async () => {
+    await Promise.all([loadServerDiagnostics(), refreshBrowserState()]);
+  }, [loadServerDiagnostics, refreshBrowserState]);
+
+  useEffect(() => {
+    void recheck();
+  }, [recheck]);
+
+  const subscribe = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
     if (!supported) {
       return { ok: false, message: "Push not supported" };
     }
 
-    if (!vapidPublicKey) {
-      return { ok: false, message: "VAPID public key is missing" };
+    if (!diagnostics.configured || !runtimeVapidPublicKey) {
+      return { ok: false, message: toDiagnosticsErrorMessage(diagnostics) };
+    }
+
+    if (Notification.permission === "denied") {
+      setPermission("denied");
+      return { ok: false, message: "Permission denied in browser settings" };
     }
 
     setIsBusy(true);
@@ -100,7 +200,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: base64ToUint8Array(vapidPublicKey),
+        applicationServerKey: base64ToUint8Array(runtimeVapidPublicKey),
       });
 
       await postJson<{ ok: boolean; id: string }>("/api/push/subscribe", {
@@ -114,9 +214,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
     } finally {
       setIsBusy(false);
     }
-  }, [supported, vapidPublicKey]);
+  }, [supported, diagnostics, runtimeVapidPublicKey]);
 
-  const unsubscribe = useCallback(async () => {
+  const unsubscribe = useCallback(async (): Promise<{ ok: boolean; message: string }> => {
     if (!supported) {
       return { ok: false, message: "Push not supported" };
     }
@@ -142,7 +242,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
     }
   }, [supported]);
 
-  const sendTest = useCallback(async (message: string) => {
+  const sendTest = useCallback(async (message: string): Promise<{ ok: boolean; message: string }> => {
     if (!supported) {
       return { ok: false, message: "Push not supported" };
     }
@@ -168,10 +268,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
       permission,
       isSubscribed,
       isBusy,
+      diagnostics,
       subscribe,
       unsubscribe,
       sendTest,
+      recheck,
     }),
-    [supported, permission, isSubscribed, isBusy, subscribe, unsubscribe, sendTest],
+    [supported, permission, isSubscribed, isBusy, diagnostics, subscribe, unsubscribe, sendTest, recheck],
   );
 }

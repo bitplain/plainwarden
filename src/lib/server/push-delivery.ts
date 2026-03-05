@@ -52,8 +52,8 @@ export async function sendPushToUser(input: {
     title: input.payload.title,
     body: input.payload.body,
     navigateTo: input.payload.navigateTo,
-    icon: "/icon.png",
-    badge: "/badge.png",
+    icon: "/globe.svg",
+    badge: "/globe.svg",
     tag: input.payload.tag,
   });
 

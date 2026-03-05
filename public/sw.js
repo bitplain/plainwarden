@@ -6,8 +6,8 @@ self.addEventListener("push", (event) => {
   let data = {
     title: "NetDen",
     body: "New reminder",
-    icon: "/icon.png",
-    badge: "/badge.png",
+    icon: "/globe.svg",
+    badge: "/globe.svg",
     navigateTo: "/",
     tag: "netden-reminder",
   };
@@ -21,8 +21,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title, {
       body: data.body,
-      icon: data.icon,
-      badge: data.badge,
+      icon: data.icon || "/globe.svg",
+      badge: data.badge || "/globe.svg",
       tag: data.tag,
       data: {
         navigateTo: data.navigateTo,
