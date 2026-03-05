@@ -19,7 +19,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - После настройки БД и секрета — обязательная авторизация
 - Гостевая консоль после сброса сессии: доступна только команда `/login`
 - После входа доступна команда `/exit` для выхода обратно в гостевую консоль
-- Раздел `Настройки` (`/settings`) с регулировкой размера CLI-композера
+- Раздел `Настройки` (`/settings`) с production-настройками интерфейса (`Density`, `Motion`, `Sidebar behavior`) и отдельной вкладкой `Календарь` для `Export .ics`
 - Календарь (полный модуль с CRUD) перенесён в проект
 - Shell backend ограничен read-only allowlist + лимиты timeout/output
 - Модульный реестр: terminal/setup/auth/calendar
@@ -29,7 +29,7 @@ Built with Next.js (App Router), TypeScript, Zustand, Prisma, and PostgreSQL.
 - `/` — редирект на `/calendar`
 - `/setup` — мастер первичной инициализации
 - `/login` — вход
-- `/settings` — настройки интерфейса CLI (приватно)
+- `/settings` — настройки интерфейса и календаря (приватно)
 - `/calendar` — календарь (вкладки: календарь, канбан, заметки, AI)
 - `POST /api/terminal/run` — запуск allowlisted shell-команд
 - `GET|POST /api/events`
