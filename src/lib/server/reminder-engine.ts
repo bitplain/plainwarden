@@ -127,11 +127,26 @@ export function applyPushRateLimit(input: {
   hourlyLimit: number;
   reminders: PushRateItem[];
 }): { allowed: PushRateItem[]; dropped: PushRateItem[] } {
-  const budget = Math.max(0, input.hourlyLimit - input.alreadySentInLastHour);
   const sorted = [...input.reminders].sort((a, b) => b.severity - a.severity);
+  const budget = Math.max(0, input.hourlyLimit - input.alreadySentInLastHour);
+
+  if (budget > 0) {
+    return {
+      allowed: sorted.slice(0, budget),
+      dropped: sorted.slice(budget),
+    };
+  }
+
+  const emergency = sorted.find((item) => item.severity >= 4);
+  if (!emergency) {
+    return {
+      allowed: [],
+      dropped: sorted,
+    };
+  }
 
   return {
-    allowed: sorted.slice(0, budget),
-    dropped: sorted.slice(budget),
+    allowed: [emergency],
+    dropped: sorted.filter((item) => item.id !== emergency.id),
   };
 }
