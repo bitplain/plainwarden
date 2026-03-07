@@ -86,8 +86,28 @@ jobs:
           fi
 
           export APP_IMAGE=kaiots/web_cal:latest
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app
-          docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --no-build
+
+          compose() {
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml "$@"
+          }
+
+          echo "=== preflight df -h ==="
+          df -h
+
+          echo "=== preflight docker system df ==="
+          docker system df || true
+
+          echo "=== preflight docker builder prune -af ==="
+          docker builder prune -af || true
+
+          echo '=== preflight docker image prune -af --filter "until=168h" ==='
+          docker image prune -af --filter "until=168h" || true
+
+          echo "=== post-clean docker system df ==="
+          docker system df || true
+
+          compose pull app
+          compose up -d --remove-orphans --wait --no-build
           curl -fsS http://localhost:${PROXY_PORT:-8080}/api/health >/dev/null
           EOF
 
@@ -120,11 +140,12 @@ jobs:
           echo "=== docker compose logs (app, postgres, proxy) ==="
           compose logs --tail=200 app postgres proxy || true
 
-          APP_CONTAINER_ID="$(compose ps -q app || true)"
-          if [ -n "${APP_CONTAINER_ID}" ]; then
-            echo "=== docker inspect app container ==="
-            docker inspect "${APP_CONTAINER_ID}" || true
-          else
-            echo "App container id not found"
-          fi
+          echo "=== df -h ==="
+          df -h || true
+
+          echo "=== docker system df -v ==="
+          docker system df -v || true
+
+          echo "=== docker image ls ==="
+          docker image ls --format 'table {{.Repository}}\t{{.Tag}}\t{{.ID}}\t{{.Size}}\t{{.CreatedSince}}' || true
           EOF
