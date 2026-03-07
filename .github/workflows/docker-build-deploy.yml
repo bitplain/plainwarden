@@ -90,3 +90,41 @@ jobs:
           docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans --wait --no-build
           curl -fsS http://localhost:${PROXY_PORT:-8080}/api/health >/dev/null
           EOF
+
+      - name: Collect deploy diagnostics
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          set -euo pipefail
+          ssh -T -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SSH_USER}@${SSH_HOST}" << 'EOF'
+          set -u
+          REPO_DIR="/opt/web_cal/plainwarden"
+
+          if [ ! -d "${REPO_DIR}" ]; then
+            echo "Repository directory not found: ${REPO_DIR}"
+            exit 0
+          fi
+
+          cd "${REPO_DIR}"
+
+          compose() {
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml "$@"
+          }
+
+          echo "=== docker compose ps ==="
+          compose ps || true
+
+          echo "=== docker compose logs (app, postgres, proxy) ==="
+          compose logs --tail=200 app postgres proxy || true
+
+          APP_CONTAINER_ID="$(compose ps -q app || true)"
+          if [ -n "${APP_CONTAINER_ID}" ]; then
+            echo "=== docker inspect app container ==="
+            docker inspect "${APP_CONTAINER_ID}" || true
+          else
+            echo "App container id not found"
+          fi
+          EOF
