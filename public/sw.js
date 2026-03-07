@@ -22,7 +22,7 @@ async function reportReceipt(verifyToken, phase) {
   }
 
   try {
-    await fetch("/api/push/receipt", {
+    const response = await fetch("/api/push/receipt", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -34,8 +34,17 @@ async function reportReceipt(verifyToken, phase) {
         phase,
       }),
     });
-  } catch {
-    // Ignore reporting errors to avoid blocking notification display.
+    if (!response.ok) {
+      console.warn("[push] receipt report failed", {
+        phase,
+        status: response.status,
+      });
+    }
+  } catch (error) {
+    console.warn("[push] receipt report failed", {
+      phase,
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
 }
 
@@ -57,7 +66,7 @@ async function fetchRuntimeVapidPublicKey() {
 }
 
 async function syncSubscriptionToServer(subscriptionJson) {
-  await fetch("/api/push/subscribe", {
+  const response = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -67,20 +76,38 @@ async function syncSubscriptionToServer(subscriptionJson) {
       subscription: subscriptionJson,
     }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Push subscription sync failed with HTTP ${response.status}`);
+  }
 }
 
 async function disableOldSubscription(endpoint) {
   if (!endpoint) return;
-  await fetch("/api/push/unsubscribe", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify({
+  try {
+    const response = await fetch("/api/push/unsubscribe", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        endpoint,
+      }),
+    });
+
+    if (!response.ok && response.status !== 404) {
+      console.warn("[push] old subscription disable failed", {
+        endpoint,
+        status: response.status,
+      });
+    }
+  } catch (error) {
+    console.warn("[push] old subscription disable failed", {
       endpoint,
-    }),
-  });
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 async function notifyVisibleClients(data) {
