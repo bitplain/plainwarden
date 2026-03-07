@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 const mocks = vi.hoisted(() => ({
   getUserIdFromRequest: vi.fn(),
+  getRateLimitResponse: vi.fn(),
   sendPushToUser: vi.fn(),
   updatePushReceiptForUser: vi.fn(),
 }));
 
 vi.mock("@/lib/server/auth", () => ({
   getUserIdFromRequest: mocks.getUserIdFromRequest,
+}));
+
+vi.mock("@/lib/server/rate-limit", () => ({
+  getRateLimitResponse: mocks.getRateLimitResponse,
 }));
 
 vi.mock("@/lib/server/push-delivery", () => ({
@@ -25,6 +30,26 @@ describe("POST /api/push/test", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.getUserIdFromRequest.mockReturnValue("u1");
+    mocks.getRateLimitResponse.mockResolvedValue(null);
+  });
+
+  it("returns 429 when push test rate limit is exceeded", async () => {
+    mocks.getRateLimitResponse.mockResolvedValue(
+      NextResponse.json({ message: "Too many requests. Try again later." }, { status: 429 }),
+    );
+
+    const request = new NextRequest("http://localhost/api/push/test", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ title: "T", message: "M" }),
+    });
+
+    const response = await POST_PUSH_TEST(request);
+    const payload = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(payload.message).toBe("Too many requests. Try again later.");
+    expect(mocks.sendPushToUser).not.toHaveBeenCalled();
   });
 
   it("returns no-active-subscriptions status when user has no subscriptions", async () => {

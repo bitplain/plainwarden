@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { createRandomId } from "@/lib/random-id";
+import {
+  ensurePushSubscriptionRegistered,
+  postPushSubscription,
+} from "@/lib/push-subscription-registration";
 
 interface PushDiagnostics {
   configured: boolean;
@@ -348,13 +352,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
       }
 
       const registration = await ensureServiceWorkerRegistration();
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
+      await ensurePushSubscriptionRegistered({
+        pushManager: registration.pushManager,
         applicationServerKey: base64ToUint8Array(runtimeVapidPublicKey),
-      });
-
-      await postJson<{ ok: boolean; id: string }>("/api/push/subscribe", {
-        subscription: subscription.toJSON(),
+        syncSubscription: async (subscription) => {
+          await postPushSubscription(fetch, subscription);
+        },
       });
 
       setIsSubscribed(true);

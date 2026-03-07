@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getUserIdFromRequest } from "@/lib/server/auth";
 import { sendPushToUser } from "@/lib/server/push-delivery";
 import { updatePushReceiptForUser } from "@/lib/server/push-receipts-db";
+import { getRateLimitResponse } from "@/lib/server/rate-limit";
 import { HttpError, handleRouteError, readJsonBody } from "@/lib/server/validators";
+
+const PUSH_TEST_RATE_LIMIT = {
+  maxRequests: 5,
+  windowMs: 60_000,
+} as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -37,6 +43,15 @@ export async function POST(request: NextRequest) {
     const userId = getUserIdFromRequest(request);
     if (!userId) {
       throw new HttpError(401, "Unauthorized");
+    }
+
+    const rateLimitResponse = await getRateLimitResponse(
+      request,
+      "push-test",
+      PUSH_TEST_RATE_LIMIT,
+    );
+    if (rateLimitResponse) {
+      return rateLimitResponse;
     }
 
     const body = await readJsonBody(request, { maxSizeKB: 8 });
