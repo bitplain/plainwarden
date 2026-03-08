@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
+import { CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME } from "./mobile-layout";
 import type { Note } from "./calendar2-types";
 
 interface NotesPanelProps {
@@ -140,7 +141,7 @@ export default function NotesPanel({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+    <div className={CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME}>
       <div className="flex items-center justify-between border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
         <div>
           <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Заметки</p>

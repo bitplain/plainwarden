@@ -9,6 +9,7 @@ import {
   type KanbanColumn,
   type TaskPriority,
 } from "./calendar2-types";
+import { CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME } from "./mobile-layout";
 
 interface KanbanBoardProps {
   cards: KanbanCard[];
@@ -116,7 +117,7 @@ export default function KanbanBoard({
   };
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+    <div className={CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME}>
       <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
         <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">Канбан-доска</p>
         <p className="text-[11px] text-[var(--cal2-text-secondary)]">Перетащите карточки между колонками</p>

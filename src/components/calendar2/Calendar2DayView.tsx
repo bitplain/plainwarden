@@ -9,6 +9,7 @@ import {
   DAY_VIEW_START_HOUR,
   getDaySlots,
 } from "@/components/calendar2/date-utils";
+import { CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME } from "./mobile-layout";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
 const EMPTY_SLOT_EVENTS: CalendarEvent[] = [];
@@ -243,7 +244,7 @@ export default function Calendar2DayView({
   const dayDateKey = format(dayDate, "yyyy-MM-dd");
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+    <div className={CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME}>
       <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
         <p className="text-[13px] font-semibold leading-[1.2] text-[var(--cal2-text-primary)]">
           {format(dayDate, "EEEE, d MMMM", { locale: ru })}
