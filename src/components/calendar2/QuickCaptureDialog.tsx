@@ -47,7 +47,12 @@ export default function QuickCaptureDialog({
         onClick={(event) => event.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="text-[13px] font-semibold text-[var(--cal2-text-primary)]">Quick Capture</h3>
+          <div>
+            <h3 className="text-[13px] font-semibold text-[var(--cal2-text-primary)]">Quick Capture</h3>
+            <p className="mt-1 text-[11px] text-[var(--cal2-text-secondary)]">
+              Глобальный захват для моментов вне вкладки Inbox.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onClose}
@@ -76,6 +81,8 @@ export default function QuickCaptureDialog({
           <input
             ref={inputRef}
             type="text"
+            autoFocus
+            autoComplete="off"
             value={value}
             maxLength={2000}
             onChange={(event) => setValue(event.target.value)}

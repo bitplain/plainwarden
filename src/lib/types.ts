@@ -5,6 +5,7 @@ export type RecurrenceScope = "this" | "all" | "this_and_following";
 export type InboxItemStatus = "new" | "processed" | "archived";
 export type InboxTypeHint = "idea" | "task" | "note" | "link";
 export type InboxConvertedEntityType = "task" | "event" | "note";
+export type InboxAiRecommendedTarget = InboxConvertedEntityType | "keep";
 export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 export type TaskProgressMode = "subtasks" | "manual";
 export type SubtaskStatus = "todo" | "doing" | "done";
@@ -98,6 +99,16 @@ export interface ConvertInboxItemInput {
   dueDate?: string;
   date?: string;
   isPriority?: boolean;
+}
+
+export interface InboxAiAnalysis {
+  itemId: string;
+  summary: string;
+  recommendedTarget: InboxAiRecommendedTarget;
+  rationale: string[];
+  suggestedDate?: string;
+  suggestedDueDate?: string;
+  suggestedPriority?: boolean;
 }
 
 export interface Task {

@@ -39,6 +39,7 @@ import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
+import { resolveInboxCaptureShortcut } from "./inbox-ui";
 import { useInboxTasks } from "./useInboxTasks";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
@@ -152,6 +153,7 @@ export default function Calendar2() {
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
   const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
   const dropFlashTimeoutRef = useRef<number | null>(null);
+  const inboxCaptureInputRef = useRef<HTMLInputElement | null>(null);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -240,22 +242,35 @@ export default function Calendar2() {
     const onKeyDown = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName?.toLowerCase();
-      const isTypingTarget =
-        tag === "input" || tag === "textarea" || target?.isContentEditable;
+      const isTypingTarget = Boolean(
+        tag === "input" || tag === "textarea" || target?.isContentEditable,
+      );
 
-      if (isTypingTarget) {
+      const shortcutAction = resolveInboxCaptureShortcut({
+        activeTab,
+        key: event.key,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        shiftKey: event.shiftKey,
+        isTypingTarget,
+      });
+
+      if (shortcutAction === "none") {
         return;
       }
 
-      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "i") {
-        event.preventDefault();
+      event.preventDefault();
+      if (shortcutAction === "focus-inline") {
+        inboxCaptureInputRef.current?.focus();
+        inboxCaptureInputRef.current?.select();
+      } else {
         setShowQuickCapture(true);
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     const clearDragOverTargets = () => {
@@ -622,10 +637,17 @@ export default function Calendar2() {
               onCreateQuickItem={async (content) => {
                 await inboxTasks.createInboxItem(content, "task");
               }}
-              onConvert={async (id, target) => {
+              onConvert={async (id, target, options) => {
                 await inboxTasks.convertInboxItem(id, target, {
-                  dueDate: target === "task" ? toDateKey(anchorDate) : undefined,
-                  date: target === "event" ? toDateKey(anchorDate) : undefined,
+                  dueDate:
+                    target === "task"
+                      ? options?.dueDate ?? toDateKey(anchorDate)
+                      : undefined,
+                  date:
+                    target === "event"
+                      ? options?.date ?? toDateKey(anchorDate)
+                      : undefined,
+                  isPriority: target === "task" ? options?.isPriority : undefined,
                 });
               }}
               onArchive={inboxTasks.archiveInboxItem}
@@ -641,6 +663,11 @@ export default function Calendar2() {
               dailyStats={inboxTasks.dailyStats}
               weeklyStats={inboxTasks.weeklyStats}
               priorityTasksTodayCount={inboxTasks.priorityTasksToday.length}
+              captureInputRef={inboxCaptureInputRef}
+              analysisByItemId={inboxTasks.analysisByItemId}
+              analysisErrorByItemId={inboxTasks.analysisErrorByItemId}
+              analysisLoadingItemId={inboxTasks.analysisLoadingItemId}
+              onAnalyzeItem={inboxTasks.analyzeInboxItem}
             />
           </div>
         );
