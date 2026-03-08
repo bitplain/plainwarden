@@ -28,6 +28,7 @@ import {
   getInboxItemActionState,
   type PendingInboxAction,
 } from "./inbox-ui";
+import { INBOX_LIST_SCROLL_CLASSNAME } from "./mobile-layout";
 
 interface InboxPanelProps {
   loading: boolean;
@@ -839,7 +840,7 @@ export default function InboxPanel({
             ))}
           </div>
 
-          <div className="max-h-[calc(100dvh-24rem)] space-y-2 overflow-y-auto pr-1">
+          <div className={INBOX_LIST_SCROLL_CLASSNAME}>
             {items.length === 0 ? (
               <EmptyInboxState title={listMeta.emptyTitle} description={listMeta.emptyDescription} />
             ) : (
