@@ -39,6 +39,7 @@ import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
+import { CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME } from "./mobile-layout";
 import { resolveInboxCaptureShortcut } from "./inbox-ui";
 import { useInboxTasks } from "./useInboxTasks";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
@@ -800,7 +801,7 @@ export default function Calendar2() {
         isSidebarVisible={isSidebarVisible}
       />
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className={CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME}>
         <div
           className={`grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 ${
             isSidebarVisible ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1"

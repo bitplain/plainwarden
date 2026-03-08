@@ -79,6 +79,8 @@ describe("InboxPanel redesign", () => {
     expect(html).toContain("Quick Capture");
     expect(html).toContain("Нажмите /, чтобы вернуть фокус");
     expect(html).toContain("aria-label=\"Quick Capture\"");
+    expect(html).toContain("xl:max-h-[calc(100dvh-24rem)]");
+    expect(html).toContain("xl:overflow-y-auto");
     expect(html).toContain("В задачу");
     expect(html).toContain("В календарь");
     expect(html).not.toContain(">Task<");
