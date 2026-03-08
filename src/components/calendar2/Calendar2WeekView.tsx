@@ -5,6 +5,7 @@ import { format, isSameDay } from "date-fns";
 import { ru } from "date-fns/locale";
 import type { CalendarEvent } from "@/lib/types";
 import { toDateKey } from "@/components/calendar2/date-utils";
+import { CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME } from "./mobile-layout";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
 interface Calendar2WeekViewProps {
@@ -206,7 +207,7 @@ export default function Calendar2WeekView({
   const today = new Date();
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
+    <div className={CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME}>
       <div className="overflow-x-auto">
         <div className="grid min-w-[840px] grid-cols-7">
           {weekDates.map((day) => {
