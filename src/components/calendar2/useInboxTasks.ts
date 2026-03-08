@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import type {
   ConvertInboxItemInput,
   CreateTaskInput,
+  InboxAiAnalysis,
   InboxConvertedEntityType,
   InboxTypeHint,
   SubtaskStatus,
@@ -36,6 +37,18 @@ function sortTasks(tasks: Task[]): Task[] {
   });
 }
 
+function filterRecordByIds<T>(input: Record<string, T>, ids: Set<string>): Record<string, T> {
+  return Object.fromEntries(
+    Object.entries(input).filter(([key]) => ids.has(key)),
+  ) as Record<string, T>;
+}
+
+function omitKey<T>(input: Record<string, T>, key: string): Record<string, T> {
+  const next = { ...input };
+  delete next[key];
+  return next;
+}
+
 export function useInboxTasks(anchorDateKey: string) {
   const [state, setState] = useState<InboxTasksState>({
     loading: true,
@@ -49,6 +62,9 @@ export function useInboxTasks(anchorDateKey: string) {
     subtasksByTaskId: {},
     dailyStats: null,
     weeklyStats: null,
+    analysisByItemId: {},
+    analysisErrorByItemId: {},
+    analysisLoadingItemId: null,
   });
 
   const refreshCore = useCallback(async () => {
@@ -61,16 +77,26 @@ export function useInboxTasks(anchorDateKey: string) {
         api.listInbox("archived"),
         api.listTasks(),
       ]);
+      const itemIds = new Set(
+        [...newItems, ...processedItems, ...archivedItems].map((item) => item.id),
+      );
 
       setState((prev) => ({
         ...prev,
         loading: false,
+        error: null,
         inbox: {
           newItems,
           processedItems,
           archivedItems,
         },
         tasks: sortTasks(tasks),
+        analysisByItemId: filterRecordByIds(prev.analysisByItemId, itemIds),
+        analysisErrorByItemId: filterRecordByIds(prev.analysisErrorByItemId, itemIds),
+        analysisLoadingItemId:
+          prev.analysisLoadingItemId && itemIds.has(prev.analysisLoadingItemId)
+            ? prev.analysisLoadingItemId
+            : null,
       }));
     } catch (error) {
       setState((prev) => ({
@@ -140,6 +166,12 @@ export function useInboxTasks(anchorDateKey: string) {
         target,
         ...options,
       });
+      setState((prev) => ({
+        ...prev,
+        analysisByItemId: omitKey(prev.analysisByItemId, id),
+        analysisErrorByItemId: omitKey(prev.analysisErrorByItemId, id),
+        analysisLoadingItemId: prev.analysisLoadingItemId === id ? null : prev.analysisLoadingItemId,
+      }));
 
       await refreshAll();
     },
@@ -149,9 +181,51 @@ export function useInboxTasks(anchorDateKey: string) {
   const archiveInboxItem = useCallback(
     async (id: string) => {
       await api.archiveInboxItem(id);
+      setState((prev) => ({
+        ...prev,
+        analysisByItemId: omitKey(prev.analysisByItemId, id),
+        analysisErrorByItemId: omitKey(prev.analysisErrorByItemId, id),
+        analysisLoadingItemId: prev.analysisLoadingItemId === id ? null : prev.analysisLoadingItemId,
+      }));
       await refreshAll();
     },
     [refreshAll],
+  );
+
+  const analyzeInboxItem = useCallback(
+    async (id: string): Promise<InboxAiAnalysis | undefined> => {
+      setState((prev) => ({
+        ...prev,
+        analysisLoadingItemId: id,
+        analysisErrorByItemId: omitKey(prev.analysisErrorByItemId, id),
+      }));
+
+      try {
+        const analysis = await api.analyzeInboxItem(id);
+        setState((prev) => ({
+          ...prev,
+          analysisByItemId: {
+            ...prev.analysisByItemId,
+            [id]: analysis,
+          },
+          analysisErrorByItemId: omitKey(prev.analysisErrorByItemId, id),
+          analysisLoadingItemId: prev.analysisLoadingItemId === id ? null : prev.analysisLoadingItemId,
+        }));
+        return analysis;
+      } catch (error) {
+        const message = getErrorMessage(error);
+        setState((prev) => ({
+          ...prev,
+          analysisErrorByItemId: {
+            ...prev.analysisErrorByItemId,
+            [id]: message,
+          },
+          analysisLoadingItemId: prev.analysisLoadingItemId === id ? null : prev.analysisLoadingItemId,
+        }));
+        return undefined;
+      }
+    },
+    [],
   );
 
   const createTask = useCallback(
@@ -238,5 +312,6 @@ export function useInboxTasks(anchorDateKey: string) {
     addSubtask,
     setSubtaskStatus,
     panicReset,
+    analyzeInboxItem,
   };
 }

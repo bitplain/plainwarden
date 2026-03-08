@@ -1,4 +1,5 @@
 import type {
+  InboxAiAnalysis,
   InboxItem,
   StatsDaily,
   StatsWeekly,
@@ -20,4 +21,7 @@ export interface InboxTasksState {
   subtasksByTaskId: Record<string, Subtask[]>;
   dailyStats: StatsDaily | null;
   weeklyStats: StatsWeekly | null;
+  analysisByItemId: Record<string, InboxAiAnalysis>;
+  analysisErrorByItemId: Record<string, string>;
+  analysisLoadingItemId: string | null;
 }

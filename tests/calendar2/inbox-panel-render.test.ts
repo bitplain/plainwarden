@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import InboxPanel from "@/components/calendar2/InboxPanel";
-import type { InboxItem, Task } from "@/lib/types";
+import type { InboxAiAnalysis, InboxItem, Task } from "@/lib/types";
 
 const NEW_ITEM: InboxItem = {
   id: "inbox-1",
@@ -33,7 +33,12 @@ const TASKS: Task[] = [
   },
 ];
 
-function renderPanel(input: { items?: InboxItem[] } = {}) {
+function renderPanel(input: {
+  items?: InboxItem[];
+  analysis?: InboxAiAnalysis;
+  analysisError?: string;
+  analysisLoadingItemId?: string | null;
+} = {}) {
   return renderToStaticMarkup(
     React.createElement(InboxPanel, {
       loading: false,
@@ -59,6 +64,10 @@ function renderPanel(input: { items?: InboxItem[] } = {}) {
       dailyStats: null,
       weeklyStats: null,
       priorityTasksTodayCount: 1,
+      analysisByItemId: input.analysis ? { [input.analysis.itemId]: input.analysis } : {},
+      analysisErrorByItemId: input.analysisError ? { "inbox-1": input.analysisError } : {},
+      analysisLoadingItemId: input.analysisLoadingItemId ?? null,
+      onAnalyzeItem: () => undefined,
     }),
   );
 }
@@ -76,6 +85,37 @@ describe("InboxPanel redesign", () => {
     expect(html).not.toContain(">Event<");
     expect(html).not.toContain(">Note<");
     expect(html).not.toContain(">Archive<");
+  });
+
+  it("renders idle ai action in the context rail for a new item", () => {
+    const html = renderPanel();
+
+    expect(html).toContain("AI-разбор");
+    expect(html).toContain("AI-разобрать");
+    expect(html).toContain("AI поможет предложить следующий шаг");
+  });
+
+  it("renders ai loading, success and error states for the selected item", () => {
+    const loadingHtml = renderPanel({ analysisLoadingItemId: "inbox-1" });
+    const successHtml = renderPanel({
+      analysis: {
+        itemId: "inbox-1",
+        summary: "Похоже на событие с датой.",
+        recommendedTarget: "event",
+        rationale: ["Есть временная привязка."],
+        suggestedDate: "2026-03-10",
+      },
+    });
+    const errorHtml = renderPanel({
+      analysisError: "Настройте OpenRouter в Settings > API",
+    });
+
+    expect(loadingHtml).toContain("AI анализирует");
+    expect(successHtml).toContain("Похоже на событие с датой.");
+    expect(successHtml).toContain("Рекомендовано");
+    expect(successHtml).toContain("2026-03-10");
+    expect(errorHtml).toContain("Настройте OpenRouter в Settings &gt; API");
+    expect(errorHtml).not.toContain("AI-разобрать");
   });
 
   it("renders a guided empty state instead of a bare empty label", () => {

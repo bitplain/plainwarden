@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { InboxItem } from "@/lib/types";
 import {
+  buildInboxAiPrefillForTarget,
   getInboxItemActionState,
   resolveInboxCaptureShortcut,
 } from "@/components/calendar2/inbox-ui";
@@ -104,5 +105,50 @@ describe("inbox item action availability", () => {
       isTerminalState: false,
       statusLabel: "Новый",
     });
+  });
+});
+
+describe("inbox ai prefill", () => {
+  it("uses suggested task fields only for the recommended task target", () => {
+    expect(
+      buildInboxAiPrefillForTarget("task", {
+        itemId: "inbox-1",
+        summary: "Это задача на конкретный день.",
+        recommendedTarget: "task",
+        rationale: ["Есть действие."],
+        suggestedDueDate: "2026-03-10",
+        suggestedPriority: true,
+      }),
+    ).toEqual({
+      dueDate: "2026-03-10",
+      isPriority: true,
+    });
+  });
+
+  it("uses suggested date only for the recommended event target", () => {
+    expect(
+      buildInboxAiPrefillForTarget("event", {
+        itemId: "inbox-1",
+        summary: "Это событие с датой.",
+        recommendedTarget: "event",
+        rationale: ["Есть временная привязка."],
+        suggestedDate: "2026-03-12",
+      }),
+    ).toEqual({
+      date: "2026-03-12",
+    });
+  });
+
+  it("does not prefill when user chooses a different target", () => {
+    expect(
+      buildInboxAiPrefillForTarget("note", {
+        itemId: "inbox-1",
+        summary: "Лучше сделать задачей.",
+        recommendedTarget: "task",
+        rationale: ["Есть действие."],
+        suggestedDueDate: "2026-03-10",
+        suggestedPriority: true,
+      }),
+    ).toEqual({});
   });
 });

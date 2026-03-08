@@ -10,11 +10,24 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import type { InboxItem, StatsDaily, StatsWeekly, Subtask, Task } from "@/lib/types";
+import type {
+  ConvertInboxItemInput,
+  InboxAiAnalysis,
+  InboxAiRecommendedTarget,
+  InboxItem,
+  StatsDaily,
+  StatsWeekly,
+  Subtask,
+  Task,
+} from "@/lib/types";
 import type { InboxBuckets } from "./inbox-types";
 import ProgressSummaryCard from "./ProgressSummaryCard";
 import TaskDetailsPanel from "./TaskDetailsPanel";
-import { getInboxItemActionState, type PendingInboxAction } from "./inbox-ui";
+import {
+  buildInboxAiPrefillForTarget,
+  getInboxItemActionState,
+  type PendingInboxAction,
+} from "./inbox-ui";
 
 interface InboxPanelProps {
   loading: boolean;
@@ -26,7 +39,11 @@ interface InboxPanelProps {
   selectedTaskId: string | null;
   onSelectTask: (taskId: string | null) => void;
   onCreateQuickItem: (content: string) => Promise<void> | void;
-  onConvert: (id: string, target: "task" | "event" | "note") => Promise<void> | void;
+  onConvert: (
+    id: string,
+    target: "task" | "event" | "note",
+    options?: Omit<ConvertInboxItemInput, "target">,
+  ) => Promise<void> | void;
   onArchive: (id: string) => Promise<void> | void;
   onPanicReset: () => Promise<void> | void;
   onLoadSubtasks: (taskId: string) => Promise<unknown> | void;
@@ -45,6 +62,10 @@ interface InboxPanelProps {
   weeklyStats: StatsWeekly | null;
   priorityTasksTodayCount: number;
   captureInputRef?: MutableRefObject<HTMLInputElement | null>;
+  analysisByItemId: Record<string, InboxAiAnalysis>;
+  analysisErrorByItemId: Record<string, string>;
+  analysisLoadingItemId: string | null;
+  onAnalyzeItem: (itemId: string) => Promise<unknown> | void;
 }
 
 const LIST_MODE_META = {
@@ -88,6 +109,13 @@ const CONVERTED_TYPE_LABELS: Record<NonNullable<InboxItem["convertedToEntityType
   task: "задачей",
   event: "событием",
   note: "заметкой",
+};
+
+const AI_TARGET_LABELS: Record<InboxAiRecommendedTarget, string> = {
+  task: "В задачу",
+  event: "В календарь",
+  note: "В заметку",
+  keep: "Оставить в Inbox",
 };
 
 function formatInboxTimestamp(value?: string): string {
@@ -153,6 +181,7 @@ function InboxCard({
   item,
   isSelected,
   pendingAction,
+  aiAnalysis,
   onSelect,
   onConvertTask,
   onConvertEvent,
@@ -160,11 +189,14 @@ function InboxCard({
   item: InboxItem;
   isSelected: boolean;
   pendingAction: PendingInboxAction | null;
+  aiAnalysis?: InboxAiAnalysis | null;
   onSelect: () => void;
   onConvertTask: () => void;
   onConvertEvent: () => void;
 }) {
   const actionState = getInboxItemActionState(item, pendingAction);
+  const isTaskRecommended = aiAnalysis?.recommendedTarget === "task";
+  const isEventRecommended = aiAnalysis?.recommendedTarget === "event";
 
   return (
     <motion.article
@@ -211,7 +243,11 @@ function InboxCard({
             event.stopPropagation();
             void onConvertTask();
           }}
-          className="rounded-[7px] border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+          className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+            isTaskRecommended
+              ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.22)] shadow-[0_0_0_1px_rgba(94,106,210,0.22)]"
+              : "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)]"
+          }`}
         >
           {actionState.isPending ? "Сохраняю..." : "В задачу"}
         </button>
@@ -222,7 +258,11 @@ function InboxCard({
             event.stopPropagation();
             void onConvertEvent();
           }}
-          className="rounded-[7px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+          className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+            isEventRecommended
+              ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.18)]"
+              : "border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]"
+          }`}
         >
           В календарь
         </button>
@@ -254,6 +294,10 @@ function ContextRail({
   onSetSubtaskDone,
   onConvertNote,
   onArchive,
+  aiAnalysis,
+  aiAnalysisError,
+  isAiAnalyzing,
+  onAnalyze,
   dailyStats,
   weeklyStats,
 }: {
@@ -277,11 +321,19 @@ function ContextRail({
   onSetSubtaskDone: (subtaskId: string, taskId: string, done: boolean) => Promise<void> | void;
   onConvertNote: (itemId: string) => Promise<void>;
   onArchive: (itemId: string) => Promise<void>;
+  aiAnalysis?: InboxAiAnalysis | null;
+  aiAnalysisError?: string;
+  isAiAnalyzing: boolean;
+  onAnalyze: (itemId: string) => Promise<unknown> | void;
   dailyStats: StatsDaily | null;
   weeklyStats: StatsWeekly | null;
 }) {
   const actionState = selectedItem ? getInboxItemActionState(selectedItem, pendingAction) : null;
   const spotlightTasks = tasks;
+  const isNoteRecommended = aiAnalysis?.recommendedTarget === "note";
+  const requestAiAnalysis = (itemId: string) => {
+    void Promise.resolve(onAnalyze(itemId)).catch(() => undefined);
+  };
 
   return (
     <aside className="flex min-h-0 flex-col gap-3">
@@ -332,6 +384,103 @@ function ContextRail({
                 )}
               </div>
 
+              {selectedItem.status === "new" && (
+                <div className="rounded-[10px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <h4 className="text-[11px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
+                        AI-разбор
+                      </h4>
+                      <p className="mt-1 text-[12px] leading-[1.5] text-[var(--cal2-text-secondary)]">
+                        AI поможет предложить следующий шаг, но ничего не применит автоматически.
+                      </p>
+                    </div>
+                    {!aiAnalysis && !isAiAnalyzing && !aiAnalysisError && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          requestAiAnalysis(selectedItem.id);
+                        }}
+                        className="rounded-[7px] border border-[rgba(94,106,210,0.42)] bg-[rgba(94,106,210,0.12)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)]"
+                      >
+                        AI-разобрать
+                      </button>
+                    )}
+                  </div>
+
+                  {isAiAnalyzing && (
+                    <p className="mt-3 text-[12px] leading-[1.5] text-[var(--cal2-text-primary)]">
+                      AI анализирует item и подбирает следующий шаг.
+                    </p>
+                  )}
+
+                  {!isAiAnalyzing && aiAnalysisError && (
+                    <div className="mt-3 space-y-3">
+                      <p className="text-[12px] leading-[1.5] text-[var(--cal2-text-primary)]">
+                        {aiAnalysisError}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          requestAiAnalysis(selectedItem.id);
+                        }}
+                        className="rounded-[7px] border border-[var(--cal2-border)] bg-transparent px-3 py-1.5 text-[11px] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
+                      >
+                        Повторить
+                      </button>
+                    </div>
+                  )}
+
+                  {!isAiAnalyzing && aiAnalysis && (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full border border-[rgba(94,106,210,0.38)] bg-[rgba(94,106,210,0.12)] px-2.5 py-1 text-[10px] uppercase tracking-[0.12em] text-[#dfe3ff]">
+                          Рекомендовано
+                        </span>
+                        <span className="rounded-full border border-[var(--cal2-border)] px-2.5 py-1 text-[11px] text-[var(--cal2-text-primary)]">
+                          {AI_TARGET_LABELS[aiAnalysis.recommendedTarget]}
+                        </span>
+                      </div>
+
+                      <p className="text-[13px] leading-[1.5] text-[var(--cal2-text-primary)]">
+                        {aiAnalysis.summary}
+                      </p>
+
+                      {aiAnalysis.rationale.length > 0 && (
+                        <div className="space-y-1">
+                          {aiAnalysis.rationale.map((reason) => (
+                            <p
+                              key={reason}
+                              className="text-[11px] leading-[1.5] text-[var(--cal2-text-secondary)]"
+                            >
+                              • {reason}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap gap-2">
+                        {aiAnalysis.suggestedDate && (
+                          <span className="rounded-full border border-[var(--cal2-border)] px-2.5 py-1 text-[11px] text-[var(--cal2-text-secondary)]">
+                            Дата: {aiAnalysis.suggestedDate}
+                          </span>
+                        )}
+                        {aiAnalysis.suggestedDueDate && (
+                          <span className="rounded-full border border-[var(--cal2-border)] px-2.5 py-1 text-[11px] text-[var(--cal2-text-secondary)]">
+                            Дедлайн: {aiAnalysis.suggestedDueDate}
+                          </span>
+                        )}
+                        {aiAnalysis.suggestedPriority !== undefined && (
+                          <span className="rounded-full border border-[var(--cal2-border)] px-2.5 py-1 text-[11px] text-[var(--cal2-text-secondary)]">
+                            {aiAnalysis.suggestedPriority ? "Приоритетно" : "Без приоритета"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <p className="mb-2 text-[11px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">
                   Дополнительные действия
@@ -346,7 +495,11 @@ function ContextRail({
                       }
                       void onConvertNote(selectedItem.id);
                     }}
-                    className="rounded-[7px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                    className={`rounded-[7px] border px-3 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+                      isNoteRecommended
+                        ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.18)]"
+                        : "border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]"
+                    }`}
                   >
                     {actionState?.isPending ? "Сохраняю..." : "В заметку"}
                   </button>
@@ -487,6 +640,10 @@ export default function InboxPanel({
   weeklyStats,
   priorityTasksTodayCount,
   captureInputRef,
+  analysisByItemId,
+  analysisErrorByItemId,
+  analysisLoadingItemId,
+  onAnalyzeItem,
 }: InboxPanelProps) {
   const localCaptureInputRef = useRef<HTMLInputElement | null>(null);
   const [quickValue, setQuickValue] = useState("");
@@ -510,6 +667,9 @@ export default function InboxPanel({
     () => tasks.find((task) => task.id === selectedTaskId) ?? null,
     [tasks, selectedTaskId],
   );
+  const selectedItemAnalysis = selectedItem ? analysisByItemId[selectedItem.id] ?? null : null;
+  const selectedItemAnalysisError = selectedItem ? analysisErrorByItemId[selectedItem.id] : undefined;
+  const isSelectedItemAiLoading = selectedItem ? analysisLoadingItemId === selectedItem.id : false;
 
   const listMeta = LIST_MODE_META[listMode];
 
@@ -689,9 +849,18 @@ export default function InboxPanel({
                   item={item}
                   isSelected={item.id === selectedItem?.id}
                   pendingAction={pendingAction}
+                  aiAnalysis={analysisByItemId[item.id]}
                   onSelect={() => setSelectedItemId(item.id)}
-                  onConvertTask={() => runItemAction(item.id, "task", () => onConvert(item.id, "task"))}
-                  onConvertEvent={() => runItemAction(item.id, "event", () => onConvert(item.id, "event"))}
+                  onConvertTask={() =>
+                    runItemAction(item.id, "task", () =>
+                      onConvert(item.id, "task", buildInboxAiPrefillForTarget("task", analysisByItemId[item.id])),
+                    )
+                  }
+                  onConvertEvent={() =>
+                    runItemAction(item.id, "event", () =>
+                      onConvert(item.id, "event", buildInboxAiPrefillForTarget("event", analysisByItemId[item.id])),
+                    )
+                  }
                 />
               ))
             )}
@@ -718,6 +887,10 @@ export default function InboxPanel({
         onSetSubtaskDone={onSetSubtaskDone}
         onConvertNote={(itemId) => runItemAction(itemId, "note", () => onConvert(itemId, "note"))}
         onArchive={(itemId) => runItemAction(itemId, "archive", () => onArchive(itemId))}
+        aiAnalysis={selectedItemAnalysis}
+        aiAnalysisError={selectedItemAnalysisError}
+        isAiAnalyzing={isSelectedItemAiLoading}
+        onAnalyze={onAnalyzeItem}
         dailyStats={dailyStats}
         weeklyStats={weeklyStats}
       />

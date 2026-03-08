@@ -1,4 +1,9 @@
-import type { InboxItem } from "@/lib/types";
+import type {
+  ConvertInboxItemInput,
+  InboxAiAnalysis,
+  InboxConvertedEntityType,
+  InboxItem,
+} from "@/lib/types";
 import type { Calendar2Tab } from "./calendar2-types";
 
 export type PendingInboxActionType = "task" | "event" | "note" | "archive";
@@ -61,4 +66,28 @@ export function getInboxItemActionState(item: InboxItem, pendingAction?: Pending
     isTerminalState: item.status === "archived",
     statusLabel: STATUS_LABELS[item.status],
   };
+}
+
+export function buildInboxAiPrefillForTarget(
+  target: InboxConvertedEntityType,
+  analysis?: InboxAiAnalysis | null,
+): Omit<ConvertInboxItemInput, "target"> {
+  if (!analysis || analysis.recommendedTarget !== target) {
+    return {};
+  }
+
+  if (target === "task") {
+    return {
+      dueDate: analysis.suggestedDueDate,
+      isPriority: analysis.suggestedPriority,
+    };
+  }
+
+  if (target === "event") {
+    return {
+      date: analysis.suggestedDate,
+    };
+  }
+
+  return {};
 }

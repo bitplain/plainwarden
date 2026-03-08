@@ -1,6 +1,7 @@
 import {
   ConvertInboxItemInput,
   CreateInboxItemInput,
+  InboxAiAnalysis,
   AuthResponse,
   CalendarEvent,
   CreateEventInput,
@@ -160,6 +161,16 @@ class ApiClient {
   async archiveInboxItem(id: string): Promise<InboxItem> {
     return this.request<InboxItem>(`/inbox/${id}/archive`, {
       method: "POST",
+    });
+  }
+
+  async analyzeInboxItem(id: string): Promise<InboxAiAnalysis> {
+    return this.request<InboxAiAnalysis>(`/inbox/${id}/ai`, {
+      method: "POST",
+      headers: {
+        "x-netden-timezone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      body: JSON.stringify({}),
     });
   }
 

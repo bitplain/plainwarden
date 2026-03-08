@@ -637,10 +637,17 @@ export default function Calendar2() {
               onCreateQuickItem={async (content) => {
                 await inboxTasks.createInboxItem(content, "task");
               }}
-              onConvert={async (id, target) => {
+              onConvert={async (id, target, options) => {
                 await inboxTasks.convertInboxItem(id, target, {
-                  dueDate: target === "task" ? toDateKey(anchorDate) : undefined,
-                  date: target === "event" ? toDateKey(anchorDate) : undefined,
+                  dueDate:
+                    target === "task"
+                      ? options?.dueDate ?? toDateKey(anchorDate)
+                      : undefined,
+                  date:
+                    target === "event"
+                      ? options?.date ?? toDateKey(anchorDate)
+                      : undefined,
+                  isPriority: target === "task" ? options?.isPriority : undefined,
                 });
               }}
               onArchive={inboxTasks.archiveInboxItem}
@@ -657,6 +664,10 @@ export default function Calendar2() {
               weeklyStats={inboxTasks.weeklyStats}
               priorityTasksTodayCount={inboxTasks.priorityTasksToday.length}
               captureInputRef={inboxCaptureInputRef}
+              analysisByItemId={inboxTasks.analysisByItemId}
+              analysisErrorByItemId={inboxTasks.analysisErrorByItemId}
+              analysisLoadingItemId={inboxTasks.analysisLoadingItemId}
+              onAnalyzeItem={inboxTasks.analyzeInboxItem}
             />
           </div>
         );
