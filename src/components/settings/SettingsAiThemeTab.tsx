@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import settingsStyles from "@/styles/settings.module.css";
-import aipStyles from "@/components/AiChatWidget.module.css";
+import AiThemePreviewCard from "@/components/ai-chat/AiThemePreviewCard";
+import { AI_THEME_META } from "@/components/ai-chat/constants";
 import {
   readAiTheme,
   saveAiTheme,
@@ -10,80 +10,37 @@ import {
   type AiTheme,
 } from "@/components/ai-theme";
 
-const THEMES: { id: AiTheme; label: string; description: string; colors: string[] }[] = [
-  {
-    id: "cyber",
-    label: "Cyber Pulse",
-    description: "Неоновый кибер-стиль с cyan акцентом и пульсирующими свечениями",
-    colors: ["#38bdf8", "#8b5cf6", "#10b981"],
-  },
-  {
-    id: "ambient",
-    label: "Ambient Flow",
-    description: "Тёплая органика с amber акцентом и мягкими mesh-градиентами",
-    colors: ["#f59e0b", "#f472b6", "#10b981"],
-  },
-  {
-    id: "terminal",
-    label: "Terminal AI",
-    description: "Ретро-терминал с зелёным фосфором и scan-lines эффектом",
-    colors: ["#22c55e", "#22c55e", "#f59e0b"],
-  },
-];
+const THEMES = Object.keys(AI_THEME_META) as AiTheme[];
 
 export default function SettingsAiThemeTab() {
   const [theme, setTheme] = useState<AiTheme>(() => readAiTheme());
 
   useEffect(() => subscribeAiTheme(setTheme), []);
 
-  const saveTheme = (next: AiTheme) => {
+  const handleSelectTheme = (next: AiTheme) => {
     setTheme(next);
     saveAiTheme(next);
   };
 
   return (
-    <div>
-      <h2 className={settingsStyles['settings-tab-section-title']}>Тема AI-виджета</h2>
-      <p className={settingsStyles['settings-tab-muted']} style={{ marginBottom: 16 }}>
-        Выберите визуальный стиль AI-ассистента
-      </p>
-      <div className={aipStyles['aip-theme-grid']}>
-        {THEMES.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            className={`${aipStyles['aip-theme-card']} ${theme === t.id ? aipStyles['aip-theme-card-active'] : ''}`}
-            onClick={() => saveTheme(t.id)}
-            data-aip-theme-preview={t.id}
-          >
-            {/* Preview area */}
-            <div className={aipStyles['aip-theme-preview']}>
-              <div className={aipStyles['aip-theme-preview-bar']}>
-                <span className={aipStyles['aip-theme-preview-dot-sm']} style={{ background: t.colors[0] }} />
-                <span className={aipStyles['aip-theme-preview-title']}>AI</span>
-              </div>
-              <div className={aipStyles['aip-theme-preview-chips']}>
-                {t.colors.map((c, i) => (
-                  <span key={i} className={aipStyles['aip-theme-preview-chip']} style={{ borderColor: `${c}55`, color: `${c}cc` }}>
-                    ◈
-                  </span>
-                ))}
-              </div>
-              <div className={aipStyles['aip-theme-preview-line']} style={{ background: t.colors[0] }} />
-              <div className={`${aipStyles['aip-theme-preview-line']} ${aipStyles['aip-theme-preview-line-short']}`} style={{ background: `${t.colors[0]}44` }} />
-              <div className={aipStyles['aip-theme-preview-input']}>
-                <span className={aipStyles['aip-theme-preview-placeholder']}>Спросите…</span>
-                <span className={aipStyles['aip-theme-preview-send']} style={{ background: `${t.colors[0]}22`, color: t.colors[0] }}>→</span>
-              </div>
-            </div>
-            <div className={aipStyles['aip-theme-card-body']}>
-              <span className={aipStyles['aip-theme-card-label']}>{t.label}</span>
-              <span className={aipStyles['aip-theme-card-desc']}>{t.description}</span>
-            </div>
-            {theme === t.id && (
-              <span className={aipStyles['aip-theme-card-check']} style={{ background: t.colors[0] }}>✓</span>
-            )}
-          </button>
+    <div className="grid gap-4">
+      <div className="space-y-2">
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[var(--cal2-text-secondary)]">
+          AI тема
+        </p>
+        <div className="max-w-[42rem] text-[13px] leading-[1.65] text-[var(--cal2-text-secondary)]">
+          Темы больше не меняют сам язык интерфейса. Они только тонко сдвигают акцент внутри единого тёмного product-shell, согласованного с календарём и настройками.
+        </div>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        {THEMES.map((item) => (
+          <AiThemePreviewCard
+            key={item}
+            theme={item}
+            active={theme === item}
+            onSelect={handleSelectTheme}
+          />
         ))}
       </div>
     </div>
