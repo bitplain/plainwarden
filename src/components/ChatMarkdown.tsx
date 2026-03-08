@@ -1,85 +1,139 @@
 "use client";
 
 import { Streamdown, type Components } from "streamdown";
-import styles from "@/components/AiChatWidget.module.css";
 
-/* ── Custom components for themed markdown rendering in chat ── */
-const chatComponents: Components = {
-  h1: ({ children, node, ...props }) => (
-    <h3 className={`${styles['aip-md-heading']} ${styles['aip-md-h1']}`} {...props}>{children}</h3>
+const markdownComponents: Components = {
+  h1: ({ children, ...props }) => (
+    <h3 className="mt-4 text-[1.05rem] font-semibold tracking-[-0.02em] text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h3>
   ),
-  h2: ({ children, node, ...props }) => (
-    <h3 className={`${styles['aip-md-heading']} ${styles['aip-md-h2']}`} {...props}>{children}</h3>
+  h2: ({ children, ...props }) => (
+    <h3 className="mt-4 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h3>
   ),
-  h3: ({ children, node, ...props }) => (
-    <h4 className={`${styles['aip-md-heading']} ${styles['aip-md-h3']}`} {...props}>{children}</h4>
+  h3: ({ children, ...props }) => (
+    <h4 className="mt-4 text-[0.92rem] font-semibold text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h4>
   ),
-  h4: ({ children, node, ...props }) => (
-    <h5 className={styles['aip-md-heading']} {...props}>{children}</h5>
+  h4: ({ children, ...props }) => (
+    <h5 className="mt-4 text-[0.88rem] font-semibold text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h5>
   ),
-  h5: ({ children, node, ...props }) => (
-    <h6 className={styles['aip-md-heading']} {...props}>{children}</h6>
+  h5: ({ children, ...props }) => (
+    <h6 className="mt-4 text-[0.84rem] font-semibold text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h6>
   ),
-  h6: ({ children, node, ...props }) => (
-    <h6 className={styles['aip-md-heading']} {...props}>{children}</h6>
+  h6: ({ children, ...props }) => (
+    <h6 className="mt-4 text-[0.82rem] font-semibold text-[var(--ai-text-primary)] first:mt-0" {...props}>
+      {children}
+    </h6>
   ),
-  p: ({ children, node, ...props }) => (
-    <p className={styles['aip-md-p']} {...props}>{children}</p>
+  p: ({ children, ...props }) => (
+    <p className="mt-3 text-[14px] leading-[1.72] text-[var(--ai-text-secondary)] first:mt-0" {...props}>
+      {children}
+    </p>
   ),
-  strong: ({ children, node, ...props }) => (
-    <strong className={styles['aip-md-strong']} {...props}>{children}</strong>
+  strong: ({ children, ...props }) => (
+    <strong className="font-semibold text-[var(--ai-text-primary)]" {...props}>
+      {children}
+    </strong>
   ),
-  em: ({ children, node, ...props }) => (
-    <em className={styles['aip-md-em']} {...props}>{children}</em>
+  em: ({ children, ...props }) => (
+    <em className="italic text-[var(--ai-text-primary)]" {...props}>
+      {children}
+    </em>
   ),
-  a: ({ href, children, node, ...props }) => (
+  a: ({ href, children, ...props }) => (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className={styles['aip-md-link']}
+      className="font-medium text-[var(--ai-accent)] underline decoration-[var(--ai-accent)]/40 underline-offset-4 transition-colors hover:text-[var(--ai-text-primary)]"
       {...props}
     >
       {children}
     </a>
   ),
-  code: ({ children, className, node, ...props }) => {
-    const isBlock = className?.includes("language-");
-    if (isBlock) {
-      return <code className={`${styles['aip-md-code-block']} ${className ?? ""}`} {...props}>{children}</code>;
+  code: ({ children, className, ...props }) => {
+    if (className?.includes("language-")) {
+      return (
+        <code
+          className={`block min-w-full font-mono text-[12px] leading-[1.7] text-[var(--ai-text-secondary)] ${className}`}
+          {...props}
+        >
+          {children}
+        </code>
+      );
     }
-    return <code className={styles['aip-md-code-inline']} {...props}>{children}</code>;
+
+    return (
+      <code
+        className="rounded-md border border-[var(--ai-border)] bg-black/25 px-1.5 py-0.5 font-mono text-[12px] text-[var(--ai-text-primary)]"
+        {...props}
+      >
+        {children}
+      </code>
+    );
   },
-  pre: ({ children, node, ...props }) => (
-    <pre className={styles['aip-md-pre']} {...props}>{children}</pre>
+  pre: ({ children, ...props }) => (
+    <pre
+      className="mt-3 overflow-x-auto rounded-[18px] border border-[var(--ai-border)] bg-black/28 p-4 font-mono text-[12px] first:mt-0"
+      {...props}
+    >
+      {children}
+    </pre>
   ),
-  ul: ({ children, node, ...props }) => (
-    <ul className={`${styles['aip-md-list']} ${styles['aip-md-ul']}`} {...props}>{children}</ul>
+  ul: ({ children, ...props }) => (
+    <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-[1.72] text-[var(--ai-text-secondary)] first:mt-0" {...props}>
+      {children}
+    </ul>
   ),
-  ol: ({ children, node, ...props }) => (
-    <ol className={`${styles['aip-md-list']} ${styles['aip-md-ol']}`} {...props}>{children}</ol>
+  ol: ({ children, ...props }) => (
+    <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[14px] leading-[1.72] text-[var(--ai-text-secondary)] first:mt-0" {...props}>
+      {children}
+    </ol>
   ),
-  li: ({ children, node, ...props }) => (
-    <li className={styles['aip-md-li']} {...props}>{children}</li>
+  li: ({ children, ...props }) => (
+    <li className="pl-1" {...props}>
+      {children}
+    </li>
   ),
-  blockquote: ({ children, node, ...props }) => (
-    <blockquote className={styles['aip-md-blockquote']} {...props}>{children}</blockquote>
+  blockquote: ({ children, ...props }) => (
+    <blockquote
+      className="mt-3 rounded-r-[16px] border-l-2 border-[var(--ai-accent)] bg-white/[0.03] px-4 py-3 text-[14px] leading-[1.72] text-[var(--ai-text-secondary)] first:mt-0"
+      {...props}
+    >
+      {children}
+    </blockquote>
   ),
-  table: ({ children, node, ...props }) => (
-    <div className={styles['aip-md-table-wrap']}>
-      <table className={styles['aip-md-table']} {...props}>{children}</table>
+  table: ({ children, ...props }) => (
+    <div className="mt-3 overflow-x-auto rounded-[18px] border border-[var(--ai-border)] first:mt-0">
+      <table className="min-w-full border-collapse text-left text-[13px] [&_tbody_tr:last-child_td]:border-b-0" {...props}>
+        {children}
+      </table>
     </div>
   ),
-  thead: ({ children, node, ...props }) => (
-    <thead className={styles['aip-md-thead']} {...props}>{children}</thead>
+  thead: ({ children, ...props }) => (
+    <thead className="bg-white/[0.04] text-[var(--ai-text-primary)]" {...props}>
+      {children}
+    </thead>
   ),
-  th: ({ children, node, ...props }) => (
-    <th className={styles['aip-md-th']} {...props}>{children}</th>
+  th: ({ children, ...props }) => (
+    <th className="border-b border-[var(--ai-border)] px-4 py-2.5 font-medium" {...props}>
+      {children}
+    </th>
   ),
-  td: ({ children, node, ...props }) => (
-    <td className={styles['aip-md-td']} {...props}>{children}</td>
+  td: ({ children, ...props }) => (
+    <td className="border-b border-[var(--ai-border)] px-4 py-2.5 align-top text-[var(--ai-text-secondary)]" {...props}>
+      {children}
+    </td>
   ),
-  hr: ({ node, ...props }) => <hr className={styles['aip-md-hr']} {...props} />,
+  hr: (props) => <hr className="my-4 border-t border-[var(--ai-border)]" {...props} />,
 };
 
 interface ChatMarkdownProps {
@@ -87,15 +141,20 @@ interface ChatMarkdownProps {
   isStreaming?: boolean;
 }
 
-export default function ChatMarkdown({ content, isStreaming = false }: ChatMarkdownProps) {
-  if (!content?.trim()) return <span>&nbsp;</span>;
+export default function ChatMarkdown({
+  content,
+  isStreaming = false,
+}: ChatMarkdownProps) {
+  if (!content.trim()) {
+    return <span className="inline-block min-h-[1.5rem]">&nbsp;</span>;
+  }
 
   return (
-    <div className={styles['aip-md']}>
+    <div className="[&_[data-streamdown-caret]]:text-[var(--ai-accent)] [&_[data-streamdown-caret]]:animate-pulse">
       <Streamdown
         mode={isStreaming ? "streaming" : "static"}
         isAnimating={isStreaming}
-        components={chatComponents}
+        components={markdownComponents}
         skipHtml
       >
         {content}

@@ -1,48 +1,46 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AgentMemoryItem } from "@/agent/types";
+import AiChatPanel from "@/components/ai-chat/AiChatPanel";
+import {
+  AI_CHAT_CONTEXT_CHIPS,
+  getAiChatSuggestions,
+  getAiWidgetToggleState,
+} from "@/components/ai-chat/constants";
+import { readAiTheme, subscribeAiTheme, type AiTheme } from "@/components/ai-theme";
 import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
-import ChatMarkdown from "@/components/ChatMarkdown";
-import styles from "@/components/AiChatWidget.module.css";
-import { readAiTheme, subscribeAiTheme, type AiTheme } from "@/components/ai-theme";
 
-/* ── Context chip definitions ── */
-const CONTEXT_CHIPS = [
-  { id: "calendar", icon: "◈", label: "Календарь", prompt: "Расскажи о моих ближайших событиях" },
-  { id: "tasks", icon: "◇", label: "Задачи", prompt: "Покажи мои текущие задачи" },
-  { id: "notes", icon: "▧", label: "Заметки", prompt: "Что в моих заметках?" },
-] as const;
-
-const QUICK_SUGGESTIONS = [
-  "Создай событие на завтра в 10:00",
-  "Что запланировано на эту неделю?",
-  "Добавь заметку",
-];
-
-/* ── SVG Icons ── */
-function SparkleIcon({ className }: { className?: string }) {
+function SparkleIcon() {
   return (
-    <svg className={className} width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 2L11.4 7.4L17 9L11.4 10.6L10 16L8.6 10.6L3 9L8.6 7.4L10 2Z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round" />
-      <path d="M15.5 2.5L16 4L17.5 4.5L16 5L15.5 6.5L15 5L13.5 4.5L15 4L15.5 2.5Z" stroke="currentColor" strokeWidth="0.8" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <path
+        d="M10 2L11.4 7.4L17 9L11.4 10.6L10 16L8.6 10.6L3 9L8.6 7.4L10 2Z"
+        stroke="currentColor"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15.5 2.5L16 4L17.5 4.5L16 5L15.5 6.5L15 5L13.5 4.5L15 4L15.5 2.5Z"
+        stroke="currentColor"
+        strokeWidth="0.9"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
-function CloseIcon({ className }: { className?: string }) {
+function CloseIcon() {
   return (
-    <svg className={className} width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <path d="M5 5L13 13M13 5L5 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function SendIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <path d="M3 8H13M13 8L8.5 3.5M13 8L8.5 12.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+      <path
+        d="M5 5L13 13M13 5L5 13"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -52,17 +50,16 @@ interface AiChatWidgetProps {
   onNavigate?: (path: string) => void;
 }
 
-export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidgetProps) {
+export default function AiChatWidget({
+  initialPrompt,
+  onNavigate,
+}: AiChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState(initialPrompt ?? "");
-  const [isFocused, setIsFocused] = useState(false);
-  const [chipsReady, setChipsReady] = useState(false);
-  const [activeChip, setActiveChip] = useState<string | null>(null);
+  const [activeChipId, setActiveChipId] = useState<string | null>(null);
   const [theme, setTheme] = useState<AiTheme>(readAiTheme);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const responseRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { items: memoryItems } = useAgentMemory();
-
   const {
     messages,
     isStreaming,
@@ -71,66 +68,76 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
     resolveAction,
   } = useAgent({ onNavigate });
 
-  const hasContent = messages.length > 0 || pendingAction !== null;
-  const showSendButton = inputValue.trim().length > 0;
-
-  /* ── Toggle ── */
-  const handleToggle = useCallback(() => {
-    setIsOpen((prev) => {
-      const next = !prev;
-      if (next) {
-        setTimeout(() => inputRef.current?.focus(), 100);
-      } else {
-        setChipsReady(false);
-        setActiveChip(null);
-      }
-      return next;
-    });
+  const focusComposer = useCallback(() => {
+    window.setTimeout(() => inputRef.current?.focus(), 120);
   }, []);
 
-  /* ── Keyboard shortcut: Cmd/Ctrl + K ── */
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        handleToggle();
-      }
-      if (e.key === "Escape" && isOpen) {
-        setIsOpen(false);
-        setChipsReady(false);
-        setActiveChip(null);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [handleToggle, isOpen]);
+  const closeWidget = useCallback(() => {
+    setIsOpen(false);
+    setActiveChipId(null);
+  }, []);
 
-  /* ── Listen for theme changes from settings ── */
+  const handleToggle = useCallback(() => {
+    setIsOpen((prev) => {
+      const nextState = getAiWidgetToggleState({
+        isOpen: prev,
+        activeChipId,
+      });
+
+      if (nextState.activeChipId !== activeChipId) {
+        setActiveChipId(nextState.activeChipId);
+      }
+
+      if (nextState.isOpen) {
+        focusComposer();
+      }
+      return nextState.isOpen;
+    });
+  }, [activeChipId, focusComposer]);
+
   useEffect(() => subscribeAiTheme(setTheme), []);
 
-  /* ── Staggered chips ── */
   useEffect(() => {
-    if (!isOpen) return;
-    const t = setTimeout(() => setChipsReady(true), 160);
-    return () => clearTimeout(t);
-  }, [isOpen]);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsOpen((prev) => {
+          const nextState = getAiWidgetToggleState({
+            isOpen: prev,
+            activeChipId,
+          });
 
-  /* ── Auto-scroll response ── */
-  useEffect(() => {
-    if (responseRef.current) {
-      responseRef.current.scrollTop = responseRef.current.scrollHeight;
-    }
-  }, [messages, isStreaming]);
+          if (nextState.activeChipId !== activeChipId) {
+            setActiveChipId(nextState.activeChipId);
+          }
+
+          if (nextState.isOpen) {
+            focusComposer();
+          }
+          return nextState.isOpen;
+        });
+      }
+
+      if (event.key === "Escape") {
+        closeWidget();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeChipId, closeWidget, focusComposer]);
 
   const handleSend = useCallback(async () => {
     const text = inputValue.trim();
-    if (!text || isStreaming) return;
+    if (!text || isStreaming) {
+      return;
+    }
+
     setInputValue("");
-    setActiveChip(null);
+    setActiveChipId(null);
     await sendMessage(text, memoryItems as AgentMemoryItem[]);
   }, [inputValue, isStreaming, memoryItems, sendMessage]);
 
-  /* ── Resolve pending action ── */
   const handleResolveAction = useCallback(
     async (approved: boolean) => {
       await resolveAction(approved, memoryItems as AgentMemoryItem[]);
@@ -138,187 +145,85 @@ export default function AiChatWidget({ initialPrompt, onNavigate }: AiChatWidget
     [memoryItems, resolveAction],
   );
 
-  const handleChipClick = useCallback(
-    (chipId: string, prompt: string) => {
-      if (activeChip === chipId) {
-        setActiveChip(null);
-        setInputValue("");
-        return;
-      }
-      setActiveChip(chipId);
-      setInputValue(prompt);
-      inputRef.current?.focus();
-    },
-    [activeChip],
-  );
+  const handleChipClick = useCallback((chipId: string, prompt: string) => {
+    setActiveChipId((prev) => {
+      const next = prev === chipId ? null : chipId;
+      setInputValue(next ? prompt : "");
+      return next;
+    });
+    focusComposer();
+  }, [focusComposer]);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        void handleSend();
-      }
-    },
-    [handleSend],
-  );
+  const handleSuggestionSelect = useCallback((prompt: string) => {
+    setActiveChipId(null);
+    setInputValue(prompt);
+    focusComposer();
+  }, [focusComposer]);
 
   return (
-    <div data-aip-theme={theme}>
-      {/* Trigger button */}
-      <button
+    <>
+      <motion.button
         type="button"
         onClick={handleToggle}
-        className={`${styles['aip-trigger']} ${isOpen ? styles['aip-trigger-open'] : ''}`}
+        whileHover={{ y: -2 }}
+        whileTap={{ scale: 0.98 }}
+        className="fixed bottom-[calc(env(safe-area-inset-bottom)+1rem)] right-4 z-[90] flex h-[3.25rem] w-[3.25rem] items-center justify-center rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(13,13,15,0.9)] text-white shadow-[0_20px_46px_-24px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-colors hover:border-[rgba(255,255,255,0.18)] sm:bottom-6 sm:right-6"
         aria-label={isOpen ? "Закрыть AI" : "Открыть AI"}
       >
+        {isOpen ? <CloseIcon /> : <SparkleIcon />}
+      </motion.button>
+
+      <AnimatePresence>
         {isOpen ? (
-          <CloseIcon className={styles['aip-trigger-icon']} />
-        ) : (
-          <SparkleIcon className={styles['aip-trigger-icon']} />
-        )}
-      </button>
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[80] bg-black/40 backdrop-blur-[2px] sm:hidden"
+              onClick={closeWidget}
+            />
 
-      {/* Slide-up panel */}
-      <div className={`${styles['aip-panel']} ${isOpen ? styles['aip-panel-open'] : ''}`}>
-        <div className={styles['aip-shell']}>
-          <div className={`${styles['aip-inner']} ${isFocused ? styles['aip-inner-focused'] : ''} ${isStreaming ? styles['aip-streaming'] : ''}`}>
-
-            {/* Header */}
-            <div className={styles['aip-header']}>
-              <span className={styles['aip-header-icon']}>◈</span>
-              <span className={styles['aip-header-title']}>AI Ассистент</span>
-              <span className={styles['aip-header-shortcut']}>⌘K</span>
-            </div>
-
-            {/* Context chips */}
-            <div className={`${styles['aip-chips']} ${isOpen ? styles['aip-chips-visible'] : ''}`}>
-              {CONTEXT_CHIPS.map((chip, i) => (
-                <button
-                  key={chip.id}
-                  type="button"
-                  className={`${styles['aip-chip']} ${chipsReady ? styles['aip-chip-visible'] : ''} ${activeChip === chip.id ? styles['aip-chip-active'] : ''}`}
-                  style={{ transitionDelay: chipsReady ? `${60 + i * 40}ms` : "0ms" }}
-                  onClick={() => handleChipClick(chip.id, chip.prompt)}
-                >
-                  <span className={styles['aip-chip-icon']}>{chip.icon}</span>
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-
-            <div className={styles['aip-separator']} />
-
-            {/* Streaming status bar */}
-            <div className={`${styles['aip-status-bar']} ${isStreaming ? styles['aip-status-bar-active'] : ''}`} />
-
-            {/* Response area */}
-            <div
-              ref={responseRef}
-              className={`${styles['aip-response']} ${hasContent ? styles['aip-response-visible'] : ''}`}
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 12, scale: 0.98 }}
+              transition={{ duration: 0.22, ease: "easeOut" }}
+              className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[85] sm:left-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[430px]"
             >
-              <div className={styles['aip-response-inner']}>
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`${styles['aip-message']} ${msg.role === "user" ? styles['aip-message-user'] : styles['aip-message-assistant']}`}
-                  >
-                    {msg.role === "assistant" ? (
-                      <ChatMarkdown content={msg.text} isStreaming={msg.streaming} />
-                    ) : (
-                      <span>{msg.text || "\u00A0"}</span>
-                    )}
-                  </div>
-                ))}
-
-                {isStreaming && messages.length === 0 && (
-                  <div className={`${styles['aip-message']} ${styles['aip-message-assistant']} ${styles['aip-message-thinking']}`}>
-                    <span className={styles['aip-thinking']}>
-                      <span className={styles['aip-thinking-dot']} />
-                      <span className={styles['aip-thinking-dot']} />
-                      <span className={styles['aip-thinking-dot']} />
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Pending action */}
-              {pendingAction && (
-                <div className={styles['aip-action']}>
-                  <div className={styles['aip-action-summary']}>{pendingAction.summary}</div>
-                  <div className={styles['aip-action-buttons']}>
-                    <button
-                      type="button"
-                      className={`${styles['aip-action-btn']} ${styles['aip-action-btn-confirm']}`}
-                      onClick={() => void handleResolveAction(true)}
-                      disabled={isStreaming}
-                    >
-                      Подтвердить
-                    </button>
-                    <button
-                      type="button"
-                      className={`${styles['aip-action-btn']} ${styles['aip-action-btn-decline']}`}
-                      onClick={() => void handleResolveAction(false)}
-                      disabled={isStreaming}
-                    >
-                      Отклонить
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Quick suggestions (empty state only) */}
-            {!hasContent && !inputValue.trim() && (
-              <div className={`${styles['aip-suggestions']} ${isOpen ? styles['aip-suggestions-visible'] : ''}`}>
-                {QUICK_SUGGESTIONS.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    className={styles['aip-suggestion']}
-                    onClick={() => {
-                      setInputValue(s);
-                      inputRef.current?.focus();
-                    }}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Input row */}
-            <div className={styles['aip-input-row']}>
-              <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => {
-                  setInputValue(e.target.value);
-                  if (activeChip) setActiveChip(null);
+              <AiChatPanel
+                mode="floating"
+                theme={theme}
+                title="AI Ассистент"
+                subtitle="Календарь, задачи и заметки в одном контексте."
+                messages={messages}
+                isStreaming={isStreaming}
+                pendingAction={pendingAction}
+                inputValue={inputValue}
+                inputPlaceholder="Спросите о задачах, встречах или заметках…"
+                inputRef={inputRef}
+                activeChipId={activeChipId}
+                chips={AI_CHAT_CONTEXT_CHIPS}
+                suggestions={getAiChatSuggestions("floating")}
+                onChipClick={handleChipClick}
+                onSuggestionSelect={handleSuggestionSelect}
+                onInputChange={(value) => {
+                  setInputValue(value);
+                  if (activeChipId) {
+                    setActiveChipId(null);
+                  }
                 }}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                className={styles['aip-input']}
-                placeholder="Спросите что угодно…"
-                disabled={isStreaming}
-                spellCheck={false}
-                aria-label="AI input"
+                onSubmit={handleSend}
+                onResolveAction={handleResolveAction}
+                emptyTitle="Попросите AI собрать для вас рабочую картину дня."
+                emptyBody="Ответы стримятся в реальном времени, markdown сохраняется, а любые деструктивные действия проходят через подтверждение."
+                footerHint="Модель и API-ключ управляются в Settings."
+                shortcutLabel="⌘K"
               />
-              <button
-                type="button"
-                onClick={() => void handleSend()}
-                disabled={isStreaming || !inputValue.trim()}
-                className={`${styles['aip-send']} ${showSendButton ? styles['aip-send-visible'] : ''}`}
-                aria-label="Отправить"
-              >
-                <SendIcon />
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
+            </motion.div>
+          </>
+        ) : null}
+      </AnimatePresence>
+    </>
   );
 }
