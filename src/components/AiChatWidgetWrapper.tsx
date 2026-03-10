@@ -7,7 +7,7 @@ const AiChatWidget = dynamic(() => import("@/components/AiChatWidget"), {
   ssr: false,
 });
 
-const HIDDEN_PATHS = ["/setup", "/register", "/login"];
+const HIDDEN_PATHS = ["/", "/setup", "/register", "/login"];
 
 export default function AiChatWidgetWrapper() {
   const pathname = usePathname();

@@ -16,7 +16,7 @@ export interface PendingInboxAction {
 export type InboxCaptureShortcutAction = "none" | "focus-inline" | "open-modal";
 
 interface ResolveInboxCaptureShortcutInput {
-  activeTab: Calendar2Tab;
+  activeTab: Calendar2Tab | "inbox";
   key: string;
   ctrlKey: boolean;
   metaKey: boolean;

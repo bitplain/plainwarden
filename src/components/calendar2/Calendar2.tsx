@@ -33,15 +33,12 @@ import Calendar2WeekView from "./Calendar2WeekView";
 import Calendar2DayView from "./Calendar2DayView";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
-import Calendar2AiPanel from "./Calendar2AiPanel";
-import InboxPanel from "./InboxPanel";
 import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 import { CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME } from "./mobile-layout";
 import { resolveInboxCaptureShortcut } from "./inbox-ui";
-import { useInboxTasks } from "./useInboxTasks";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
   readUiPreferences,
@@ -50,6 +47,7 @@ import {
   subscribeUiPreferences,
   type UiPreferences,
 } from "@/components/settings/settings-ui-preferences";
+import { api } from "@/lib/api";
 
 type EventMovePayload = { date: string; time?: string };
 const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
@@ -140,7 +138,6 @@ export default function Calendar2() {
   const anchorDate = useMemo(() => toDayStart(urlState.date), [urlState.date]);
 
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
@@ -154,7 +151,6 @@ export default function Calendar2() {
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
   const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
   const dropFlashTimeoutRef = useRef<number | null>(null);
-  const inboxCaptureInputRef = useRef<HTMLInputElement | null>(null);
 
   // Global store
   const user = useNetdenStore((s) => s.user);
@@ -173,7 +169,6 @@ export default function Calendar2() {
   // Local store for kanban, notes, time blocks
   const localStore = useCalendar2Store();
   const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
-  const inboxTasks = useInboxTasks(toDateKey(anchorDate));
 
   usePreciseReminderTick({
     events,
@@ -261,10 +256,7 @@ export default function Calendar2() {
       }
 
       event.preventDefault();
-      if (shortcutAction === "focus-inline") {
-        inboxCaptureInputRef.current?.focus();
-        inboxCaptureInputRef.current?.select();
-      } else {
+      if (shortcutAction === "open-modal") {
         setShowQuickCapture(true);
       }
     };
@@ -623,55 +615,6 @@ export default function Calendar2() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case "inbox":
-        return (
-          <div className="min-h-0 flex-1">
-            <InboxPanel
-              loading={inboxTasks.loading}
-              error={inboxTasks.error}
-              anchorDateKey={toDateKey(anchorDate)}
-              inbox={inboxTasks.inbox}
-              tasks={inboxTasks.tasks}
-              subtasksByTaskId={inboxTasks.subtasksByTaskId}
-              selectedTaskId={selectedTaskId}
-              onSelectTask={setSelectedTaskId}
-              onCreateQuickItem={async (content) => {
-                await inboxTasks.createInboxItem(content, "task");
-              }}
-              onConvert={async (id, target, options) => {
-                await inboxTasks.convertInboxItem(id, target, {
-                  dueDate:
-                    target === "task"
-                      ? options?.dueDate ?? toDateKey(anchorDate)
-                      : undefined,
-                  date:
-                    target === "event"
-                      ? options?.date ?? toDateKey(anchorDate)
-                      : undefined,
-                  isPriority: target === "task" ? options?.isPriority : undefined,
-                });
-              }}
-              onArchive={inboxTasks.archiveInboxItem}
-              onPanicReset={async () => {
-                await inboxTasks.panicReset(toDateKey(anchorDate));
-              }}
-              onLoadSubtasks={inboxTasks.loadSubtasks}
-              onUpdateTask={inboxTasks.updateTask}
-              onAddSubtask={inboxTasks.addSubtask}
-              onSetSubtaskDone={async (subtaskId, taskId, done) => {
-                await inboxTasks.setSubtaskStatus(subtaskId, taskId, done ? "done" : "todo");
-              }}
-              dailyStats={inboxTasks.dailyStats}
-              weeklyStats={inboxTasks.weeklyStats}
-              priorityTasksTodayCount={inboxTasks.priorityTasksToday.length}
-              captureInputRef={inboxCaptureInputRef}
-              analysisByItemId={inboxTasks.analysisByItemId}
-              analysisErrorByItemId={inboxTasks.analysisErrorByItemId}
-              analysisLoadingItemId={inboxTasks.analysisLoadingItemId}
-              onAnalyzeItem={inboxTasks.analyzeInboxItem}
-            />
-          </div>
-        );
       case "calendar":
         return (
           <div className="min-h-0 flex-1">
@@ -736,12 +679,6 @@ export default function Calendar2() {
               onUpdateNote={localStore.updateNote}
               onDeleteNote={localStore.deleteNote}
             />
-          </div>
-        );
-      case "ai":
-        return (
-          <div className="min-h-0 flex-1">
-            <Calendar2AiPanel />
           </div>
         );
       default:
@@ -852,24 +789,23 @@ export default function Calendar2() {
       <button
         type="button"
         onClick={() => {
-          if (activeTab === "inbox") {
-            setShowQuickCapture(true);
-            return;
-          }
           setAddModalDate(undefined);
           setShowAddModal(true);
         }}
         className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
         aria-label="Добавить"
       >
-        {activeTab === "inbox" ? "I" : "+"}
+        +
       </button>
 
       <QuickCaptureDialog
         open={showQuickCapture}
         onClose={() => setShowQuickCapture(false)}
         onSave={async (content, typeHint) => {
-          await inboxTasks.createInboxItem(content, typeHint);
+          await api.createInboxItem({
+            content: content.trim(),
+            typeHint,
+          });
         }}
       />
 
