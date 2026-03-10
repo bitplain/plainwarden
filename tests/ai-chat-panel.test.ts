@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   getAiChatSuggestions,
+  getAiSurfaceLayout,
   getAiScrollBehavior,
   getAiWidgetToggleState,
 } from "@/components/ai-chat/constants";
@@ -66,6 +67,56 @@ describe("getAiWidgetToggleState", () => {
     ).toEqual({
       isOpen: false,
       activeChipId: null,
+    });
+  });
+});
+
+describe("getAiSurfaceLayout", () => {
+  test("keeps embedded conversation inside a stable centered rail after the first message", () => {
+    expect(
+      getAiSurfaceLayout({
+        mode: "embedded",
+        hasMessages: true,
+        hasPendingAction: false,
+      }),
+    ).toMatchObject({
+      stage: "active",
+      rail: "centered",
+      railMaxWidthClassName: "max-w-[1360px]",
+      metaTone: "compact",
+      composerTone: "compact",
+      chipFlow: "wrap",
+    });
+  });
+
+  test("switches the floating widget to a compact active shell", () => {
+    expect(
+      getAiSurfaceLayout({
+        mode: "floating",
+        hasMessages: true,
+        hasPendingAction: false,
+      }),
+    ).toMatchObject({
+      stage: "active",
+      headerTone: "compact",
+      chipFlow: "scroll",
+      widgetHeightClassName: "h-[38rem] max-h-[74dvh]",
+    });
+  });
+
+  test("keeps the floating widget in a more prominent empty shell before conversation starts", () => {
+    expect(
+      getAiSurfaceLayout({
+        mode: "floating",
+        hasMessages: false,
+        hasPendingAction: false,
+      }),
+    ).toMatchObject({
+      stage: "empty",
+      headerTone: "standard",
+      chipFlow: "wrap",
+      widgetHeightClassName: "h-[46rem] max-h-[82dvh]",
+      composerTone: "standard",
     });
   });
 });
