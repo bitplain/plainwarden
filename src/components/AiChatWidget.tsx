@@ -7,6 +7,7 @@ import AiChatPanel from "@/components/ai-chat/AiChatPanel";
 import {
   AI_CHAT_CONTEXT_CHIPS,
   getAiChatSuggestions,
+  getAiSurfaceLayout,
   getAiWidgetToggleState,
 } from "@/components/ai-chat/constants";
 import { readAiTheme, subscribeAiTheme, type AiTheme } from "@/components/ai-theme";
@@ -67,6 +68,11 @@ export default function AiChatWidget({
     sendMessage,
     resolveAction,
   } = useAgent({ onNavigate });
+  const widgetLayout = getAiSurfaceLayout({
+    mode: "floating",
+    hasMessages: messages.length > 0,
+    hasPendingAction: Boolean(pendingAction),
+  });
 
   const focusComposer = useCallback(() => {
     window.setTimeout(() => inputRef.current?.focus(), 120);
@@ -189,7 +195,8 @@ export default function AiChatWidget({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[85] sm:left-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[430px]"
+              data-ai-widget-stage={widgetLayout.stage}
+              className={`fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[85] sm:left-auto sm:right-6 sm:bottom-[5.5rem] ${widgetLayout.widgetWidthClassName}`}
             >
               <AiChatPanel
                 mode="floating"
