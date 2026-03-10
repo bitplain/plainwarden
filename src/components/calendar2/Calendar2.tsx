@@ -40,7 +40,9 @@ import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerRe
 import QuickCaptureDialog from "./QuickCaptureDialog";
 import { CALENDAR2_LINEAR_VARS } from "./calendar2-theme";
 import { CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME } from "./mobile-layout";
+import { refreshAuthoritativeDataAfterInboxConvert } from "./inbox-convert-sync";
 import { resolveInboxCaptureShortcut } from "./inbox-ui";
+import { useCalendar2Notes } from "./notes-store";
 import { useInboxTasks } from "./useInboxTasks";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
@@ -174,6 +176,7 @@ export default function Calendar2() {
   const localStore = useCalendar2Store();
   const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
   const inboxTasks = useInboxTasks(toDateKey(anchorDate));
+  const notesState = useCalendar2Notes(Boolean(user));
 
   usePreciseReminderTick({
     events,
@@ -485,7 +488,7 @@ export default function Calendar2() {
   const handleConvertToNote = async (eventId: string) => {
     const event = events.find((e) => e.id === eventId);
     if (!event) return;
-    localStore.addNote({
+    await notesState.createNote({
       title: event.title,
       content: event.description || "",
       linkedDate: event.date,
@@ -650,6 +653,10 @@ export default function Calendar2() {
                       : undefined,
                   isPriority: target === "task" ? options?.isPriority : undefined,
                 });
+                await refreshAuthoritativeDataAfterInboxConvert(target, {
+                  refreshEvents: () => fetchEvents(liveCalendarQueryFilters),
+                  refreshNotes: notesState.refresh,
+                });
               }}
               onArchive={inboxTasks.archiveInboxItem}
               onPanicReset={async () => {
@@ -729,12 +736,14 @@ export default function Calendar2() {
         return (
           <div className="min-h-0 flex-1">
             <NotesPanel
-              notes={localStore.notes}
+              notes={notesState.notes}
               events={events}
               anchorDate={anchorDate}
-              onAddNote={localStore.addNote}
-              onUpdateNote={localStore.updateNote}
-              onDeleteNote={localStore.deleteNote}
+              loading={notesState.loading}
+              error={notesState.error}
+              onAddNote={notesState.createNote}
+              onUpdateNote={notesState.updateNote}
+              onDeleteNote={notesState.deleteNote}
             />
           </div>
         );
@@ -816,7 +825,7 @@ export default function Calendar2() {
               activeFilter={categoryFilter}
               onSelectDate={handleSelectDate}
               onFilterChange={handleFilterChange}
-              notes={localStore.notes}
+              notes={notesState.notes}
               activeTab={activeTab}
             />
           </div>
@@ -881,7 +890,7 @@ export default function Calendar2() {
           eventPriorities={resolvedPriorities}
           existingEvents={events}
           categories={localStore.categories}
-          linkedNotes={localStore.notes.filter((n) => n.linkedEventId === selectedEvent.id)}
+          linkedNotes={notesState.notes.filter((n) => n.linkedEventId === selectedEvent.id)}
           linkedKanbanCards={localStore.kanbanCards.filter((c) => c.linkedEventId === selectedEvent.id)}
           onClose={() => setSelectedEventId(null)}
           onDelete={handleDeleteEvent}

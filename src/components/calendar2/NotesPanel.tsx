@@ -12,14 +12,16 @@ interface NotesPanelProps {
   notes: Note[];
   events: CalendarEvent[];
   anchorDate: Date;
+  loading?: boolean;
+  error?: string | null;
   onAddNote: (input: {
     title: string;
     content: string;
     linkedDate?: string;
     linkedEventId?: string;
-  }) => void;
-  onUpdateNote: (id: string, updates: { title?: string; content?: string }) => void;
-  onDeleteNote: (id: string) => void;
+  }) => Promise<void> | void;
+  onUpdateNote: (id: string, updates: { title?: string; content?: string }) => Promise<void> | void;
+  onDeleteNote: (id: string) => Promise<void> | void;
 }
 
 type NoteFilter = "all" | "date" | "event";
@@ -79,6 +81,8 @@ export default function NotesPanel({
   notes,
   events,
   anchorDate,
+  loading = false,
+  error = null,
   onAddNote,
   onUpdateNote,
   onDeleteNote,
@@ -103,7 +107,7 @@ export default function NotesPanel({
     }
   }, [notes, filter, dateKey]);
 
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     setFormError(null);
 
     if (!form.title.trim()) {
@@ -116,21 +120,31 @@ export default function NotesPanel({
       return;
     }
 
-    onAddNote({
-      title: form.title.trim(),
-      content: form.content,
-      linkedDate: form.linkedDate || undefined,
-      linkedEventId: form.linkedEventId || undefined,
-    });
+    try {
+      await onAddNote({
+        title: form.title.trim(),
+        content: form.content,
+        linkedDate: form.linkedDate || undefined,
+        linkedEventId: form.linkedEventId || undefined,
+      });
 
-    setForm({ ...EMPTY_FORM });
-    setShowForm(false);
+      setForm({ ...EMPTY_FORM });
+      setShowForm(false);
+    } catch (submitError) {
+      setFormError(submitError instanceof Error ? submitError.message : "Не удалось сохранить заметку");
+    }
   };
 
-  const handleSaveEdit = (id: string) => {
-    onUpdateNote(id, { content: editContent });
-    setEditingId(null);
-    setEditContent("");
+  const handleSaveEdit = async (id: string) => {
+    setFormError(null);
+
+    try {
+      await onUpdateNote(id, { content: editContent });
+      setEditingId(null);
+      setEditContent("");
+    } catch (submitError) {
+      setFormError(submitError instanceof Error ? submitError.message : "Не удалось обновить заметку");
+    }
   };
 
   const getLinkedEventTitle = (eventId?: string): string | null => {
@@ -183,6 +197,12 @@ export default function NotesPanel({
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
+        {error && (
+          <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-4 py-3">
+            <p className="text-[11px] text-[#d9ddff]">{error}</p>
+          </div>
+        )}
+
         {/* Add note form */}
         {showForm && (
           <div className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-4">
@@ -244,7 +264,9 @@ export default function NotesPanel({
 
               <button
                 type="button"
-                onClick={handleAddNote}
+                onClick={() => {
+                  void handleAddNote();
+                }}
                 className="w-full rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
               >
                 Сохранить заметку
@@ -255,7 +277,13 @@ export default function NotesPanel({
 
         {/* Notes list */}
         <div className="space-y-2 p-3 sm:p-4">
-          {filteredNotes.length === 0 && (
+          {loading && filteredNotes.length === 0 && (
+            <div className="rounded-[8px] border border-dashed border-[var(--cal2-border)] p-6 text-center">
+              <p className="text-[12px] text-[var(--cal2-text-secondary)]">Загружаю заметки...</p>
+            </div>
+          )}
+
+          {!loading && filteredNotes.length === 0 && (
             <div className="rounded-[8px] border border-dashed border-[var(--cal2-border)] p-6 text-center">
               <p className="text-[12px] text-[var(--cal2-text-secondary)]">
                 {filter === "date"
@@ -327,7 +355,9 @@ export default function NotesPanel({
                     </button>
                     <button
                       type="button"
-                      onClick={() => onDeleteNote(note.id)}
+                      onClick={() => {
+                        void onDeleteNote(note.id);
+                      }}
                       className="rounded-[4px] px-1.5 py-0.5 text-[10px] text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
                     >
                       ✕
@@ -345,7 +375,9 @@ export default function NotesPanel({
                     />
                     <button
                       type="button"
-                      onClick={() => handleSaveEdit(note.id)}
+                      onClick={() => {
+                        void handleSaveEdit(note.id);
+                      }}
                       className="rounded-[6px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent-soft)] px-4 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)]"
                     >
                       Сохранить
