@@ -5,5 +5,8 @@ export const CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME =
 export const CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME =
   "flex min-h-0 flex-col overflow-hidden rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] xl:h-full";
 
+export const INBOX_CONTEXT_RAIL_SCROLL_CLASSNAME =
+  "flex min-h-0 flex-col gap-3 xl:overflow-y-auto xl:pr-1";
+
 export const INBOX_LIST_SCROLL_CLASSNAME =
-  "space-y-2 xl:max-h-[calc(100dvh-24rem)] xl:overflow-y-auto xl:pr-1";
+  "space-y-2 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-1";

@@ -628,7 +628,7 @@ export default function Calendar2() {
     switch (activeTab) {
       case "inbox":
         return (
-          <div className="min-h-0 flex-1">
+          <div className="min-h-0 flex h-full flex-1 flex-col">
             <InboxPanel
               loading={inboxTasks.loading}
               error={inboxTasks.error}

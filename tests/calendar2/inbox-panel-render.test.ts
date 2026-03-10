@@ -72,17 +72,25 @@ function renderPanel(input: {
   );
 }
 
+function countOccurrences(source: string, needle: string): number {
+  return source.split(needle).length - 1;
+}
+
 describe("InboxPanel redesign", () => {
-  it("renders dominant quick capture copy and primary inline actions", () => {
+  it("renders dominant quick capture copy and responsive inbox actions", () => {
     const html = renderPanel();
 
     expect(html).toContain("Quick Capture");
     expect(html).toContain("Нажмите /, чтобы вернуть фокус");
     expect(html).toContain("aria-label=\"Quick Capture\"");
-    expect(html).toContain("xl:max-h-[calc(100dvh-24rem)]");
+    expect(html).toContain("xl:flex-1");
     expect(html).toContain("xl:overflow-y-auto");
+    expect(html).toContain("xl:flex");
+    expect(html).toContain("xl:hidden");
     expect(html).toContain("В задачу");
     expect(html).toContain("В календарь");
+    expect(countOccurrences(html, "В заметку")).toBeGreaterThanOrEqual(2);
+    expect(countOccurrences(html, "Архивировать")).toBeGreaterThanOrEqual(2);
     expect(html).not.toContain(">Task<");
     expect(html).not.toContain(">Event<");
     expect(html).not.toContain(">Note<");
@@ -92,6 +100,8 @@ describe("InboxPanel redesign", () => {
   it("renders idle ai action in the context rail for a new item", () => {
     const html = renderPanel();
 
+    expect(html).toContain("xl:overflow-y-auto");
+    expect(html).toContain("xl:pr-1");
     expect(html).toContain("AI-разбор");
     expect(html).toContain("AI-разобрать");
     expect(html).toContain("AI поможет предложить следующий шаг");

@@ -28,7 +28,10 @@ import {
   getInboxItemActionState,
   type PendingInboxAction,
 } from "./inbox-ui";
-import { INBOX_LIST_SCROLL_CLASSNAME } from "./mobile-layout";
+import {
+  INBOX_CONTEXT_RAIL_SCROLL_CLASSNAME,
+  INBOX_LIST_SCROLL_CLASSNAME,
+} from "./mobile-layout";
 
 interface InboxPanelProps {
   loading: boolean;
@@ -186,6 +189,8 @@ function InboxCard({
   onSelect,
   onConvertTask,
   onConvertEvent,
+  onConvertNote,
+  onArchive,
 }: {
   item: InboxItem;
   isSelected: boolean;
@@ -194,10 +199,13 @@ function InboxCard({
   onSelect: () => void;
   onConvertTask: () => void;
   onConvertEvent: () => void;
+  onConvertNote: () => void;
+  onArchive: () => void;
 }) {
   const actionState = getInboxItemActionState(item, pendingAction);
   const isTaskRecommended = aiAnalysis?.recommendedTarget === "task";
   const isEventRecommended = aiAnalysis?.recommendedTarget === "event";
+  const isNoteRecommended = aiAnalysis?.recommendedTarget === "note";
 
   return (
     <motion.article
@@ -236,7 +244,7 @@ function InboxCard({
         </p>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="mt-3 hidden flex-wrap gap-2 xl:flex">
         <button
           type="button"
           disabled={!actionState.canConvertToTask}
@@ -269,14 +277,97 @@ function InboxCard({
         </button>
         <button
           type="button"
+          disabled={!actionState.canConvertToNote}
           onClick={(event) => {
             event.stopPropagation();
-            onSelect();
+            void onConvertNote();
           }}
-          className="rounded-[7px] border border-[var(--cal2-border)] bg-transparent px-2.5 py-1.5 text-[11px] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)]"
+          className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+            isNoteRecommended
+              ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.18)]"
+              : "border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]"
+          }`}
         >
-          Ещё
+          {actionState.isPending ? "Сохраняю..." : "В заметку"}
         </button>
+        <button
+          type="button"
+          disabled={!actionState.canArchive}
+          onClick={(event) => {
+            event.stopPropagation();
+            void onArchive();
+          }}
+          className="rounded-[7px] border border-[var(--cal2-border)] bg-transparent px-2.5 py-1.5 text-[11px] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Архивировать
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 xl:hidden">
+        <button
+          type="button"
+          disabled={!actionState.canConvertToTask}
+          onClick={(event) => {
+            event.stopPropagation();
+            void onConvertTask();
+          }}
+          className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+            isTaskRecommended
+              ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.22)] shadow-[0_0_0_1px_rgba(94,106,210,0.22)]"
+              : "border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)]"
+          }`}
+        >
+          {actionState.isPending ? "Сохраняю..." : "В задачу"}
+        </button>
+        <button
+          type="button"
+          disabled={!actionState.canConvertToEvent}
+          onClick={(event) => {
+            event.stopPropagation();
+            void onConvertEvent();
+          }}
+          className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+            isEventRecommended
+              ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.18)]"
+              : "border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]"
+          }`}
+        >
+          В календарь
+        </button>
+        <details className="group">
+          <summary className="list-none rounded-[7px] border border-[var(--cal2-border)] bg-transparent px-2.5 py-1.5 text-[11px] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)] [&::-webkit-details-marker]:hidden">
+            Ещё
+          </summary>
+
+          <div className="mt-2 flex flex-wrap gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] p-2">
+            <button
+              type="button"
+              disabled={!actionState.canConvertToNote}
+              onClick={(event) => {
+                event.stopPropagation();
+                void onConvertNote();
+              }}
+              className={`rounded-[7px] border px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50 ${
+                isNoteRecommended
+                  ? "border-[rgba(94,106,210,0.64)] bg-[rgba(94,106,210,0.18)]"
+                  : "border-[var(--cal2-border)] bg-[var(--cal2-surface-2)]"
+              }`}
+            >
+              {actionState.isPending ? "Сохраняю..." : "В заметку"}
+            </button>
+            <button
+              type="button"
+              disabled={!actionState.canArchive}
+              onClick={(event) => {
+                event.stopPropagation();
+                void onArchive();
+              }}
+              className="rounded-[7px] border border-[var(--cal2-border)] bg-transparent px-2.5 py-1.5 text-[11px] text-[var(--cal2-text-secondary)] hover:text-[var(--cal2-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Архивировать
+            </button>
+          </div>
+        </details>
       </div>
     </motion.article>
   );
@@ -337,7 +428,7 @@ function ContextRail({
   };
 
   return (
-    <aside className="flex min-h-0 flex-col gap-3">
+    <aside className={INBOX_CONTEXT_RAIL_SCROLL_CLASSNAME}>
       <ProgressSummaryCard daily={dailyStats} weekly={weeklyStats} />
 
       <SurfaceCard className="min-h-[260px] p-4">
@@ -812,7 +903,7 @@ export default function InboxPanel({
           </div>
         </SurfaceCard>
 
-        <SurfaceCard className="min-h-0 p-3">
+        <SurfaceCard className="min-h-0 flex flex-1 flex-col p-3">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)]">Список</p>
@@ -861,6 +952,12 @@ export default function InboxPanel({
                     runItemAction(item.id, "event", () =>
                       onConvert(item.id, "event", buildInboxAiPrefillForTarget("event", analysisByItemId[item.id])),
                     )
+                  }
+                  onConvertNote={() =>
+                    runItemAction(item.id, "note", () => onConvert(item.id, "note"))
+                  }
+                  onArchive={() =>
+                    runItemAction(item.id, "archive", () => onArchive(item.id))
                   }
                 />
               ))
