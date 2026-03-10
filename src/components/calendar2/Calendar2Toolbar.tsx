@@ -20,11 +20,9 @@ interface Calendar2ToolbarProps {
 }
 
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
-  { id: "inbox", label: "Inbox" },
   { id: "calendar", label: "Календарь" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
-  { id: "ai", label: "AI" },
 ];
 
 const VIEW_OPTIONS: { id: Calendar2View; label: string }[] = [
@@ -107,21 +105,31 @@ export default function Calendar2Toolbar({
         {/* Tabs row */}
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
-            {TAB_OPTIONS.map((tab) => {
+            {TAB_OPTIONS.map((tab, index) => {
               const isActive = tab.id === activeTab;
+
               return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => onTabChange(tab.id)}
-                  className={`rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px] ${
-                    isActive
-                      ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
-                      : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
-                  }`}
-                >
-                  {tab.label}
-                </button>
+                <div key={tab.id} className="contents">
+                  <button
+                    type="button"
+                    onClick={() => onTabChange(tab.id)}
+                    className={`rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px] ${
+                      isActive
+                        ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+                        : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                  {index === 0 && (
+                    <Link
+                      href="/"
+                      className="rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] sm:text-[12px]"
+                    >
+                      AI
+                    </Link>
+                  )}
+                </div>
               );
             })}
           </div>

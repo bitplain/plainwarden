@@ -40,22 +40,31 @@ describe("parseCalendar2UrlState", () => {
 
     expect(state).toEqual({
       q: "",
-      tab: "inbox",
+      tab: "calendar",
       view: "month",
       category: "all",
       date: "2026-03-11",
     });
   });
 
-  it("accepts ai tab value", () => {
+  it("treats legacy inbox and ai tabs as invalid", () => {
     const state = parseCalendar2UrlState(
+      new URLSearchParams({
+        tab: "inbox",
+      }),
+      "2026-03-11",
+    );
+
+    expect(state.tab).toBe("calendar");
+
+    const aiState = parseCalendar2UrlState(
       new URLSearchParams({
         tab: "ai",
       }),
       "2026-03-11",
     );
 
-    expect(state.tab).toBe("ai");
+    expect(aiState.tab).toBe("calendar");
   });
 });
 
@@ -87,7 +96,7 @@ describe("buildCalendar2UrlQuery", () => {
       currentSearchParams: new URLSearchParams("tab=notes&view=week&category=done&date=2026-01-01"),
       state: {
         q: "   ",
-        tab: "inbox",
+        tab: "calendar",
         view: "month",
         category: "all",
         date: "2026-13-40",
@@ -109,7 +118,7 @@ describe("buildCalendar2UrlQuery", () => {
       currentSearchParams: new URLSearchParams("dateFrom=2026-04-01&dateTo=2026-04-12"),
       state: {
         q: "",
-        tab: "inbox",
+        tab: "calendar",
         view: "month",
         category: "all",
         date: "2026-04-11",
@@ -119,5 +128,21 @@ describe("buildCalendar2UrlQuery", () => {
     const params = new URLSearchParams(query);
     expect(params.get("dateFrom")).toBeNull();
     expect(params.get("dateTo")).toBeNull();
+  });
+
+  it("omits the default calendar tab from the query string", () => {
+    const query = buildCalendar2UrlQuery({
+      currentSearchParams: new URLSearchParams("tab=kanban"),
+      state: {
+        q: "",
+        tab: "calendar",
+        view: "month",
+        category: "all",
+        date: "2026-04-11",
+      },
+    });
+
+    const params = new URLSearchParams(query);
+    expect(params.get("tab")).toBeNull();
   });
 });

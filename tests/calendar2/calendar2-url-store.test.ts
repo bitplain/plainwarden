@@ -27,7 +27,7 @@ describe("readCalendar2UrlStateFromSearch", () => {
         "2026-03-10",
       ),
     ).toEqual({
-      tab: "inbox",
+      tab: "calendar",
       view: "month",
       category: "all",
       q: "",
@@ -43,7 +43,7 @@ describe("buildCalendar2UrlChange", () => {
       search: "?embedded=1",
       hash: "#panel",
       state: {
-        tab: "ai",
+        tab: "notes",
         view: "day",
         category: "pending",
         q: "standup",
@@ -58,7 +58,7 @@ describe("buildCalendar2UrlChange", () => {
     const query = result.nextUrl.split("?")[1].split("#")[0];
     const params = new URLSearchParams(query);
     expect(params.get("embedded")).toBe("1");
-    expect(params.get("tab")).toBe("ai");
+    expect(params.get("tab")).toBe("notes");
     expect(params.get("view")).toBe("day");
     expect(params.get("category")).toBe("pending");
     expect(params.get("q")).toBe("standup");
