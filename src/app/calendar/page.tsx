@@ -4,10 +4,10 @@ import Calendar2 from "@/components/calendar2/Calendar2";
 function readRedirectTarget(input?: string | string[]): string | null {
   const value = Array.isArray(input) ? input[0] : input;
   if (value === "inbox" || value === "ai") {
-    return `/?segment=${value}`;
+    return `/ai?segment=${value}`;
   }
   if (value === "ai-i") {
-    return "/ai-i";
+    return "/";
   }
   return null;
 }
@@ -22,5 +22,15 @@ export default async function CalendarPage(input?: {
     redirect(redirectTarget);
   }
 
-  return <Calendar2 />;
+  const initialSearchParams = new URLSearchParams();
+  if (searchParams) {
+    Object.entries(searchParams).forEach(([key, value]) => {
+      const normalized = Array.isArray(value) ? value[0] : value;
+      if (typeof normalized === "string") {
+        initialSearchParams.set(key, normalized);
+      }
+    });
+  }
+
+  return <Calendar2 initialSearch={initialSearchParams.toString()} />;
 }

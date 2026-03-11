@@ -11,14 +11,14 @@ export function getAiIThemeStyles(theme: AiTheme): AiIThemeStyles {
 
   return {
     ...getAiThemeStyles(theme),
-    "--ai-i-shell": "rgba(19,20,25,0.92)",
-    "--ai-i-shell-border": "rgba(255,255,255,0.12)",
+    "--ai-i-shell": "rgba(17,18,22,0.94)",
+    "--ai-i-shell-border": "rgba(255,255,255,0.08)",
     "--ai-i-shell-text": "rgba(245,247,251,0.98)",
-    "--ai-i-shell-muted": "rgba(214,219,231,0.68)",
-    "--ai-i-divider": `${palette.accent}99`,
-    "--ai-i-stage-top": "#d0c0de",
-    "--ai-i-stage-mid": "#deb9cc",
-    "--ai-i-stage-bottom": "#ff9700",
+    "--ai-i-shell-muted": "rgba(214,219,231,0.62)",
+    "--ai-i-divider": "rgba(94,106,210,0.6)",
+    "--ai-i-stage-top": "#12131a",
+    "--ai-i-stage-mid": "#111218",
+    "--ai-i-stage-bottom": "rgba(181,124,52,0.56)",
     "--ai-i-stage-glow": palette.accentGlow,
   };
 }

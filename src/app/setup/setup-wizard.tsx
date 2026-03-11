@@ -604,7 +604,7 @@ export function SetupWizard() {
         <header className={homeStyles["home-header"]}>
           <div className={homeStyles["home-header-left"]}>
             <Link href="/" className={homeStyles["home-back-link"]}>
-              ← Терминал
+              ← AI-I
             </Link>
             <div>
               <p className={homeStyles["home-kicker"]}>NetDen</p>

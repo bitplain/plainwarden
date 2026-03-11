@@ -18,7 +18,12 @@ vi.mock("@/components/home/HomeWorkspace", () => ({
 }));
 
 vi.mock("@/components/calendar2/Calendar2", () => ({
-  default: () => React.createElement("main", { "data-calendar-workspace": "mock" }, "Calendar Workspace"),
+  default: (props: Record<string, unknown>) =>
+    React.createElement(
+      "main",
+      { "data-calendar-workspace": "mock", "data-calendar-props": JSON.stringify(props) },
+      "Calendar Workspace",
+    ),
 }));
 
 vi.mock("@/components/ai-chat/AiIStandalonePage", () => ({
@@ -26,6 +31,7 @@ vi.mock("@/components/ai-chat/AiIStandalonePage", () => ({
 }));
 
 import HomePage from "@/app/page";
+import AiPage from "@/app/ai/page";
 import AiIPage from "@/app/ai-i/page";
 import CalendarPage from "@/app/calendar/page";
 
@@ -35,8 +41,18 @@ describe("home and calendar routes", () => {
     homeWorkspaceMock.mockClear();
   });
 
-  it("renders the home workspace on / without redirecting to calendar", async () => {
+  it("renders the ai-i workspace on / without redirecting", async () => {
     const page = await HomePage({
+      searchParams: Promise.resolve({}),
+    } as never);
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("AI-I Workspace");
+    expect(redirectMock).not.toHaveBeenCalled();
+  });
+
+  it("renders the legacy ai home workspace on /ai", async () => {
+    const page = await AiPage({
       searchParams: Promise.resolve({}),
     } as never);
     const html = renderToStaticMarkup(page);
@@ -49,8 +65,8 @@ describe("home and calendar routes", () => {
     });
   });
 
-  it("bootstraps idea mode from the legacy inbox segment", async () => {
-    const page = await HomePage({
+  it("bootstraps idea mode from the legacy inbox segment on /ai", async () => {
+    const page = await AiPage({
       searchParams: Promise.resolve({ segment: "inbox" }),
     } as never);
     renderToStaticMarkup(page);
@@ -66,7 +82,7 @@ describe("home and calendar routes", () => {
       CalendarPage({
         searchParams: Promise.resolve({ tab: "inbox" }),
       } as never),
-    ).rejects.toThrow("REDIRECT:/?segment=inbox");
+    ).rejects.toThrow("REDIRECT:/ai?segment=inbox");
   });
 
   it("redirects legacy ai tab requests to the new home segment", async () => {
@@ -74,7 +90,7 @@ describe("home and calendar routes", () => {
       CalendarPage({
         searchParams: Promise.resolve({ tab: "ai" }),
       } as never),
-    ).rejects.toThrow("REDIRECT:/?segment=ai");
+    ).rejects.toThrow("REDIRECT:/ai?segment=ai");
   });
 
   it("redirects ai-i calendar tab requests to the standalone ai-i page", async () => {
@@ -82,7 +98,7 @@ describe("home and calendar routes", () => {
       CalendarPage({
         searchParams: Promise.resolve({ tab: "ai-i" }),
       } as never),
-    ).rejects.toThrow("REDIRECT:/ai-i");
+    ).rejects.toThrow("REDIRECT:/");
   });
 
   it("keeps rendering the calendar workspace for non-legacy tabs", async () => {
@@ -92,13 +108,10 @@ describe("home and calendar routes", () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Calendar Workspace");
+    expect(html).toContain("tab=kanban");
   });
 
-  it("renders the standalone ai-i workspace on /ai-i", async () => {
-    const page = await AiIPage();
-    const html = renderToStaticMarkup(page);
-
-    expect(html).toContain("AI-I Workspace");
-    expect(redirectMock).not.toHaveBeenCalled();
+  it("redirects /ai-i to the canonical root ai-i route", async () => {
+    expect(() => AiIPage()).toThrow("REDIRECT:/");
   });
 });
