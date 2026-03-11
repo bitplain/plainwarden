@@ -159,7 +159,7 @@ interface AiIChatSurfaceProps {
   onSubmit: (overrideText?: string) => Promise<void> | void;
   onResolveAction: (approved: boolean) => Promise<void> | void;
   inputRef?: RefObject<HTMLTextAreaElement | null>;
-  mode?: "embedded" | "floating";
+  mode?: "embedded" | "floating" | "standalone";
   theme?: AiTheme;
 }
 
@@ -236,6 +236,9 @@ export default function AiIChatSurface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const composerRef = inputRef ?? localInputRef;
   const hasTranscript = messages.length > 0 || pendingAction !== null;
+  const shellState = hasTranscript ? "transcript" : "empty";
+  const compactComposer = mode === "standalone" && !hasTranscript;
+  const composerLayout = compactComposer ? "compact" : hasTranscript ? "threaded" : "immersive";
   const closeImagePreview = useCallback(() => {
     setSelectedImageUrl(null);
   }, []);
@@ -370,22 +373,30 @@ export default function AiIChatSurface({
 
   return (
     <section
-        style={getAiIThemeStyles(theme)}
-        className={cn(
-          "relative min-h-0 overflow-hidden text-[var(--ai-i-shell-text)]",
-          mode === "floating"
-            ? "h-[46rem] max-h-[82dvh] rounded-[28px]"
-            : "flex h-full flex-1 rounded-[28px]",
-        )}
-      >
+      data-ai-i-surface-mode={mode}
+      data-ai-i-shell-state={shellState}
+      style={getAiIThemeStyles(theme)}
+      className={cn(
+        "relative flex min-h-0 w-full flex-col overflow-hidden text-[var(--ai-i-shell-text)]",
+        mode === "floating"
+          ? "h-[46rem] max-h-[82dvh] rounded-[28px]"
+          : mode === "standalone"
+            ? "min-h-[calc(100dvh-5.75rem)] flex-1 rounded-[32px] sm:rounded-[36px]"
+            : "h-full flex-1 rounded-[28px]",
+      )}
+    >
         <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--ai-i-stage-top)_0%,var(--ai-i-stage-mid)_54%,rgba(244,182,123,0.88)_78%,var(--ai-i-stage-bottom)_100%)]" />
         <div className="absolute inset-x-[18%] bottom-[-18%] h-[56%] rounded-full bg-[radial-gradient(circle,var(--ai-i-stage-bottom)_0%,rgba(255,151,0,0.5)_42%,transparent_74%)] blur-3xl" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_30%)]" />
 
         <div
           className={cn(
-            "relative flex h-full min-h-0 flex-col",
-            hasTranscript ? "px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-6" : "p-5 sm:p-8",
+            "relative flex min-h-0 w-full flex-1 flex-col",
+            hasTranscript
+              ? "px-4 pb-4 pt-4 sm:px-6 sm:pb-6 sm:pt-6"
+              : compactComposer
+                ? "px-4 pb-8 pt-8 sm:px-6 sm:pb-10 sm:pt-10"
+                : "p-5 sm:p-8",
           )}
         >
           {hasTranscript ? (
@@ -492,12 +503,20 @@ export default function AiIChatSurface({
             )}
           >
             <div
+              data-ai-i-composer-layout={composerLayout}
               className={cn(
                 "mx-auto w-full",
-                hasTranscript ? "max-w-[58rem]" : "max-w-[56rem]",
+                hasTranscript ? "max-w-[58rem]" : compactComposer ? "max-w-[34rem]" : "max-w-[56rem]",
               )}
             >
-              <div className="w-full rounded-[2.3rem] border border-[var(--ai-i-shell-border)] bg-[linear-gradient(135deg,rgba(21,22,28,0.96),rgba(16,17,23,0.94))] px-4 pb-4 pt-5 shadow-[0_30px_80px_-34px_rgba(0,0,0,0.55)] backdrop-blur-[18px]">
+              <div
+                className={cn(
+                  "w-full border border-[var(--ai-i-shell-border)] bg-[linear-gradient(135deg,rgba(21,22,28,0.96),rgba(16,17,23,0.94))] shadow-[0_30px_80px_-34px_rgba(0,0,0,0.55)] backdrop-blur-[18px]",
+                  compactComposer
+                    ? "rounded-[2rem] px-4 pb-3 pt-4"
+                    : "rounded-[2.3rem] px-4 pb-4 pt-5",
+                )}
+              >
                 {preview ? (
                   <div className="mb-3 flex">
                     <button
@@ -569,20 +588,28 @@ export default function AiIChatSurface({
                     spellCheck={false}
                     disabled={isStreaming}
                     placeholder={placeholder}
-                    className="min-h-[7rem] max-h-44 w-full resize-none bg-transparent px-3 text-[clamp(1.8rem,2.1vw,2.25rem)] leading-[1.25] tracking-[-0.04em] text-[var(--ai-i-shell-text)] outline-none placeholder:text-white/58 disabled:cursor-not-allowed disabled:opacity-60"
+                    className={cn(
+                      "w-full resize-none bg-transparent outline-none placeholder:text-white/58 disabled:cursor-not-allowed disabled:opacity-60",
+                      compactComposer
+                        ? "min-h-[3.5rem] max-h-32 px-3 text-[clamp(1.05rem,1.35vw,1.35rem)] leading-[1.4] tracking-[-0.02em] text-[var(--ai-i-shell-text)]"
+                        : "min-h-[7rem] max-h-44 px-3 text-[clamp(1.8rem,2.1vw,2.25rem)] leading-[1.25] tracking-[-0.04em] text-[var(--ai-i-shell-text)]",
+                    )}
                   />
                 )}
 
-                <div className="mt-4 flex items-end justify-between gap-3">
+                <div className={cn("flex items-end justify-between gap-3", compactComposer ? "mt-3" : "mt-4")}>
                   <div className="flex flex-wrap items-center gap-1 text-[var(--ai-i-shell-muted)]">
                     <button
                       type="button"
                       aria-label="Upload image"
                       title="Upload image"
                       onClick={() => fileInputRef.current?.click()}
-                      className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-white/8 hover:text-white"
+                      className={cn(
+                        "inline-flex items-center justify-center rounded-full transition-colors hover:bg-white/8 hover:text-white",
+                        compactComposer ? "h-9 w-9" : "h-11 w-11",
+                      )}
                     >
-                      <PaperclipIcon className="h-5 w-5" />
+                      <PaperclipIcon className={compactComposer ? "h-4.5 w-4.5" : "h-5 w-5"} />
                     </button>
 
                     <input
@@ -608,7 +635,7 @@ export default function AiIChatSurface({
                       }}
                     />
 
-                    <div className="flex items-center rounded-full bg-black/15 px-1 py-1">
+                    <div className={cn("flex items-center rounded-full bg-black/15", compactComposer ? "px-0.5 py-0.5" : "px-1 py-1")}>
                       {[
                         {
                           id: "search",
@@ -652,7 +679,8 @@ export default function AiIChatSurface({
                               aria-label={item.label}
                               onClick={item.onClick}
                               className={cn(
-                                "inline-flex h-11 min-w-11 items-center justify-center gap-2 rounded-full px-3 transition-colors",
+                                "inline-flex items-center justify-center gap-2 rounded-full transition-colors",
+                                compactComposer ? "h-9 min-w-9 px-2.5" : "h-11 min-w-11 px-3",
                                 item.active
                                   ? "bg-white/10 text-white"
                                   : "text-[var(--ai-i-shell-muted)] hover:bg-white/8 hover:text-white",
@@ -665,7 +693,7 @@ export default function AiIChatSurface({
                                 }}
                                 transition={{ duration: 0.35, ease: "easeOut" }}
                               >
-                                <Icon className="h-4.5 w-4.5" />
+                                <Icon className={compactComposer ? "h-4 w-4" : "h-4.5 w-4.5"} />
                               </motion.span>
                               <AnimatePresence initial={false}>
                                 {item.active ? (
@@ -704,7 +732,8 @@ export default function AiIChatSurface({
                       setIsRecording(true);
                     }}
                     className={cn(
-                      "inline-flex h-16 w-16 shrink-0 items-center justify-center rounded-full shadow-[0_18px_42px_-20px_rgba(0,0,0,0.4)] transition-transform hover:scale-[1.02]",
+                      "inline-flex shrink-0 items-center justify-center rounded-full shadow-[0_18px_42px_-20px_rgba(0,0,0,0.4)] transition-transform hover:scale-[1.02]",
+                      compactComposer ? "h-12 w-12" : "h-16 w-16",
                       isRecording
                         ? "bg-[#1b1d22] text-[#ff5e5e]"
                         : inputValue.trim() || preview || isStreaming
@@ -715,11 +744,11 @@ export default function AiIChatSurface({
                     {isStreaming ? (
                       <SquareIcon className="h-4 w-4" />
                     ) : isRecording ? (
-                      <StopCircleIcon className="h-6 w-6" />
+                      <StopCircleIcon className={compactComposer ? "h-5 w-5" : "h-6 w-6"} />
                     ) : inputValue.trim() || preview ? (
-                      <ArrowUpIcon className="h-5 w-5" />
+                      <ArrowUpIcon className={compactComposer ? "h-4.5 w-4.5" : "h-5 w-5"} />
                     ) : (
-                      <MicIcon className="h-6 w-6" />
+                      <MicIcon className={compactComposer ? "h-5 w-5" : "h-6 w-6"} />
                     )}
                   </button>
                 </div>

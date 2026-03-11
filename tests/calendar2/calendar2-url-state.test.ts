@@ -58,7 +58,7 @@ describe("parseCalendar2UrlState", () => {
     expect(state.tab).toBe("calendar");
   });
 
-  it("accepts ai-i tab value", () => {
+  it("treats ai-i tab value as invalid for calendar state", () => {
     const state = parseCalendar2UrlState(
       new URLSearchParams({
         tab: "ai-i",
@@ -66,7 +66,7 @@ describe("parseCalendar2UrlState", () => {
       "2026-03-11",
     );
 
-    expect(state.tab).toBe("ai-i");
+    expect(state.tab).toBe("calendar");
   });
 
   it("treats legacy ai tab value as invalid for calendar state", () => {

@@ -17,9 +17,7 @@ describe("AI chat surface registry", () => {
     ]);
   });
 
-  it("returns only calendar-visible tabs in rollout order", () => {
-    expect(getCalendarAiSurfaceTabs().map((surface) => surface.label)).toEqual([
-      "AI-I",
-    ]);
+  it("does not expose standalone ai-i as a calendar tab anymore", () => {
+    expect(getCalendarAiSurfaceTabs()).toEqual([]);
   });
 });

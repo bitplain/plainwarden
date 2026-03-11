@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Calendar2View, Calendar2Tab } from "@/components/calendar2/calendar2-types";
-import { getCalendarAiSurfaceTabs } from "@/components/ai-chat/surfaces";
+import WorkspaceTopNav from "@/components/workspace/WorkspaceTopNav";
 
 interface Calendar2ToolbarProps {
   activeTab: Calendar2Tab;
@@ -20,23 +20,10 @@ interface Calendar2ToolbarProps {
   onSearchChange: (value: string) => void;
 }
 
-const AI_SURFACE_TABS = getCalendarAiSurfaceTabs();
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
-  ...AI_SURFACE_TABS.filter((surface) => surface.toolbarPlacement === "before-calendar").map(
-    (surface) => ({
-      id: surface.id,
-      label: surface.label,
-    }),
-  ),
   { id: "calendar", label: "Календарь" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
-  ...AI_SURFACE_TABS.filter((surface) => surface.toolbarPlacement === "after-notes").map(
-    (surface) => ({
-      id: surface.id,
-      label: surface.label,
-    }),
-  ),
 ];
 
 const VIEW_OPTIONS: { id: Calendar2View; label: string }[] = [
@@ -62,7 +49,17 @@ export default function Calendar2Toolbar({
   searchValue,
   onSearchChange,
 }: Calendar2ToolbarProps) {
-  const shouldShowSidebarButton = activeTab !== "ai-i";
+  const shouldShowSidebarButton = true;
+  const topNavItems = [
+    { id: "ai-i", label: "AI-I", href: "/ai-i" },
+    ...TAB_OPTIONS.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+      active: tab.id === activeTab,
+      onClick: () => onTabChange(tab.id),
+    })),
+    { id: "ai", label: "AI", href: "/" },
+  ];
 
   return (
     <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
@@ -122,34 +119,7 @@ export default function Calendar2Toolbar({
 
         {/* Tabs row */}
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-          <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
-            {TAB_OPTIONS.map((tab) => {
-              const isActive = tab.id === activeTab;
-              return (
-                <div key={tab.id} className="contents">
-                  <button
-                    type="button"
-                    onClick={() => onTabChange(tab.id)}
-                    className={`rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px] ${
-                      isActive
-                        ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
-                        : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                  {tab.id === "calendar" ? (
-                    <Link
-                      href="/"
-                      className="rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] sm:text-[12px]"
-                    >
-                      AI
-                    </Link>
-                  ) : null}
-                </div>
-              );
-            })}
-          </div>
+          <WorkspaceTopNav activeId={activeTab} items={topNavItems} />
 
           {/* Calendar navigation — only visible on calendar tab */}
           {activeTab === "calendar" && (

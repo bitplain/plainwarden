@@ -36,6 +36,26 @@ describe("AiIChatSurface", () => {
     expect(html).toContain("Voice message");
   });
 
+  it("renders standalone mode with a compact centered composer layout", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(AiIChatSurface, {
+        mode: "standalone",
+        messages: [],
+        pendingAction: null,
+        isStreaming: false,
+        inputValue: "",
+        onInputChange: vi.fn(),
+        onSubmit: vi.fn(),
+        onResolveAction: vi.fn(),
+      }),
+    );
+
+    expect(html).toContain('data-ai-i-surface-mode="standalone"');
+    expect(html).toContain('data-ai-i-shell-state="empty"');
+    expect(html).toContain('data-ai-i-composer-layout="compact"');
+    expect(html).toContain("relative flex min-h-0 w-full flex-1 flex-col");
+  });
+
   it("keeps transcript and pending action inside the new visual shell", () => {
     const html = renderToStaticMarkup(
       React.createElement(AiIChatSurface, {
