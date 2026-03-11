@@ -2,8 +2,9 @@
 
 import React, { useCallback, useRef } from "react";
 import { format, isSameDay, isSameMonth } from "date-fns";
+import { GlowingEffect } from "@/components/ui/glowing-effect";
+import { formatMonthShort, toDateKey } from "@/components/calendar2/date-utils";
 import type { CalendarEvent } from "@/lib/types";
-import { toDateKey } from "@/components/calendar2/date-utils";
 import { CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME } from "./mobile-layout";
 import { PRIORITY_CONFIG, type TaskPriority } from "./calendar2-types";
 
@@ -22,13 +23,65 @@ interface Calendar2MonthViewProps {
 const MONTH_DAY_NAMES = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 const EMPTY_DAY_EVENTS: CalendarEvent[] = [];
 
-function getEventStyle(event: CalendarEvent, priorities?: Record<string, TaskPriority>) {
-  return event.type === "event"
-    ? "bg-[#1E3A8A20] border-[#3B82F6] text-[#93C5FD] rounded-[8px]" // Мягкий синий фон, синяя рамка, события не приоритизируются
-    : "bg-[#2A2A2A] border-[#3A3A3A] text-[#E5E5E5] rounded-[6px]"; // Нейтральный серый фон для задач
+function cn(...classes: Array<string | false | null | undefined>) {
+  return classes.filter(Boolean).join(" ");
 }
 
-/* ── Isolated month cell ── */
+function getEventStyle(event: CalendarEvent) {
+  return event.type === "event"
+    ? "border-[rgba(91,124,255,0.28)] bg-[rgba(52,75,164,0.18)] text-[#D9E1FF]"
+    : "border-[rgba(255,255,255,0.07)] bg-[rgba(255,255,255,0.04)] text-[#E7E7EA]";
+}
+
+function getMonthWeekdayLabel(date: Date) {
+  return MONTH_DAY_NAMES[(date.getDay() + 6) % 7];
+}
+
+type MonthCellTone = "default" | "muted" | "active";
+
+function getMonthCellTone(input: {
+  isCurrentMonth: boolean;
+  isCurrentDay: boolean;
+  isToday: boolean;
+  isGlowing: boolean;
+}): MonthCellTone {
+  if (input.isCurrentDay || input.isToday || input.isGlowing) {
+    return "active";
+  }
+
+  if (!input.isCurrentMonth) {
+    return "muted";
+  }
+
+  return "default";
+}
+
+function getMonthCellSurfaceClass(tone: MonthCellTone) {
+  switch (tone) {
+    case "active":
+      return "border-[rgba(126,141,255,0.36)] [background-image:var(--cal2-month-card-active)] [box-shadow:var(--cal2-month-shadow-active)]";
+    case "muted":
+      return "border-[rgba(255,255,255,0.04)] [background-image:var(--cal2-month-card-muted)] [box-shadow:var(--cal2-month-shadow)]";
+    default:
+      return "border-[rgba(255,255,255,0.07)] [background-image:var(--cal2-month-card)] [box-shadow:var(--cal2-month-shadow)]";
+  }
+}
+
+function getDateButtonClass(input: {
+  isToday: boolean;
+  isCurrentMonth: boolean;
+  isCurrentDay: boolean;
+}) {
+  if (input.isToday || input.isCurrentDay) {
+    return "border border-[rgba(148,163,255,0.38)] bg-[rgba(94,106,210,0.18)] text-[var(--cal2-text-primary)]";
+  }
+
+  if (input.isCurrentMonth) {
+    return "text-[var(--cal2-text-primary)] hover:bg-[rgba(255,255,255,0.06)]";
+  }
+
+  return "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)]";
+}
 
 interface MonthCellProps {
   day: Date;
@@ -62,12 +115,13 @@ const MonthCell = React.memo(function MonthCell({
   const cellRef = useRef<HTMLDivElement>(null);
   const visibleEvents = dayEvents.slice(0, 3);
   const extraCount = dayEvents.length - visibleEvents.length;
-
-  const bgClass = isCurrentDay
-    ? "bg-[var(--cal2-accent-soft)]"
-    : isCurrentMonth
-      ? "bg-transparent hover:bg-[rgba(255,255,255,0.03)]"
-      : "bg-[rgba(0,0,0,0.2)] hover:bg-[rgba(255,255,255,0.02)]";
+  const tone = getMonthCellTone({
+    isCurrentMonth,
+    isCurrentDay,
+    isToday,
+    isGlowing,
+  });
+  const glowActive = tone === "active";
 
   const markDragOver = useCallback(() => {
     const cell = cellRef.current;
@@ -105,98 +159,133 @@ const MonthCell = React.memo(function MonthCell({
   }, [clearDragOver]);
 
   return (
-    <div
-      ref={cellRef}
-      onClick={() => onQuickAdd(day)}
-      onDragEnter={handleDragEnter}
-      onDragOver={(e) => {
-        e.preventDefault();
-        markDragOver();
-      }}
-      onDragLeave={handleDragLeave}
-      onDrop={(e) => {
-        e.preventDefault();
-        clearDragOver();
-        const draggedEventId = e.dataTransfer.getData("text/plain");
-        if (draggedEventId) {
-          void onMoveEvent(draggedEventId, { date: dateKey });
-        }
-      }}
-      className={[
-        "cal2-drop-target group relative cursor-pointer border-b border-r border-[var(--cal2-border)] p-1.5 text-left last:border-r-0",
-        bgClass,
-        isGlowing ? "cal2-cell-drop-flash" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      style={{ contain: "layout style paint" }}
-    >
-      <div className="mb-1 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelectDate(day);
-          }}
-          className={`inline-flex h-6 min-w-6 items-center justify-center rounded-[4px] px-1 text-[11px] font-semibold leading-[1] transition-colors ${
-            isToday
-              ? "border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-[var(--cal2-text-primary)]"
-              : isCurrentMonth
-                ? "text-[var(--cal2-text-primary)] hover:bg-[rgba(255,255,255,0.06)]"
-                : "text-[var(--cal2-text-disabled)] hover:bg-[rgba(255,255,255,0.03)]"
-          }`}
-        >
-          {format(day, "d")}
-        </button>
-        <span className="text-[10px] text-[var(--cal2-text-secondary)] opacity-0 transition-opacity group-hover:opacity-100">
-          +
-        </span>
-      </div>
-
-      <div className="space-y-0.5">
-        {visibleEvents.map((event) => {
-          return (
-            <button
-              key={event.id}
-              type="button"
-              draggable
-              onDragStartCapture={(dragEvent) => {
-                dragEvent.stopPropagation();
-                dragEvent.dataTransfer.effectAllowed = "move";
-                dragEvent.dataTransfer.setData("text/plain", event.id);
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectEvent(event.id);
-              }}
-              className={`relative flex items-center w-full truncate border px-1.5 py-0.5 text-left text-[10px] font-medium leading-[1.2] transition-colors hover:brightness-110 ${getEventStyle(event)}`}
-            >
-              {event.type === "task" && eventPriorities[event.id] && (
-                <div
-                  className={`absolute left-0 top-0 bottom-0 w-[4px] rounded-l-sm ${PRIORITY_CONFIG[eventPriorities[event.id]].dot}`}
-                />
-              )}
-              <div className={`flex w-full truncate ${event.type === "task" && eventPriorities[event.id] ? "ml-1" : ""}`}>
-                {event.time && (
-                  <span className="mr-1 text-[#9CA3AF]">{event.time}</span>
-                )}
-                <span className="truncate">{event.title}</span>
-              </div>
-            </button>
-          );
-        })}
-
-        {extraCount > 0 && (
-          <p className="px-1 text-[10px] font-medium text-[var(--cal2-text-secondary)]">
-            +{extraCount}
-          </p>
+    <div className="min-h-0">
+      <div
+        ref={cellRef}
+        data-cal2-month-cell-tone={tone}
+        onClick={() => onQuickAdd(day)}
+        onDragEnter={handleDragEnter}
+        onDragOver={(event) => {
+          event.preventDefault();
+          markDragOver();
+        }}
+        onDragLeave={handleDragLeave}
+        onDrop={(event) => {
+          event.preventDefault();
+          clearDragOver();
+          const draggedEventId = event.dataTransfer.getData("text/plain");
+          if (draggedEventId) {
+            void onMoveEvent(draggedEventId, { date: dateKey });
+          }
+        }}
+        className={cn(
+          "cal2-drop-target group/calcell relative flex h-full min-h-[112px] cursor-pointer flex-col overflow-hidden rounded-[18px] border p-3 text-left transition duration-200 ease-out md:min-h-[132px]",
+          "hover:-translate-y-[1px] hover:[background-image:var(--cal2-month-card-hover)]",
+          getMonthCellSurfaceClass(tone),
+          isGlowing && "cal2-cell-drop-flash",
         )}
+        style={{ contain: "layout style paint" }}
+      >
+        <GlowingEffect active={glowActive} />
+
+        <div className="relative z-[1] mb-3 flex items-start justify-between gap-2">
+          <div className="flex min-w-0 flex-col">
+            <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--cal2-text-secondary)]">
+              {getMonthWeekdayLabel(day)}
+            </span>
+            {!isCurrentMonth ? (
+              <span className="mt-0.5 text-[10px] uppercase tracking-[0.14em] text-[var(--cal2-text-disabled)]">
+                {formatMonthShort(day)}
+              </span>
+            ) : null}
+          </div>
+
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onSelectDate(day);
+            }}
+            className={cn(
+              "inline-flex h-8 min-w-8 items-center justify-center rounded-[10px] px-2 text-[12px] font-semibold leading-none transition-colors",
+              getDateButtonClass({ isToday, isCurrentMonth, isCurrentDay }),
+            )}
+          >
+            {format(day, "d")}
+          </button>
+        </div>
+
+        <div className="relative z-[1] flex flex-1 flex-col justify-between gap-2">
+          <div className="space-y-1.5">
+            {visibleEvents.map((event) => {
+              const priority = eventPriorities[event.id];
+              const hasPriority = event.type === "task" && Boolean(priority);
+
+              return (
+                <button
+                  key={event.id}
+                  type="button"
+                  draggable
+                  onDragStartCapture={(dragEvent) => {
+                    dragEvent.stopPropagation();
+                    dragEvent.dataTransfer.effectAllowed = "move";
+                    dragEvent.dataTransfer.setData("text/plain", event.id);
+                  }}
+                  onClick={(clickEvent) => {
+                    clickEvent.stopPropagation();
+                    onSelectEvent(event.id);
+                  }}
+                  className={cn(
+                    "relative flex w-full items-center gap-1.5 overflow-hidden rounded-[10px] border px-2 py-1.5 text-left text-[10px] font-medium leading-[1.25] transition duration-150 ease-out hover:brightness-110",
+                    getEventStyle(event),
+                  )}
+                >
+                  {hasPriority ? (
+                    <span
+                      className={cn(
+                        "absolute inset-y-0 left-0 w-[4px] rounded-l-[10px]",
+                        PRIORITY_CONFIG[priority].dot,
+                      )}
+                    />
+                  ) : null}
+
+                  {event.time ? (
+                    <span className={cn(
+                      "shrink-0 text-[9px] uppercase tracking-[0.12em] text-[#9CA3AF]",
+                      hasPriority && "ml-1",
+                    )}>
+                      {event.time}
+                    </span>
+                  ) : null}
+
+                  <span className={cn("truncate", hasPriority && !event.time && "ml-1")}>
+                    {event.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            {extraCount > 0 ? (
+              <p className="text-[10px] font-medium text-[var(--cal2-text-secondary)]">
+                +{extraCount}
+              </p>
+            ) : (
+              <span className="text-[10px] text-[var(--cal2-text-disabled)]">
+                {dayEvents.length === 0 ? "Свободно" : "\u00A0"}
+              </span>
+            )}
+
+            <span className="text-[10px] uppercase tracking-[0.16em] text-[var(--cal2-text-disabled)] opacity-0 transition-opacity group-hover/calcell:opacity-100">
+              Добавить
+            </span>
+          </div>
+        </div>
       </div>
     </div>
   );
 });
-
-/* ── Month view grid ── */
 
 export default function Calendar2MonthView({
   anchorDate,
@@ -213,18 +302,21 @@ export default function Calendar2MonthView({
 
   return (
     <div className={CALENDAR2_RESPONSIVE_PANEL_FRAME_CLASSNAME}>
-      <div className="grid grid-cols-7 border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-2)]">
+      <div className="grid grid-cols-7 gap-3 px-3 pb-2 pt-3 md:px-4">
         {MONTH_DAY_NAMES.map((name) => (
           <div
             key={name}
-            className="border-r border-[var(--cal2-border)] px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--cal2-text-secondary)] last:border-r-0"
+            className="rounded-[12px] border border-[var(--cal2-border-subtle)] bg-[rgba(255,255,255,0.02)] px-2 py-2 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--cal2-text-secondary)]"
           >
             {name}
           </div>
         ))}
       </div>
 
-      <div className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(100px,1fr))] md:grid-rows-[repeat(6,minmax(120px,1fr))]">
+      <div
+        data-cal2-month-grid="detached"
+        className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(112px,1fr))] gap-3 overflow-hidden px-3 pb-3 md:grid-rows-[repeat(6,minmax(132px,1fr))] md:px-4"
+      >
         {days.map((day) => {
           const dateKey = toDateKey(day);
           const dayEvents = eventsByDate[dateKey] ?? EMPTY_DAY_EVENTS;
