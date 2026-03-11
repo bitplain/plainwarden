@@ -28,7 +28,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace("/calendar");
+      router.replace("/");
     }
   }, [isAuthenticated, router]);
 
@@ -43,7 +43,7 @@ export default function RegisterPage() {
 
     try {
       await register({ name, email, password });
-      router.replace("/calendar");
+      router.replace("/");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ошибка регистрации";
       setFormError(message);
@@ -56,7 +56,7 @@ export default function RegisterPage() {
         <header className={homeStyles['home-header']}>
           <div className={homeStyles['home-header-left']}>
             <Link href="/" className={homeStyles['home-back-link']}>
-              ← Терминал
+              ← AI-I
             </Link>
             <div>
               <p className={homeStyles['home-kicker']}>NetDen</p>

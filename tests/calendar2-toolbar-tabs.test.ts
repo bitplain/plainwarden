@@ -25,14 +25,14 @@ describe("Calendar2 toolbar tabs", () => {
       }),
     );
 
-    const aiIIndex = html.indexOf('href="/ai-i"');
+    const aiIIndex = html.indexOf('href="/"');
     const calendarIndex = html.indexOf(">Календарь</button>");
 
     expect(aiIIndex).toBeGreaterThan(-1);
     expect(calendarIndex).toBeGreaterThan(-1);
     expect(aiIIndex).toBeLessThan(calendarIndex);
     expect(html).toContain(">AI-I</a>");
-    expect(html).toContain('href="/"');
+    expect(html).toContain('href="/ai"');
     expect(html).not.toContain(">Inbox<");
     expect(html).not.toContain(">AI-I</button>");
     expect(html).not.toContain(">AI</button>");

@@ -41,6 +41,7 @@ import { CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME } from "./mobile-layout";
 import { resolveInboxCaptureShortcut } from "./inbox-ui";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
+  DEFAULT_UI_PREFERENCES,
   readUiPreferences,
   resolveDesktopSidebarInitialState,
   saveRememberedDesktopSidebarState,
@@ -129,8 +130,8 @@ function toDayStart(dateKey: string): Date {
   return startOfDay(date);
 }
 
-export default function Calendar2() {
-  const { state: urlState, setState: setUrlState } = useCalendar2UrlStore();
+export default function Calendar2({ initialSearch = "" }: { initialSearch?: string }) {
+  const { state: urlState, setState: setUrlState } = useCalendar2UrlStore(initialSearch);
   const activeTab = urlState.tab;
   const view = urlState.view;
   const categoryFilter = urlState.category;
@@ -141,13 +142,13 @@ export default function Calendar2() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
-  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
-  const [isSidebarVisible, setIsSidebarVisible] = useState(() =>
-    resolveDesktopSidebarInitialState(readUiPreferences()),
+  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(DEFAULT_UI_PREFERENCES);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(
+    DEFAULT_UI_PREFERENCES.sidebarDefaultDesktop === "open",
   );
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
+  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>({});
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
   const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
   const dropFlashTimeoutRef = useRef<number | null>(null);
@@ -218,7 +219,16 @@ export default function Calendar2() {
     void fetchEvents(calendarQueryFilters);
   }, [user, fetchEvents, calendarQueryFilters]);
 
-  useEffect(() => subscribeUiPreferences(setUiPreferences), []);
+  useEffect(() => {
+    const initialPreferences = readUiPreferences();
+    setUiPreferences(initialPreferences);
+    setIsSidebarVisible(resolveDesktopSidebarInitialState(initialPreferences));
+    setEventPriorities(loadPriorities());
+
+    return subscribeUiPreferences((nextPreferences) => {
+      setUiPreferences(nextPreferences);
+    });
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");

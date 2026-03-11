@@ -237,6 +237,7 @@ export default function AiIChatSurface({
   const composerRef = inputRef ?? localInputRef;
   const hasTranscript = messages.length > 0 || pendingAction !== null;
   const shellState = hasTranscript ? "transcript" : "empty";
+  const standalone = mode === "standalone";
   const compactComposer = mode === "standalone" && !hasTranscript;
   const composerLayout = compactComposer ? "compact" : hasTranscript ? "threaded" : "immersive";
   const closeImagePreview = useCallback(() => {
@@ -380,14 +381,35 @@ export default function AiIChatSurface({
         "relative flex min-h-0 w-full flex-col overflow-hidden text-[var(--ai-i-shell-text)]",
         mode === "floating"
           ? "h-[46rem] max-h-[82dvh] rounded-[28px]"
-          : mode === "standalone"
-            ? "min-h-[calc(100dvh-5.75rem)] flex-1 rounded-[32px] sm:rounded-[36px]"
+          : standalone
+            ? "h-full min-h-[32rem] flex-1 rounded-[30px] border border-[var(--cal2-border)] shadow-[0_40px_120px_-52px_rgba(0,0,0,0.96)]"
             : "h-full flex-1 rounded-[28px]",
       )}
     >
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,var(--ai-i-stage-top)_0%,var(--ai-i-stage-mid)_54%,rgba(244,182,123,0.88)_78%,var(--ai-i-stage-bottom)_100%)]" />
-        <div className="absolute inset-x-[18%] bottom-[-18%] h-[56%] rounded-full bg-[radial-gradient(circle,var(--ai-i-stage-bottom)_0%,rgba(255,151,0,0.5)_42%,transparent_74%)] blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_30%)]" />
+        <div
+          className={cn(
+            "absolute inset-0",
+            standalone
+              ? "bg-[linear-gradient(180deg,rgba(17,17,19,0.98),rgba(10,10,12,0.99))]"
+              : "bg-[linear-gradient(180deg,var(--ai-i-stage-top)_0%,var(--ai-i-stage-mid)_54%,rgba(244,182,123,0.88)_78%,var(--ai-i-stage-bottom)_100%)]",
+          )}
+        />
+        <div
+          className={cn(
+            "absolute rounded-full blur-3xl",
+            standalone
+              ? "inset-x-[22%] bottom-[-26%] h-[54%] bg-[radial-gradient(circle,rgba(94,106,210,0.22)_0%,rgba(94,106,210,0.1)_42%,transparent_74%)]"
+              : "inset-x-[18%] bottom-[-18%] h-[56%] bg-[radial-gradient(circle,var(--ai-i-stage-bottom)_0%,rgba(255,151,0,0.5)_42%,transparent_74%)]",
+          )}
+        />
+        <div
+          className={cn(
+            "absolute inset-0",
+            standalone
+              ? "bg-[radial-gradient(circle_at_top,rgba(94,106,210,0.12),transparent_24%),radial-gradient(circle_at_bottom,rgba(255,173,54,0.12),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.03),transparent_20%)]"
+              : "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.08),transparent_30%)]",
+          )}
+        />
 
         <div
           className={cn(

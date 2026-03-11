@@ -35,11 +35,12 @@ describe("AiIStandalonePage", () => {
     expect(html).toContain('data-ai-i-page="standalone"');
     expect(html).toContain('data-ai-i-stage="centered"');
     expect(html).toContain('data-workspace-top-nav="ai-i"');
-    expect(html).toContain('href="/ai-i"');
+    expect(html).toContain('href="/"');
     expect(html).toContain('href="/calendar"');
     expect(html).toContain('href="/calendar?tab=kanban"');
     expect(html).toContain('href="/calendar?tab=notes"');
-    expect(html).toContain('href="/"');
+    expect(html).toContain('href="/ai"');
+    expect(html).toContain("Default route");
     expect(html).toContain("AI-I Surface");
   });
 });

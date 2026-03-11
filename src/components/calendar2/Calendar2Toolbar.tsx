@@ -51,14 +51,13 @@ export default function Calendar2Toolbar({
 }: Calendar2ToolbarProps) {
   const shouldShowSidebarButton = true;
   const topNavItems = [
-    { id: "ai-i", label: "AI-I", href: "/ai-i" },
+    { id: "ai-i", label: "AI-I", href: "/" },
     ...TAB_OPTIONS.map((tab) => ({
       id: tab.id,
       label: tab.label,
-      active: tab.id === activeTab,
       onClick: () => onTabChange(tab.id),
     })),
-    { id: "ai", label: "AI", href: "/" },
+    { id: "ai", label: "AI", href: "/ai" },
   ];
 
   return (

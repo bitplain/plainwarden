@@ -32,6 +32,7 @@ import { useAgent } from "@/hooks/useAgent";
 import { useAgentMemory } from "@/hooks/useAgentMemory";
 import { useNetdenStore } from "@/lib/store";
 import type { InboxAiAnalysis, InboxItem } from "@/lib/types";
+import WorkspaceTopNav from "@/components/workspace/WorkspaceTopNav";
 import {
   createHomeWorkspaceState,
   getHomePromptIntent,
@@ -705,6 +706,13 @@ export default function HomeWorkspace({
     (workspaceState.inputMode === "ai"
       ? workspaceState.aiDraft.trim().length > 0
       : normalizeIdeaDraft(workspaceState.ideaDraft).length > 0) && !isPromptBusy;
+  const workspaceNavItems = [
+    { id: "ai-i", label: "AI-I", href: "/" },
+    { id: "calendar", label: "Календарь", href: "/calendar" },
+    { id: "kanban", label: "Канбан", href: "/calendar?tab=kanban" },
+    { id: "notes", label: "Заметки", href: "/calendar?tab=notes" },
+    { id: "ai", label: "AI", href: "/ai" },
+  ];
 
   return (
     <div
@@ -714,7 +722,18 @@ export default function HomeWorkspace({
     >
       <div className="mx-auto flex min-h-dvh max-w-[1280px] flex-col px-3 pb-6 pt-4 sm:px-5 lg:px-6">
         <header className="rounded-[30px] border border-[var(--cal2-border)] bg-[rgba(10,10,12,0.84)] px-4 py-4 shadow-[0_30px_90px_-58px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:px-6 sm:py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <WorkspaceTopNav activeId="ai" items={workspaceNavItems} />
+
+            <Link
+              href="/settings"
+              className="rounded-full border border-[var(--cal2-border)] bg-transparent px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+            >
+              Settings
+            </Link>
+          </div>
+
+          <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
             <div className="max-w-[44rem]">
               <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--cal2-text-secondary)]">
                 Calm command center
@@ -728,19 +747,13 @@ export default function HomeWorkspace({
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Link
-                href="/calendar"
-                className="rounded-full border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.08)]"
-              >
-                Календарь
-              </Link>
-              <Link
-                href="/settings"
-                className="rounded-full border border-[var(--cal2-border)] bg-transparent px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-              >
-                Settings
-              </Link>
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-[var(--cal2-text-secondary)]">
+              <span className="rounded-full border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.04)] px-3 py-1.5 text-[var(--cal2-text-primary)]">
+                Unified workspace
+              </span>
+              <span className="rounded-full border border-[rgba(94,106,210,0.24)] bg-[rgba(94,106,210,0.1)] px-3 py-1.5 text-[var(--cal2-text-primary)]">
+                /ai
+              </span>
             </div>
           </div>
 

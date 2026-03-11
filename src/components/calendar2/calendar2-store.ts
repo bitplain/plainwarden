@@ -187,8 +187,19 @@ function saveState(state: Calendar2LocalState): void {
   }
 }
 
-let currentState = loadState();
+let currentState: Calendar2LocalState = { ...EMPTY_STATE };
+let hasHydratedFromStorage = false;
+let hydrationScheduled = false;
 const listeners = new Set<() => void>();
+
+function hydrateStateFromStorage(): void {
+  if (typeof window === "undefined" || hasHydratedFromStorage) {
+    return;
+  }
+
+  currentState = loadState();
+  hasHydratedFromStorage = true;
+}
 
 function emitChange(): void {
   for (const listener of listeners) {
@@ -197,6 +208,7 @@ function emitChange(): void {
 }
 
 function setState(updater: (prev: Calendar2LocalState) => Calendar2LocalState): void {
+  hydrateStateFromStorage();
   const nextState = updater(currentState);
   if (Object.is(nextState, currentState)) {
     return;
@@ -208,6 +220,19 @@ function setState(updater: (prev: Calendar2LocalState) => Calendar2LocalState): 
 
 function subscribe(listener: () => void): () => void {
   listeners.add(listener);
+
+  if (typeof window !== "undefined" && !hasHydratedFromStorage && !hydrationScheduled) {
+    hydrationScheduled = true;
+    window.setTimeout(() => {
+      hydrationScheduled = false;
+      const prevState = currentState;
+      hydrateStateFromStorage();
+      if (!Object.is(prevState, currentState)) {
+        emitChange();
+      }
+    }, 0);
+  }
+
   return () => {
     listeners.delete(listener);
   };
