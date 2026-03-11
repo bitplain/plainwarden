@@ -39,7 +39,7 @@ describe("HomeWorkspace", () => {
     expect(html).toContain("data-home-layout=\"single-surface\"");
     expect(html).toContain("data-home-prompt-bar=\"true\"");
     expect(html).toContain("data-home-idea-rail=\"compact\"");
-    expect(html).toContain("AI home");
+    expect(html).toContain("Начните с одного вопроса");
     expect(html).not.toContain("Quick Capture");
     expect(html).not.toContain("data-home-segmented-control");
     expect(html).not.toContain("data-home-rail=\"compact-context\"");

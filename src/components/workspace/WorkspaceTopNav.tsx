@@ -23,15 +23,17 @@ export default function WorkspaceTopNav({
 }: WorkspaceTopNavProps) {
   return (
     <nav
+      aria-label="Workspace sections"
       data-workspace-top-nav={activeId}
-      className="inline-flex rounded-[10px] border border-white/10 bg-[rgba(16,17,21,0.86)] p-1 shadow-[0_18px_48px_-30px_rgba(0,0,0,0.85)] backdrop-blur-xl"
+      className="inline-flex flex-wrap rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5"
     >
       {items.map((item) => {
+        const isActive = item.active ?? item.id === activeId;
         const sharedClassName = cn(
-          "rounded-[8px] px-3 py-1.5 text-[12px] font-medium leading-[1.2] transition-colors",
-          item.active
-            ? "border border-[rgba(94,106,210,0.42)] bg-[rgba(94,106,210,0.22)] text-white"
-            : "border border-transparent text-white/54 hover:bg-white/5 hover:text-white/86",
+          "rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px]",
+          isActive
+            ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+            : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]",
         );
 
         if (item.href) {
@@ -39,7 +41,7 @@ export default function WorkspaceTopNav({
             <Link
               key={item.id}
               href={item.href}
-              aria-current={item.active ? "page" : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={sharedClassName}
             >
               {item.label}
@@ -52,7 +54,7 @@ export default function WorkspaceTopNav({
             key={item.id}
             type="button"
             onClick={item.onClick}
-            aria-current={item.active ? "page" : undefined}
+            aria-current={isActive ? "page" : undefined}
             className={sharedClassName}
           >
             {item.label}

@@ -1,7 +1,6 @@
 "use client";
 
 import { startOfDay } from "date-fns";
-import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -707,60 +706,15 @@ export default function HomeWorkspace({
       : normalizeIdeaDraft(workspaceState.ideaDraft).length > 0) && !isPromptBusy;
 
   return (
-    <div
-      style={CALENDAR2_LINEAR_VARS}
-      data-home-layout="single-surface"
-      className="min-h-dvh bg-[radial-gradient(circle_at_top,rgba(94,106,210,0.1),transparent_24%),linear-gradient(180deg,#08080a,#121216)] font-[family-name:var(--font-geist-sans)] text-[var(--cal2-text-primary)]"
-    >
-      <div className="mx-auto flex min-h-dvh max-w-[1280px] flex-col px-3 pb-6 pt-4 sm:px-5 lg:px-6">
-        <header className="rounded-[30px] border border-[var(--cal2-border)] bg-[rgba(10,10,12,0.84)] px-4 py-4 shadow-[0_30px_90px_-58px_rgba(0,0,0,0.95)] backdrop-blur-xl sm:px-6 sm:py-5">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="max-w-[44rem]">
-              <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--cal2-text-secondary)]">
-                Calm command center
-              </p>
-              <h1 className="mt-3 text-[32px] font-semibold tracking-[-0.05em] text-[var(--cal2-text-primary)] sm:text-[42px]">
-                AI home
-              </h1>
-              <p className="mt-3 max-w-[40rem] text-[13px] leading-[1.7] text-[rgba(240,240,240,0.68)]">
-                Один главный поток, одна строка ввода и быстрый `Tab` между разговором и идеями без
-                визуального шума.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Link
-                href="/calendar"
-                className="rounded-full border border-[var(--cal2-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-primary)] transition-colors hover:bg-[rgba(255,255,255,0.08)]"
-              >
-                Календарь
-              </Link>
-              <Link
-                href="/settings"
-                className="rounded-full border border-[var(--cal2-border)] bg-transparent px-3 py-2 text-[12px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-              >
-                Settings
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2 text-[11px] text-[var(--cal2-text-secondary)]">
-            <span>Новых идей: {inboxTasks.inbox.newItems.length}</span>
-            <span className="text-[rgba(255,255,255,0.18)]">•</span>
-            <span>Приоритетных задач на сегодня: {inboxTasks.priorityTasksToday.length}</span>
-            <span className="text-[rgba(255,255,255,0.18)]">•</span>
-            <span>{inboxTasks.loading ? "Синхронизация…" : "Tab меняет AI / Идея"}</span>
-          </div>
-        </header>
-
-        <form
+    <div style={CALENDAR2_LINEAR_VARS} data-home-layout="single-surface" className="flex min-h-0 flex-1 flex-col">
+      <form
           style={getAiThemeStyles(theme)}
           onSubmit={(event) => {
             void handlePromptSubmit(event);
           }}
           data-home-prompt-bar="true"
           data-home-input-mode={workspaceState.inputMode}
-          className="sticky top-3 z-20 mt-4 rounded-[30px] border border-[var(--ai-border)] bg-[rgba(11,11,13,0.94)] p-3 shadow-[0_30px_80px_-52px_rgba(0,0,0,0.96)] backdrop-blur-xl"
+          className="sticky top-3 z-20 rounded-[30px] border border-[var(--ai-border)] bg-[rgba(11,11,13,0.94)] p-3 shadow-[0_30px_80px_-52px_rgba(0,0,0,0.96)] backdrop-blur-xl"
         >
           <div className="rounded-[24px] border border-[var(--ai-border)] bg-[var(--ai-canvas)] px-3 py-3 transition-shadow focus-within:border-[var(--ai-accent)] focus-within:shadow-[0_0_28px_var(--ai-accent-soft)] sm:px-4">
             <div className="flex items-center gap-2 pb-2">
@@ -810,7 +764,7 @@ export default function HomeWorkspace({
           </div>
         </form>
 
-        <main className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
+      <main className="mt-4 flex min-h-0 flex-1 flex-col gap-4">
           <CompactIdeaRail
             items={compactIdeaItems}
             newIdeasCount={inboxTasks.inbox.newItems.length}
@@ -844,8 +798,7 @@ export default function HomeWorkspace({
               footerHint=""
             />
           </div>
-        </main>
-      </div>
+      </main>
 
       {workspaceState.isIdeaSheetOpen ? (
         <div

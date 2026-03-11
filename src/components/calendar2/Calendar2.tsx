@@ -19,7 +19,7 @@ import {
   sortEventsByDateTime,
   toDateKey,
 } from "@/components/calendar2/date-utils";
-import type { SidebarCategory, TaskPriority } from "./calendar2-types";
+import type { Calendar2Tab, SidebarCategory, TaskPriority } from "./calendar2-types";
 import {
   buildCalendar2EventFilters,
   type Calendar2CategoryFilter,
@@ -41,6 +41,7 @@ import { CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME } from "./mobile-layout";
 import { resolveInboxCaptureShortcut } from "./inbox-ui";
 import { usePreciseReminderTick } from "./usePreciseReminderTick";
 import {
+  DEFAULT_UI_PREFERENCES,
   readUiPreferences,
   resolveDesktopSidebarInitialState,
   saveRememberedDesktopSidebarState,
@@ -129,9 +130,16 @@ function toDayStart(dateKey: string): Date {
   return startOfDay(date);
 }
 
-export default function Calendar2() {
-  const { state: urlState, setState: setUrlState } = useCalendar2UrlStore();
-  const activeTab = urlState.tab;
+interface Calendar2Props {
+  initialSearch?: string;
+  section?: Calendar2Tab;
+}
+
+export default function Calendar2({
+  initialSearch = "",
+  section = "calendar",
+}: Calendar2Props) {
+  const { state: urlState, setState: setUrlState } = useCalendar2UrlStore(initialSearch);
   const view = urlState.view;
   const categoryFilter = urlState.category;
   const searchQuery = urlState.q;
@@ -141,13 +149,13 @@ export default function Calendar2() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showQuickCapture, setShowQuickCapture] = useState(false);
   const [addModalDate, setAddModalDate] = useState<string | undefined>(undefined);
-  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
-  const [isSidebarVisible, setIsSidebarVisible] = useState(() =>
-    resolveDesktopSidebarInitialState(readUiPreferences()),
+  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(DEFAULT_UI_PREFERENCES);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(
+    DEFAULT_UI_PREFERENCES.sidebarDefaultDesktop === "open",
   );
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
-  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>(loadPriorities);
+  const [eventPriorities, setEventPriorities] = useState<Record<string, TaskPriority>>({});
   const [movePickerRequest, setMovePickerRequest] = useState<MoveTimePickerRequest | null>(null);
   const [glowingCellKey, setGlowingCellKey] = useState<string | null>(null);
   const dropFlashTimeoutRef = useRef<number | null>(null);
@@ -164,8 +172,6 @@ export default function Calendar2() {
   const addEvent = useNetdenStore((s) => s.addEvent);
   const updateEvent = useNetdenStore((s) => s.updateEvent);
   const deleteEvent = useNetdenStore((s) => s.deleteEvent);
-  const logout = useNetdenStore((s) => s.logout);
-
   // Local store for kanban, notes, time blocks
   const localStore = useCalendar2Store();
   const syncTaskEventsToKanban = localStore.syncTaskEventsToKanban;
@@ -218,7 +224,16 @@ export default function Calendar2() {
     void fetchEvents(calendarQueryFilters);
   }, [user, fetchEvents, calendarQueryFilters]);
 
-  useEffect(() => subscribeUiPreferences(setUiPreferences), []);
+  useEffect(() => {
+    const initialPreferences = readUiPreferences();
+    setUiPreferences(initialPreferences);
+    setIsSidebarVisible(resolveDesktopSidebarInitialState(initialPreferences));
+    setEventPriorities(loadPriorities());
+
+    return subscribeUiPreferences((nextPreferences) => {
+      setUiPreferences(nextPreferences);
+    });
+  }, []);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -243,7 +258,7 @@ export default function Calendar2() {
       );
 
       const shortcutAction = resolveInboxCaptureShortcut({
-        activeTab,
+        activeTab: section,
         key: event.key,
         ctrlKey: event.ctrlKey,
         metaKey: event.metaKey,
@@ -263,7 +278,7 @@ export default function Calendar2() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeTab]);
+  }, [section]);
 
   useEffect(() => {
     const clearDragOverTargets = () => {
@@ -377,13 +392,13 @@ export default function Calendar2() {
     }
 
     const removeStaleSyncedCards =
-      activeTab !== "calendar" || !hasActiveCalendarFilters;
+      section !== "calendar" || !hasActiveCalendarFilters;
     syncTaskEventsToKanban(events, resolvedPriorities, { removeStaleSyncedCards });
   }, [
     user,
     isAuthLoading,
     isEventsLoading,
-    activeTab,
+    section,
     hasActiveCalendarFilters,
     events,
     resolvedPriorities,
@@ -537,11 +552,6 @@ export default function Calendar2() {
     setMovePickerRequest(null);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = "/login";
-  };
-
   const handlePrev = () => {
     setUrlState(
       (prev) => ({
@@ -614,7 +624,7 @@ export default function Calendar2() {
   }, [isMobileLayout, uiPreferences.sidebarRemember]);
 
   const renderContent = () => {
-    switch (activeTab) {
+    switch (section) {
       case "calendar":
         return (
           <div className="min-h-0 flex-1">
@@ -688,56 +698,49 @@ export default function Calendar2() {
 
   const isCompactDensity = uiPreferences.density === "compact";
   const isReducedMotion = uiPreferences.motion === "reduced";
-  const shouldShowSidebar = isSidebarVisible;
+  const shouldShowSidebar = section === "calendar" && isSidebarVisible;
 
   return (
     <div
       style={CALENDAR2_LINEAR_VARS}
-      className={`flex h-dvh flex-col bg-[var(--cal2-bg)] font-[family-name:var(--font-geist-sans)] leading-[1.3] text-[var(--cal2-text-primary)] ${
+      className={`flex min-h-0 flex-1 flex-col bg-[transparent] font-[family-name:var(--font-geist-sans)] leading-[1.3] text-[var(--cal2-text-primary)] ${
         isCompactDensity ? "text-[12px]" : "text-[13px]"
       } ${isReducedMotion ? "[&_*]:animate-none [&_*]:duration-0" : ""}`}
     >
-      <Calendar2Toolbar
-        activeTab={activeTab}
-        onTabChange={(nextTab) =>
-          setUrlState(
-            (prev) => ({
-              ...prev,
-              tab: nextTab,
-            }),
-            "push",
-          )
-        }
-        currentView={view}
-        periodLabel={periodLabel}
-        onViewChange={(nextView) =>
-          setUrlState(
-            (prev) => ({
-              ...prev,
-              view: nextView,
-            }),
-            "push",
-          )
-        }
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onToday={handleToday}
-        onAdd={() => {
-          setAddModalDate(undefined);
-          setShowAddModal(true);
-        }}
-        onQuickCapture={() => setShowQuickCapture(true)}
-        onLogout={handleLogout}
-        searchValue={searchQuery}
-        onSearchChange={(value) =>
-          setUrlState((prev) => ({
-            ...prev,
-            q: value,
-          }))
-        }
-        onToggleSidebar={handleToggleSidebar}
-        isSidebarVisible={shouldShowSidebar}
-      />
+      {section === "calendar" ? (
+        <div className="mb-3">
+          <Calendar2Toolbar
+            currentView={view}
+            periodLabel={periodLabel}
+            onViewChange={(nextView) =>
+              setUrlState(
+                (prev) => ({
+                  ...prev,
+                  view: nextView,
+                }),
+                "push",
+              )
+            }
+            onPrev={handlePrev}
+            onNext={handleNext}
+            onToday={handleToday}
+            onAdd={() => {
+              setAddModalDate(undefined);
+              setShowAddModal(true);
+            }}
+            onQuickCapture={() => setShowQuickCapture(true)}
+            searchValue={searchQuery}
+            onSearchChange={(value) =>
+              setUrlState((prev) => ({
+                ...prev,
+                q: value,
+              }))
+            }
+            onToggleSidebar={handleToggleSidebar}
+            isSidebarVisible={shouldShowSidebar}
+          />
+        </div>
+      ) : null}
 
       <div className={CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME}>
         <div
@@ -755,7 +758,7 @@ export default function Calendar2() {
               onSelectDate={handleSelectDate}
               onFilterChange={handleFilterChange}
               notes={localStore.notes}
-              activeTab={activeTab}
+              activeTab={section}
             />
           </div>
 
@@ -785,17 +788,19 @@ export default function Calendar2() {
       </div>
 
       {/* Mobile FAB */}
-      <button
-        type="button"
-        onClick={() => {
-          setAddModalDate(undefined);
-          setShowAddModal(true);
-        }}
-        className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
-        aria-label="Добавить"
-      >
-        +
-      </button>
+      {section === "calendar" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setAddModalDate(undefined);
+            setShowAddModal(true);
+          }}
+          className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
+          aria-label="Добавить"
+        >
+          +
+        </button>
+      ) : null}
 
       <QuickCaptureDialog
         open={showQuickCapture}

@@ -113,7 +113,7 @@ export function buildCalendar2UrlChange(input: {
 
 function getCalendar2UrlSnapshot(): Calendar2UrlState {
   if (typeof window === "undefined") {
-    return getCalendar2UrlServerSnapshot();
+    return getCalendar2UrlServerSnapshot("");
   }
 
   const search = window.location.search;
@@ -126,15 +126,15 @@ function getCalendar2UrlSnapshot(): Calendar2UrlState {
   return cachedSnapshot;
 }
 
-function getCalendar2UrlServerSnapshot(): Calendar2UrlState {
-  return parseCalendar2UrlState(new URLSearchParams(), getFallbackDateKey());
+function getCalendar2UrlServerSnapshot(initialSearch: string): Calendar2UrlState {
+  return readCalendar2UrlStateFromSearch(initialSearch, getFallbackDateKey());
 }
 
-export function useCalendar2UrlStore() {
+export function useCalendar2UrlStore(initialSearch = "") {
   const state = useSyncExternalStore(
     subscribeCalendar2UrlStore,
     getCalendar2UrlSnapshot,
-    getCalendar2UrlServerSnapshot,
+    () => getCalendar2UrlServerSnapshot(initialSearch),
   );
 
   const setState = useCallback(

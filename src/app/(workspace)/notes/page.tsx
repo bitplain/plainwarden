@@ -1,5 +1,4 @@
-import HomeWorkspace from "@/components/home/HomeWorkspace";
-import { parseHomeUrlState } from "@/components/home/home-url-state";
+import Calendar2 from "@/components/calendar2/Calendar2";
 
 function toUrlSearchParams(
   input?: Record<string, string | string[] | undefined>,
@@ -20,16 +19,9 @@ function toUrlSearchParams(
   return params;
 }
 
-export default async function Home(input?: {
+export default async function NotesPage(input?: {
   searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
   const searchParams = input?.searchParams ? await input.searchParams : undefined;
-  const homeUrlState = parseHomeUrlState(toUrlSearchParams(searchParams));
-
-  return (
-    <HomeWorkspace
-      initialInputMode={homeUrlState.initialInputMode}
-      shouldCanonicalizeLegacyQuery={homeUrlState.shouldCanonicalize}
-    />
-  );
+  return <Calendar2 initialSearch={toUrlSearchParams(searchParams).toString()} section="notes" />;
 }
