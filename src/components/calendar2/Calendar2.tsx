@@ -19,14 +19,13 @@ import {
   sortEventsByDateTime,
   toDateKey,
 } from "@/components/calendar2/date-utils";
-import type { SidebarCategory, TaskPriority } from "./calendar2-types";
+import type { Calendar2Tab, SidebarCategory, TaskPriority } from "./calendar2-types";
 import {
   buildCalendar2EventFilters,
   type Calendar2CategoryFilter,
 } from "./calendar2-query-filters";
 import { useCalendar2UrlStore } from "./calendar2-url-store";
 import { useCalendar2Store } from "./calendar2-store";
-import Calendar2Toolbar from "./Calendar2Toolbar";
 import Calendar2Sidebar from "./Calendar2Sidebar";
 import Calendar2MonthView from "./Calendar2MonthView";
 import Calendar2WeekView from "./Calendar2WeekView";
@@ -47,6 +46,12 @@ import {
   subscribeUiPreferences,
   type UiPreferences,
 } from "@/components/settings/settings-ui-preferences";
+import {
+  dispatchWorkspaceSidebarState,
+  WORKSPACE_ADD_EVENT_EVENT,
+  WORKSPACE_QUICK_CAPTURE_EVENT,
+  WORKSPACE_TOGGLE_SIDEBAR_EVENT,
+} from "@/components/workspace/workspace-events";
 import { api } from "@/lib/api";
 
 type EventMovePayload = { date: string; time?: string };
@@ -129,9 +134,12 @@ function toDayStart(dateKey: string): Date {
   return startOfDay(date);
 }
 
-export default function Calendar2() {
+interface Calendar2Props {
+  section?: Calendar2Tab;
+}
+
+export default function Calendar2({ section = "calendar" }: Calendar2Props) {
   const { state: urlState, setState: setUrlState } = useCalendar2UrlStore();
-  const activeTab = urlState.tab;
   const view = urlState.view;
   const categoryFilter = urlState.category;
   const searchQuery = urlState.q;
@@ -164,7 +172,6 @@ export default function Calendar2() {
   const addEvent = useNetdenStore((s) => s.addEvent);
   const updateEvent = useNetdenStore((s) => s.updateEvent);
   const deleteEvent = useNetdenStore((s) => s.deleteEvent);
-  const logout = useNetdenStore((s) => s.logout);
 
   // Local store for kanban, notes, time blocks
   const localStore = useCalendar2Store();
@@ -243,7 +250,7 @@ export default function Calendar2() {
       );
 
       const shortcutAction = resolveInboxCaptureShortcut({
-        activeTab,
+        activeTab: section,
         key: event.key,
         ctrlKey: event.ctrlKey,
         metaKey: event.metaKey,
@@ -263,7 +270,7 @@ export default function Calendar2() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [activeTab]);
+  }, [section]);
 
   useEffect(() => {
     const clearDragOverTargets = () => {
@@ -377,13 +384,13 @@ export default function Calendar2() {
     }
 
     const removeStaleSyncedCards =
-      activeTab !== "calendar" || !hasActiveCalendarFilters;
+      section !== "calendar" || !hasActiveCalendarFilters;
     syncTaskEventsToKanban(events, resolvedPriorities, { removeStaleSyncedCards });
   }, [
     user,
     isAuthLoading,
     isEventsLoading,
-    activeTab,
+    section,
     hasActiveCalendarFilters,
     events,
     resolvedPriorities,
@@ -537,11 +544,6 @@ export default function Calendar2() {
     setMovePickerRequest(null);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    window.location.href = "/login";
-  };
-
   const handlePrev = () => {
     setUrlState(
       (prev) => ({
@@ -613,8 +615,36 @@ export default function Calendar2() {
     });
   }, [isMobileLayout, uiPreferences.sidebarRemember]);
 
+  useEffect(() => {
+    if (section !== "calendar") {
+      return;
+    }
+
+    const openQuickCapture = () => setShowQuickCapture(true);
+    const openAddEvent = () => {
+      setAddModalDate(undefined);
+      setShowAddModal(true);
+    };
+
+    window.addEventListener(WORKSPACE_QUICK_CAPTURE_EVENT, openQuickCapture);
+    window.addEventListener(WORKSPACE_ADD_EVENT_EVENT, openAddEvent);
+    window.addEventListener(WORKSPACE_TOGGLE_SIDEBAR_EVENT, handleToggleSidebar);
+
+    return () => {
+      window.removeEventListener(WORKSPACE_QUICK_CAPTURE_EVENT, openQuickCapture);
+      window.removeEventListener(WORKSPACE_ADD_EVENT_EVENT, openAddEvent);
+      window.removeEventListener(WORKSPACE_TOGGLE_SIDEBAR_EVENT, handleToggleSidebar);
+    };
+  }, [handleToggleSidebar, section]);
+
+  useEffect(() => {
+    if (section === "calendar") {
+      dispatchWorkspaceSidebarState(isSidebarVisible);
+    }
+  }, [isSidebarVisible, section]);
+
   const renderContent = () => {
-    switch (activeTab) {
+    switch (section) {
       case "calendar":
         return (
           <div className="min-h-0 flex-1">
@@ -688,57 +718,15 @@ export default function Calendar2() {
 
   const isCompactDensity = uiPreferences.density === "compact";
   const isReducedMotion = uiPreferences.motion === "reduced";
-  const shouldShowSidebar = isSidebarVisible;
+  const shouldShowSidebar = section === "calendar" && isSidebarVisible;
 
   return (
     <div
       style={CALENDAR2_LINEAR_VARS}
-      className={`flex h-dvh flex-col bg-[var(--cal2-bg)] font-[family-name:var(--font-geist-sans)] leading-[1.3] text-[var(--cal2-text-primary)] ${
+      className={`flex min-h-0 flex-1 flex-col bg-[transparent] font-[family-name:var(--font-geist-sans)] leading-[1.3] text-[var(--cal2-text-primary)] ${
         isCompactDensity ? "text-[12px]" : "text-[13px]"
       } ${isReducedMotion ? "[&_*]:animate-none [&_*]:duration-0" : ""}`}
     >
-      <Calendar2Toolbar
-        activeTab={activeTab}
-        onTabChange={(nextTab) =>
-          setUrlState(
-            (prev) => ({
-              ...prev,
-              tab: nextTab,
-            }),
-            "push",
-          )
-        }
-        currentView={view}
-        periodLabel={periodLabel}
-        onViewChange={(nextView) =>
-          setUrlState(
-            (prev) => ({
-              ...prev,
-              view: nextView,
-            }),
-            "push",
-          )
-        }
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onToday={handleToday}
-        onAdd={() => {
-          setAddModalDate(undefined);
-          setShowAddModal(true);
-        }}
-        onQuickCapture={() => setShowQuickCapture(true)}
-        onLogout={handleLogout}
-        searchValue={searchQuery}
-        onSearchChange={(value) =>
-          setUrlState((prev) => ({
-            ...prev,
-            q: value,
-          }))
-        }
-        onToggleSidebar={handleToggleSidebar}
-        isSidebarVisible={shouldShowSidebar}
-      />
-
       <div className={CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME}>
         <div
           className={`grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 ${
@@ -755,7 +743,7 @@ export default function Calendar2() {
               onSelectDate={handleSelectDate}
               onFilterChange={handleFilterChange}
               notes={localStore.notes}
-              activeTab={activeTab}
+              activeTab={section}
             />
           </div>
 
@@ -785,17 +773,19 @@ export default function Calendar2() {
       </div>
 
       {/* Mobile FAB */}
-      <button
-        type="button"
-        onClick={() => {
-          setAddModalDate(undefined);
-          setShowAddModal(true);
-        }}
-        className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
-        aria-label="Добавить"
-      >
-        +
-      </button>
+      {section === "calendar" ? (
+        <button
+          type="button"
+          onClick={() => {
+            setAddModalDate(undefined);
+            setShowAddModal(true);
+          }}
+          className="fixed bottom-4 right-4 z-30 inline-flex h-11 w-11 items-center justify-center rounded-[8px] border border-[rgba(94,106,210,0.45)] bg-[var(--cal2-accent)] text-lg font-semibold text-[var(--cal2-text-primary)] transition-colors hover:bg-[var(--cal2-accent-soft-strong)] md:hidden"
+          aria-label="Добавить"
+        >
+          +
+        </button>
+      ) : null}
 
       <QuickCaptureDialog
         open={showQuickCapture}

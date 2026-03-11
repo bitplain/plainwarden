@@ -20,7 +20,7 @@ function toUrlSearchParams(
   return params;
 }
 
-export default async function Home(input?: {
+export default async function AiPage(input?: {
   searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined>;
 }) {
   const searchParams = input?.searchParams ? await input.searchParams : undefined;
