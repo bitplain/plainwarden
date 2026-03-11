@@ -8,11 +8,10 @@ describe("readCalendar2UrlStateFromSearch", () => {
   it("parses valid calendar2 URL state", () => {
     expect(
       readCalendar2UrlStateFromSearch(
-        "?tab=kanban&view=week&category=task&q=review&dateFrom=2026-03-01&dateTo=2026-03-31&date=2026-03-12",
+        "?view=week&category=task&q=review&dateFrom=2026-03-01&dateTo=2026-03-31&date=2026-03-12",
         "2026-03-10",
       ),
     ).toEqual({
-      tab: "kanban",
       view: "week",
       category: "task",
       q: "review",
@@ -23,11 +22,10 @@ describe("readCalendar2UrlStateFromSearch", () => {
   it("uses defaults for invalid values", () => {
     expect(
       readCalendar2UrlStateFromSearch(
-        "?tab=invalid&view=quarter&category=custom&dateFrom=bad&dateTo=2026-02-40&date=not-date&q=   ",
+        "?view=quarter&category=custom&dateFrom=bad&dateTo=2026-02-40&date=not-date&q=   ",
         "2026-03-10",
       ),
     ).toEqual({
-      tab: "calendar",
       view: "month",
       category: "all",
       q: "",
@@ -43,7 +41,6 @@ describe("buildCalendar2UrlChange", () => {
       search: "?embedded=1",
       hash: "#panel",
       state: {
-        tab: "notes",
         view: "day",
         category: "pending",
         q: "standup",
@@ -58,7 +55,6 @@ describe("buildCalendar2UrlChange", () => {
     const query = result.nextUrl.split("?")[1].split("#")[0];
     const params = new URLSearchParams(query);
     expect(params.get("embedded")).toBe("1");
-    expect(params.get("tab")).toBe("notes");
     expect(params.get("view")).toBe("day");
     expect(params.get("category")).toBe("pending");
     expect(params.get("q")).toBe("standup");
@@ -70,7 +66,6 @@ describe("buildCalendar2UrlChange", () => {
       pathname: "/calendar",
       search: "?embedded=1&dateFrom=2026-01-01&dateTo=2026-02-01",
       state: {
-        tab: "calendar",
         view: "month",
         category: "all",
         q: "",
@@ -88,9 +83,8 @@ describe("buildCalendar2UrlChange", () => {
   it("detects unchanged query", () => {
     const result = buildCalendar2UrlChange({
       pathname: "/calendar",
-      search: "?tab=notes&view=week&category=done&q=review&date=2026-03-12",
+      search: "?view=week&category=done&q=review&date=2026-03-12",
       state: {
-        tab: "notes",
         view: "week",
         category: "done",
         q: "review",

@@ -30,10 +30,12 @@ vi.mock("@/components/ai-chat/AiIStandalonePage", () => ({
   default: () => React.createElement("main", { "data-ai-i-workspace": "mock" }, "AI-I Workspace"),
 }));
 
-import HomePage from "@/app/page";
-import AiPage from "@/app/ai/page";
+import HomePage from "@/app/(workspace)/page";
+import AiPage from "@/app/(workspace)/ai/page";
 import AiIPage from "@/app/ai-i/page";
-import CalendarPage from "@/app/calendar/page";
+import CalendarPage from "@/app/(workspace)/calendar/page";
+import KanbanPage from "@/app/(workspace)/kanban/page";
+import NotesPage from "@/app/(workspace)/notes/page";
 
 describe("home and calendar routes", () => {
   beforeEach(() => {
@@ -101,14 +103,51 @@ describe("home and calendar routes", () => {
     ).rejects.toThrow("REDIRECT:/");
   });
 
-  it("keeps rendering the calendar workspace for non-legacy tabs", async () => {
+  it("redirects legacy kanban tab requests to the standalone kanban page", async () => {
+    await expect(
+      CalendarPage({
+        searchParams: Promise.resolve({ tab: "kanban" }),
+      } as never),
+    ).rejects.toThrow("REDIRECT:/kanban");
+  });
+
+  it("redirects legacy notes tab requests to the standalone notes page", async () => {
+    await expect(
+      CalendarPage({
+        searchParams: Promise.resolve({ tab: "notes" }),
+      } as never),
+    ).rejects.toThrow("REDIRECT:/notes");
+  });
+
+  it("renders the calendar workspace on /calendar", async () => {
     const page = await CalendarPage({
-      searchParams: Promise.resolve({ tab: "kanban" }),
+      searchParams: Promise.resolve({ view: "week", q: "review" }),
     } as never);
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Calendar Workspace");
-    expect(html).toContain("tab=kanban");
+    expect(html).toContain("&quot;section&quot;:&quot;calendar&quot;");
+    expect(html).toContain("view=week");
+  });
+
+  it("renders the kanban workspace on /kanban", async () => {
+    const page = await KanbanPage({
+      searchParams: Promise.resolve({}),
+    } as never);
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Calendar Workspace");
+    expect(html).toContain("&quot;section&quot;:&quot;kanban&quot;");
+  });
+
+  it("renders the notes workspace on /notes", async () => {
+    const page = await NotesPage({
+      searchParams: Promise.resolve({}),
+    } as never);
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("Calendar Workspace");
+    expect(html).toContain("&quot;section&quot;:&quot;notes&quot;");
   });
 
   it("redirects /ai-i to the canonical root ai-i route", async () => {

@@ -25,15 +25,15 @@ export default function WorkspaceTopNav({
     <nav
       aria-label="Workspace sections"
       data-workspace-top-nav={activeId}
-      className="inline-flex flex-wrap items-center gap-1 rounded-[22px] border border-[var(--cal2-border,rgba(255,255,255,0.08))] bg-[rgba(10,10,12,0.82)] p-1.5 shadow-[0_24px_70px_-42px_rgba(0,0,0,0.92)] backdrop-blur-xl"
+      className="inline-flex flex-wrap rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5"
     >
       {items.map((item) => {
         const isActive = item.active ?? item.id === activeId;
         const sharedClassName = cn(
-          "inline-flex items-center justify-center rounded-[16px] border px-4 py-3 text-[13px] font-medium leading-none tracking-[-0.02em] transition-[background-color,border-color,color,box-shadow]",
+          "rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] transition-colors sm:text-[12px]",
           isActive
-            ? "border-[rgba(94,106,210,0.45)] bg-[rgba(94,106,210,0.18)] text-[var(--cal2-text-primary,#F0F0F0)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-            : "border-transparent text-[var(--cal2-text-secondary,#8a8f98)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary,#F0F0F0)]",
+            ? "border border-[rgba(94,106,210,0.42)] bg-[var(--cal2-accent-soft)] text-[var(--cal2-text-primary)]"
+            : "text-[var(--cal2-text-secondary)] hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)]",
         );
 
         if (item.href) {

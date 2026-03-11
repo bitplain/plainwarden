@@ -1,9 +1,8 @@
 import type { Calendar2CategoryFilter } from "./calendar2-query-filters";
-import type { Calendar2Tab, Calendar2View } from "./calendar2-types";
+import type { Calendar2View } from "./calendar2-types";
 
 const ISO_DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-const TAB_VALUES = new Set<Calendar2Tab>(["calendar", "kanban", "notes"]);
 const VIEW_VALUES = new Set<Calendar2View>(["month", "week", "day"]);
 const CATEGORY_VALUES = new Set<Calendar2CategoryFilter>([
   "all",
@@ -15,7 +14,6 @@ const CATEGORY_VALUES = new Set<Calendar2CategoryFilter>([
 
 export interface Calendar2UrlState {
   q: string;
-  tab: Calendar2Tab;
   view: Calendar2View;
   category: Calendar2CategoryFilter;
   date: string;
@@ -48,10 +46,6 @@ function normalizeDate(value: string | null): string | undefined {
   return normalized;
 }
 
-function parseTab(value: string | null): Calendar2Tab {
-  return value && TAB_VALUES.has(value as Calendar2Tab) ? (value as Calendar2Tab) : "calendar";
-}
-
 function parseView(value: string | null): Calendar2View {
   return value && VIEW_VALUES.has(value as Calendar2View) ? (value as Calendar2View) : "month";
 }
@@ -76,7 +70,6 @@ export function parseCalendar2UrlState(
 ): Calendar2UrlState {
   return {
     q: (searchParams.get("q") ?? "").trim(),
-    tab: parseTab(searchParams.get("tab")),
     view: parseView(searchParams.get("view")),
     category: parseCategory(searchParams.get("category")),
     date: normalizeDate(searchParams.get("date")) ?? fallbackDate,
@@ -92,7 +85,6 @@ export function buildCalendar2UrlQuery(input: {
   params.delete("dateTo");
 
   setOrDelete(params, "q", input.state.q.trim() || undefined);
-  setOrDelete(params, "tab", input.state.tab === "calendar" ? undefined : input.state.tab);
   setOrDelete(params, "view", input.state.view === "month" ? undefined : input.state.view);
   setOrDelete(
     params,

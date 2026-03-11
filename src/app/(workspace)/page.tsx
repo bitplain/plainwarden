@@ -1,5 +1,5 @@
 import AiIStandalonePage from "@/components/ai-chat/AiIStandalonePage";
 
-export default function Home() {
+export default function HomePage() {
   return <AiIStandalonePage />;
 }
