@@ -33,6 +33,7 @@ import Calendar2WeekView from "./Calendar2WeekView";
 import Calendar2DayView from "./Calendar2DayView";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
+import Calendar2AiIPanel from "./Calendar2AiIPanel";
 import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import QuickCaptureDialog from "./QuickCaptureDialog";
@@ -656,6 +657,12 @@ export default function Calendar2() {
             )}
           </div>
         );
+      case "ai-i":
+        return (
+          <div className="min-h-0 flex-1">
+            <Calendar2AiIPanel />
+          </div>
+        );
       case "kanban":
         return (
           <div className="min-h-0 flex-1">
@@ -688,6 +695,8 @@ export default function Calendar2() {
 
   const isCompactDensity = uiPreferences.density === "compact";
   const isReducedMotion = uiPreferences.motion === "reduced";
+  const isAiIActive = activeTab === "ai-i";
+  const shouldShowSidebar = isSidebarVisible && !isAiIActive;
 
   return (
     <div
@@ -735,17 +744,17 @@ export default function Calendar2() {
           }))
         }
         onToggleSidebar={handleToggleSidebar}
-        isSidebarVisible={isSidebarVisible}
+        isSidebarVisible={shouldShowSidebar}
       />
 
       <div className={CALENDAR2_MOBILE_SCROLL_SHELL_CLASSNAME}>
         <div
           className={`grid h-full w-full grid-cols-1 gap-0 px-0 pb-0 pt-0 ${
-            isSidebarVisible ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1"
+            shouldShowSidebar ? "lg:grid-cols-[280px_1fr]" : "lg:grid-cols-1"
           }`}
         >
           {/* Sidebar */}
-          <div className={`${isSidebarVisible ? "block" : "hidden"} min-h-0`}>
+          <div className={`${shouldShowSidebar ? "block" : "hidden"} min-h-0`}>
             <Calendar2Sidebar
               anchorDate={anchorDate}
               eventsByDate={eventsByDate}
@@ -761,11 +770,13 @@ export default function Calendar2() {
           {/* Main content */}
           <main
             className={`${
-              isSidebarVisible ? "hidden lg:flex" : "flex"
-            } relative min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] ${
-              isCompactDensity ? "p-2 sm:p-2.5" : "p-2 sm:p-3"
-            } ${
-              isSidebarVisible ? "lg:rounded-l-none lg:border-l-0" : ""
+              shouldShowSidebar ? "hidden lg:flex" : "flex"
+            } relative min-h-0 flex-col gap-2 ${
+              isAiIActive
+                ? "bg-transparent p-0"
+                : `rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] ${
+                    isCompactDensity ? "p-2 sm:p-2.5" : "p-2 sm:p-3"
+                  } ${shouldShowSidebar ? "lg:rounded-l-none lg:border-l-0" : ""}`
             }`}
           >
             {(isAuthLoading || isEventsLoading) && (

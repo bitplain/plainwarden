@@ -2,17 +2,19 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AgentMemoryItem } from "@/agent/types";
+import AiIChatSurface from "@/components/ai-chat/AiIChatSurface";
 import AiChatPanel from "@/components/ai-chat/AiChatPanel";
 import {
   AI_CHAT_CONTEXT_CHIPS,
   getAiChatSuggestions,
-  getAiSurfaceLayout,
   getAiWidgetToggleState,
 } from "@/components/ai-chat/constants";
+import {
+  useAiChatRuntime,
+  useAiChatRuntimeActions,
+} from "@/components/ai-chat/AiChatProvider";
+import { DEFAULT_FLOATING_AI_SURFACE_ID } from "@/components/ai-chat/surfaces";
 import { readAiTheme, subscribeAiTheme, type AiTheme } from "@/components/ai-theme";
-import { useAgent } from "@/hooks/useAgent";
-import { useAgentMemory } from "@/hooks/useAgentMemory";
 
 function SparkleIcon() {
   return (
@@ -48,31 +50,23 @@ function CloseIcon() {
 
 interface AiChatWidgetProps {
   initialPrompt?: string;
-  onNavigate?: (path: string) => void;
 }
 
 export default function AiChatWidget({
   initialPrompt,
-  onNavigate,
 }: AiChatWidgetProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(initialPrompt ?? "");
-  const [activeChipId, setActiveChipId] = useState<string | null>(null);
   const [theme, setTheme] = useState<AiTheme>(readAiTheme);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const { items: memoryItems } = useAgentMemory();
-  const {
-    messages,
-    isStreaming,
-    pendingAction,
-    sendMessage,
-    resolveAction,
-  } = useAgent({ onNavigate });
-  const widgetLayout = getAiSurfaceLayout({
-    mode: "floating",
-    hasMessages: messages.length > 0,
-    hasPendingAction: Boolean(pendingAction),
-  });
+  const messages = useAiChatRuntime((state) => state.messages);
+  const isStreaming = useAiChatRuntime((state) => state.isStreaming);
+  const pendingAction = useAiChatRuntime((state) => state.pendingAction);
+  const inputValue = useAiChatRuntime((state) => state.inputValue);
+  const activeChipId = useAiChatRuntime((state) => state.activeChipId);
+  const setInputValue = useAiChatRuntime((state) => state.setInputValue);
+  const toggleChip = useAiChatRuntime((state) => state.toggleChip);
+  const selectSuggestion = useAiChatRuntime((state) => state.selectSuggestion);
+  const { submitCurrentInput, resolvePendingAction } = useAiChatRuntimeActions();
 
   const focusComposer = useCallback(() => {
     window.setTimeout(() => inputRef.current?.focus(), 120);
@@ -80,7 +74,6 @@ export default function AiChatWidget({
 
   const closeWidget = useCallback(() => {
     setIsOpen(false);
-    setActiveChipId(null);
   }, []);
 
   const handleToggle = useCallback(() => {
@@ -89,10 +82,6 @@ export default function AiChatWidget({
         isOpen: prev,
         activeChipId,
       });
-
-      if (nextState.activeChipId !== activeChipId) {
-        setActiveChipId(nextState.activeChipId);
-      }
 
       if (nextState.isOpen) {
         focusComposer();
@@ -113,10 +102,6 @@ export default function AiChatWidget({
             activeChipId,
           });
 
-          if (nextState.activeChipId !== activeChipId) {
-            setActiveChipId(nextState.activeChipId);
-          }
-
           if (nextState.isOpen) {
             focusComposer();
           }
@@ -133,38 +118,28 @@ export default function AiChatWidget({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeChipId, closeWidget, focusComposer]);
 
-  const handleSend = useCallback(async () => {
-    const text = inputValue.trim();
-    if (!text || isStreaming) {
-      return;
+  useEffect(() => {
+    if (initialPrompt) {
+      setInputValue(initialPrompt);
     }
+  }, [initialPrompt, setInputValue]);
 
-    setInputValue("");
-    setActiveChipId(null);
-    await sendMessage(text, memoryItems as AgentMemoryItem[]);
-  }, [inputValue, isStreaming, memoryItems, sendMessage]);
+  const handleChipClick = useCallback((chipId: string, prompt: string) => {
+    toggleChip(chipId, prompt);
+    focusComposer();
+  }, [focusComposer, toggleChip]);
+
+  const handleSuggestionSelect = useCallback((prompt: string) => {
+    selectSuggestion(prompt);
+    focusComposer();
+  }, [focusComposer, selectSuggestion]);
 
   const handleResolveAction = useCallback(
     async (approved: boolean) => {
-      await resolveAction(approved, memoryItems as AgentMemoryItem[]);
+      await resolvePendingAction(approved);
     },
-    [memoryItems, resolveAction],
+    [resolvePendingAction],
   );
-
-  const handleChipClick = useCallback((chipId: string, prompt: string) => {
-    setActiveChipId((prev) => {
-      const next = prev === chipId ? null : chipId;
-      setInputValue(next ? prompt : "");
-      return next;
-    });
-    focusComposer();
-  }, [focusComposer]);
-
-  const handleSuggestionSelect = useCallback((prompt: string) => {
-    setActiveChipId(null);
-    setInputValue(prompt);
-    focusComposer();
-  }, [focusComposer]);
 
   return (
     <>
@@ -195,38 +170,47 @@ export default function AiChatWidget({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 12, scale: 0.98 }}
               transition={{ duration: 0.22, ease: "easeOut" }}
-              data-ai-widget-stage={widgetLayout.stage}
-              className={`fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[85] sm:left-auto sm:right-6 sm:bottom-[5.5rem] ${widgetLayout.widgetWidthClassName}`}
+              className="fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] z-[85] sm:left-auto sm:right-6 sm:bottom-[5.5rem] sm:w-[430px]"
             >
-              <AiChatPanel
-                mode="floating"
-                theme={theme}
-                title="AI Ассистент"
-                subtitle="Календарь, задачи и заметки в одном контексте."
-                messages={messages}
-                isStreaming={isStreaming}
-                pendingAction={pendingAction}
-                inputValue={inputValue}
-                inputPlaceholder="Спросите о задачах, встречах или заметках…"
-                inputRef={inputRef}
-                activeChipId={activeChipId}
-                chips={AI_CHAT_CONTEXT_CHIPS}
-                suggestions={getAiChatSuggestions("floating")}
-                onChipClick={handleChipClick}
-                onSuggestionSelect={handleSuggestionSelect}
-                onInputChange={(value) => {
-                  setInputValue(value);
-                  if (activeChipId) {
-                    setActiveChipId(null);
-                  }
-                }}
-                onSubmit={handleSend}
-                onResolveAction={handleResolveAction}
-                emptyTitle="Попросите AI собрать для вас рабочую картину дня."
-                emptyBody="Ответы стримятся в реальном времени, markdown сохраняется, а любые деструктивные действия проходят через подтверждение."
-                footerHint="Модель и API-ключ управляются в Settings."
-                shortcutLabel="⌘K"
-              />
+              {DEFAULT_FLOATING_AI_SURFACE_ID === "ai" ? (
+                <AiChatPanel
+                  mode="floating"
+                  theme={theme}
+                  title="AI Ассистент"
+                  subtitle="Календарь, задачи и заметки в одном контексте."
+                  messages={messages}
+                  isStreaming={isStreaming}
+                  pendingAction={pendingAction}
+                  inputValue={inputValue}
+                  inputPlaceholder="Спросите о задачах, встречах или заметках…"
+                  inputRef={inputRef}
+                  activeChipId={activeChipId}
+                  chips={AI_CHAT_CONTEXT_CHIPS}
+                  suggestions={getAiChatSuggestions("floating")}
+                  onChipClick={handleChipClick}
+                  onSuggestionSelect={handleSuggestionSelect}
+                  onInputChange={setInputValue}
+                  onSubmit={submitCurrentInput}
+                  onResolveAction={handleResolveAction}
+                  emptyTitle="Попросите AI собрать для вас рабочую картину дня."
+                  emptyBody="Ответы стримятся в реальном времени, markdown сохраняется, а любые деструктивные действия проходят через подтверждение."
+                  footerHint="Модель и API-ключ управляются в Settings."
+                  shortcutLabel="⌘K"
+                />
+              ) : DEFAULT_FLOATING_AI_SURFACE_ID === "ai-i" ? (
+                <AiIChatSurface
+                  mode="floating"
+                  theme={theme}
+                  messages={messages}
+                  pendingAction={pendingAction}
+                  isStreaming={isStreaming}
+                  inputValue={inputValue}
+                  inputRef={inputRef}
+                  onInputChange={setInputValue}
+                  onSubmit={submitCurrentInput}
+                  onResolveAction={handleResolveAction}
+                />
+              ) : null}
             </motion.div>
           </>
         ) : null}
