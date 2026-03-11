@@ -4,10 +4,16 @@ import Calendar2 from "@/components/calendar2/Calendar2";
 function readRedirectTarget(input?: string | string[]): string | null {
   const value = Array.isArray(input) ? input[0] : input;
   if (value === "inbox" || value === "ai") {
-    return `/?segment=${value}`;
+    return `/ai?segment=${value}`;
   }
   if (value === "ai-i") {
-    return "/ai-i";
+    return "/";
+  }
+  if (value === "kanban") {
+    return "/kanban";
+  }
+  if (value === "notes") {
+    return "/notes";
   }
   return null;
 }
@@ -22,5 +28,5 @@ export default async function CalendarPage(input?: {
     redirect(redirectTarget);
   }
 
-  return <Calendar2 />;
+  return <Calendar2 section="calendar" />;
 }

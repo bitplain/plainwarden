@@ -29,17 +29,14 @@ vi.mock("@/components/ai-chat/AiIChatSurface", () => ({
 import AiIStandalonePage from "@/components/ai-chat/AiIStandalonePage";
 
 describe("AiIStandalonePage", () => {
-  it("renders a dedicated ai-i workspace shell with centered stage and shared nav", () => {
+  it("renders only the ai-i content surface because the shared shell owns the header", () => {
     const html = renderToStaticMarkup(React.createElement(AiIStandalonePage));
 
     expect(html).toContain('data-ai-i-page="standalone"');
     expect(html).toContain('data-ai-i-stage="centered"');
-    expect(html).toContain('data-workspace-top-nav="ai-i"');
-    expect(html).toContain('href="/ai-i"');
-    expect(html).toContain('href="/calendar"');
-    expect(html).toContain('href="/calendar?tab=kanban"');
-    expect(html).toContain('href="/calendar?tab=notes"');
-    expect(html).toContain('href="/"');
+    expect(html).not.toContain('data-workspace-top-nav="ai-i"');
+    expect(html).not.toContain('href="/ai-i"');
+    expect(html).not.toContain('href="/calendar"');
     expect(html).toContain("AI-I Surface");
   });
 });

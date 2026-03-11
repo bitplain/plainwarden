@@ -24,7 +24,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace("/calendar");
+      router.replace("/");
     }
   }, [isAuthenticated, router]);
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
     setFormError(null);
     try {
       await login({ email, password });
-      router.replace("/calendar");
+      router.replace("/");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ошибка входа";
       setFormError(message);

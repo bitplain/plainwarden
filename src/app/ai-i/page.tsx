@@ -1,5 +1,5 @@
-import AiIStandalonePage from "@/components/ai-chat/AiIStandalonePage";
+import { redirect } from "next/navigation";
 
 export default function AiIPage() {
-  return <AiIStandalonePage />;
+  redirect("/");
 }
