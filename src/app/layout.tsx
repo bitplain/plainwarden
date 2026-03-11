@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { NetdenStoreProvider } from "@/lib/store";
+import { AiChatProvider } from "@/components/ai-chat/AiChatProvider";
 import AiChatWidgetWrapper from "@/components/AiChatWidgetWrapper";
 import PushForegroundOverlay from "@/components/PushForegroundOverlay";
 import "./globals.css";
@@ -31,9 +32,11 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <NetdenStoreProvider>
-          {children}
-          <PushForegroundOverlay />
-          <AiChatWidgetWrapper />
+          <AiChatProvider>
+            {children}
+            <PushForegroundOverlay />
+            <AiChatWidgetWrapper />
+          </AiChatProvider>
         </NetdenStoreProvider>
       </body>
     </html>

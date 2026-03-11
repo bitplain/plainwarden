@@ -47,7 +47,7 @@ describe("parseCalendar2UrlState", () => {
     });
   });
 
-  it("treats legacy inbox and ai tabs as invalid", () => {
+  it("treats legacy inbox tab value as invalid for calendar state", () => {
     const state = parseCalendar2UrlState(
       new URLSearchParams({
         tab: "inbox",
@@ -56,15 +56,28 @@ describe("parseCalendar2UrlState", () => {
     );
 
     expect(state.tab).toBe("calendar");
+  });
 
-    const aiState = parseCalendar2UrlState(
+  it("accepts ai-i tab value", () => {
+    const state = parseCalendar2UrlState(
+      new URLSearchParams({
+        tab: "ai-i",
+      }),
+      "2026-03-11",
+    );
+
+    expect(state.tab).toBe("ai-i");
+  });
+
+  it("treats legacy ai tab value as invalid for calendar state", () => {
+    const state = parseCalendar2UrlState(
       new URLSearchParams({
         tab: "ai",
       }),
       "2026-03-11",
     );
 
-    expect(aiState.tab).toBe("calendar");
+    expect(state.tab).toBe("calendar");
   });
 });
 

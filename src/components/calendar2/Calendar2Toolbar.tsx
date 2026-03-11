@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Calendar2View, Calendar2Tab } from "@/components/calendar2/calendar2-types";
+import { getCalendarAiSurfaceTabs } from "@/components/ai-chat/surfaces";
 
 interface Calendar2ToolbarProps {
   activeTab: Calendar2Tab;
@@ -19,10 +20,23 @@ interface Calendar2ToolbarProps {
   onSearchChange: (value: string) => void;
 }
 
+const AI_SURFACE_TABS = getCalendarAiSurfaceTabs();
 const TAB_OPTIONS: { id: Calendar2Tab; label: string }[] = [
+  ...AI_SURFACE_TABS.filter((surface) => surface.toolbarPlacement === "before-calendar").map(
+    (surface) => ({
+      id: surface.id,
+      label: surface.label,
+    }),
+  ),
   { id: "calendar", label: "Календарь" },
   { id: "kanban", label: "Канбан" },
   { id: "notes", label: "Заметки" },
+  ...AI_SURFACE_TABS.filter((surface) => surface.toolbarPlacement === "after-notes").map(
+    (surface) => ({
+      id: surface.id,
+      label: surface.label,
+    }),
+  ),
 ];
 
 const VIEW_OPTIONS: { id: Calendar2View; label: string }[] = [
@@ -48,6 +62,8 @@ export default function Calendar2Toolbar({
   searchValue,
   onSearchChange,
 }: Calendar2ToolbarProps) {
+  const shouldShowSidebarButton = activeTab !== "ai-i";
+
   return (
     <header className="border-b border-[var(--cal2-border)] bg-[var(--cal2-surface-1)]">
       <div className="flex w-full flex-col gap-2.5 px-3 py-3 sm:px-5 xl:px-6">
@@ -78,13 +94,15 @@ export default function Calendar2Toolbar({
             >
               Quick Capture
             </button>
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
-            >
-              {isSidebarVisible ? "Скрыть панель" : "Показать панель"}
-            </button>
+            {shouldShowSidebarButton ? (
+              <button
+                type="button"
+                onClick={onToggleSidebar}
+                className="rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--cal2-text-secondary)] transition-colors hover:text-[var(--cal2-text-primary)]"
+              >
+                {isSidebarVisible ? "Скрыть панель" : "Показать панель"}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onAdd}
@@ -105,9 +123,8 @@ export default function Calendar2Toolbar({
         {/* Tabs row */}
         <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
           <div className="inline-flex rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] p-0.5">
-            {TAB_OPTIONS.map((tab, index) => {
+            {TAB_OPTIONS.map((tab) => {
               const isActive = tab.id === activeTab;
-
               return (
                 <div key={tab.id} className="contents">
                   <button
@@ -121,14 +138,14 @@ export default function Calendar2Toolbar({
                   >
                     {tab.label}
                   </button>
-                  {index === 0 && (
+                  {tab.id === "calendar" ? (
                     <Link
                       href="/"
                       className="rounded-[4px] px-2.5 py-1.5 text-[11px] font-medium leading-[1.2] text-[var(--cal2-text-secondary)] transition-colors hover:bg-[rgba(255,255,255,0.04)] hover:text-[var(--cal2-text-primary)] sm:text-[12px]"
                     >
                       AI
                     </Link>
-                  )}
+                  ) : null}
                 </div>
               );
             })}
