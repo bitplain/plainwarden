@@ -33,7 +33,6 @@ import Calendar2WeekView from "./Calendar2WeekView";
 import Calendar2DayView from "./Calendar2DayView";
 import KanbanBoard from "./KanbanBoard";
 import NotesPanel from "./NotesPanel";
-import Calendar2AiIPanel from "./Calendar2AiIPanel";
 import EventModal2 from "./EventModal2";
 import MoveTimePickerDialog, { type MoveTimePickerRequest, type MoveTimePickerResult } from "./MoveTimePickerDialog";
 import QuickCaptureDialog from "./QuickCaptureDialog";
@@ -657,12 +656,6 @@ export default function Calendar2() {
             )}
           </div>
         );
-      case "ai-i":
-        return (
-          <div className="min-h-0 flex-1">
-            <Calendar2AiIPanel />
-          </div>
-        );
       case "kanban":
         return (
           <div className="min-h-0 flex-1">
@@ -695,8 +688,7 @@ export default function Calendar2() {
 
   const isCompactDensity = uiPreferences.density === "compact";
   const isReducedMotion = uiPreferences.motion === "reduced";
-  const isAiIActive = activeTab === "ai-i";
-  const shouldShowSidebar = isSidebarVisible && !isAiIActive;
+  const shouldShowSidebar = isSidebarVisible;
 
   return (
     <div
@@ -771,13 +763,9 @@ export default function Calendar2() {
           <main
             className={`${
               shouldShowSidebar ? "hidden lg:flex" : "flex"
-            } relative min-h-0 flex-col gap-2 ${
-              isAiIActive
-                ? "bg-transparent p-0"
-                : `rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] ${
-                    isCompactDensity ? "p-2 sm:p-2.5" : "p-2 sm:p-3"
-                  } ${shouldShowSidebar ? "lg:rounded-l-none lg:border-l-0" : ""}`
-            }`}
+            } relative min-h-0 flex-col gap-2 rounded-[8px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-1)] ${
+              isCompactDensity ? "p-2 sm:p-2.5" : "p-2 sm:p-3"
+            } ${shouldShowSidebar ? "lg:rounded-l-none lg:border-l-0" : ""}`}
           >
             {(isAuthLoading || isEventsLoading) && (
               <div className="pointer-events-none absolute right-3 top-3 z-20 rounded-[6px] border border-[var(--cal2-border)] bg-[var(--cal2-surface-2)] px-3 py-2 text-[11px] text-[var(--cal2-text-secondary)] shadow-[0_6px_16px_-10px_rgba(0,0,0,0.8)]">

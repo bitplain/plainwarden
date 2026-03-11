@@ -1,7 +1,7 @@
 import type { CalendarEvent } from "@/lib/types";
 
 export type Calendar2View = "month" | "week" | "day";
-export type Calendar2Tab = "ai-i" | "calendar" | "kanban" | "notes";
+export type Calendar2Tab = "calendar" | "kanban" | "notes";
 
 export type TaskPriority = "urgent" | "high" | "medium" | "low";
 

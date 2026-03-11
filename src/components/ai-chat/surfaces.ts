@@ -1,7 +1,4 @@
-import type { Calendar2Tab } from "@/components/calendar2/calendar2-types";
-
 export type AiChatSurfaceId = "ai" | "ai-i";
-export type CalendarAiSurfaceId = Extract<Calendar2Tab, AiChatSurfaceId>;
 export type AiChatToolbarPlacement = "before-calendar" | "after-notes";
 
 export interface AiChatSurfaceDefinition {
@@ -14,15 +11,11 @@ export interface AiChatSurfaceDefinition {
   widgetTarget: boolean;
 }
 
-export interface CalendarAiSurfaceDefinition extends AiChatSurfaceDefinition {
-  id: CalendarAiSurfaceId;
-}
-
 export const AI_CHAT_SURFACES: readonly AiChatSurfaceDefinition[] = [
   {
     id: "ai-i",
     label: "AI-I",
-    toolbarVisible: true,
+    toolbarVisible: false,
     toolbarPlacement: "before-calendar",
     legacy: false,
     experimental: true,
@@ -41,8 +34,6 @@ export const AI_CHAT_SURFACES: readonly AiChatSurfaceDefinition[] = [
 
 export const DEFAULT_FLOATING_AI_SURFACE_ID: AiChatSurfaceId = "ai";
 
-export function getCalendarAiSurfaceTabs(): readonly CalendarAiSurfaceDefinition[] {
-  return AI_CHAT_SURFACES.filter(
-    (surface): surface is CalendarAiSurfaceDefinition => surface.toolbarVisible && surface.id !== "ai",
-  );
+export function getCalendarAiSurfaceTabs(): readonly AiChatSurfaceDefinition[] {
+  return [];
 }

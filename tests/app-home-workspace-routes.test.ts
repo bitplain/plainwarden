@@ -21,7 +21,12 @@ vi.mock("@/components/calendar2/Calendar2", () => ({
   default: () => React.createElement("main", { "data-calendar-workspace": "mock" }, "Calendar Workspace"),
 }));
 
+vi.mock("@/components/ai-chat/AiIStandalonePage", () => ({
+  default: () => React.createElement("main", { "data-ai-i-workspace": "mock" }, "AI-I Workspace"),
+}));
+
 import HomePage from "@/app/page";
+import AiIPage from "@/app/ai-i/page";
 import CalendarPage from "@/app/calendar/page";
 
 describe("home and calendar routes", () => {
@@ -72,6 +77,14 @@ describe("home and calendar routes", () => {
     ).rejects.toThrow("REDIRECT:/?segment=ai");
   });
 
+  it("redirects ai-i calendar tab requests to the standalone ai-i page", async () => {
+    await expect(
+      CalendarPage({
+        searchParams: Promise.resolve({ tab: "ai-i" }),
+      } as never),
+    ).rejects.toThrow("REDIRECT:/ai-i");
+  });
+
   it("keeps rendering the calendar workspace for non-legacy tabs", async () => {
     const page = await CalendarPage({
       searchParams: Promise.resolve({ tab: "kanban" }),
@@ -79,5 +92,13 @@ describe("home and calendar routes", () => {
     const html = renderToStaticMarkup(page);
 
     expect(html).toContain("Calendar Workspace");
+  });
+
+  it("renders the standalone ai-i workspace on /ai-i", async () => {
+    const page = await AiIPage();
+    const html = renderToStaticMarkup(page);
+
+    expect(html).toContain("AI-I Workspace");
+    expect(redirectMock).not.toHaveBeenCalled();
   });
 });
