@@ -179,7 +179,7 @@ const MonthCell = React.memo(function MonthCell({
           }
         }}
         className={cn(
-          "cal2-drop-target group/calcell relative flex h-full min-h-[112px] cursor-pointer flex-col overflow-hidden rounded-[18px] border p-3 text-left transition duration-200 ease-out md:min-h-[132px]",
+          "cal2-drop-target group/calcell relative flex h-full min-h-0 cursor-pointer flex-col overflow-hidden rounded-[18px] border p-3 text-left transition duration-200 ease-out",
           "hover:-translate-y-[1px] hover:[background-image:var(--cal2-month-card-hover)]",
           getMonthCellSurfaceClass(tone),
           isGlowing && "cal2-cell-drop-flash",
@@ -315,7 +315,8 @@ export default function Calendar2MonthView({
 
       <div
         data-cal2-month-grid="detached"
-        className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(112px,1fr))] gap-3 overflow-hidden px-3 pb-3 md:grid-rows-[repeat(6,minmax(132px,1fr))] md:px-4"
+        data-cal2-month-fit="viewport"
+        className="grid flex-1 grid-cols-7 grid-rows-[repeat(6,minmax(0,1fr))] gap-3 overflow-hidden px-3 pb-3 md:px-4"
       >
         {days.map((day) => {
           const dateKey = toDateKey(day);

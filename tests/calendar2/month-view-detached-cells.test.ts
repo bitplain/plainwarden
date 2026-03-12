@@ -45,8 +45,11 @@ describe("Calendar2MonthView detached cells", () => {
     );
 
     expect(html).toContain('data-cal2-month-grid="detached"');
+    expect(html).toContain('data-cal2-month-fit="viewport"');
     expect(html).toContain("gap-3");
+    expect(html).toContain("grid-rows-[repeat(6,minmax(0,1fr))]");
     expect(html).toContain('data-cal2-month-cell-tone="active"');
+    expect(html).toContain('data-cal2-glow-mode="pointer"');
     expect(html).toContain('data-cal2-glow-active="true"');
     expect(html).not.toContain("border-b border-r");
   });
